@@ -44,7 +44,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             if (treeviewSyms.SelectedNode.Tag is SQLBuildInfo bld) {
                 if (bld.SymbolDetails.Count > 0) {
                     dnldButton.Enabled = false;
-                    lastDownloadedSymFolder = $@"{pathToPDBs}\{bld.BuildNumber}";
+                    lastDownloadedSymFolder = $@"{pathToPDBs}\{bld.BuildNumber}.{bld.MachineType}";
                     Directory.CreateDirectory(lastDownloadedSymFolder);
                     using (var client = new WebClient()) {
                         client.DownloadProgressChanged += new DownloadProgressChangedEventHandler(Client_DownloadProgressChanged);
