@@ -71,15 +71,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             return retval;
         }
 
-        private static string matchEval(Match m) {
-            return $"{m.Groups["prefix"]}{m.Groups["suffix"]}";
-        }
-
-        internal static (Dictionary<string, Symbol>, string) ParseModuleInfoXML(string input) {
+        public static (Dictionary<string, Symbol>, string) ParseModuleInfoXML(string input) {
             Contract.Requires(!string.IsNullOrEmpty(input));
             var outCallstack = new StringBuilder();
             // use a multi-line regex replace to reassemble XML fragments which were split across lines
-            input = Regex.Replace(input, @"(?<prefix>\<frame[^\/\>]*?)(?<newline>(\r\n|\n))(?<suffix>.*?\/\>\s*?$)", new MatchEvaluator(matchEval), RegexOptions.Multiline);
+            input = Regex.Replace(input, @"(?<prefix>\<frame[^\/\>]*?)(?<newline>(\r\n|\n))(?<suffix>.*?\/\>\s*?$)", @"${prefix}${suffix}", RegexOptions.Multiline);
             // next, replace any pre-post stuff from the XML frame lines
             input = Regex.Replace(input, @"(?<prefix>.*?)(?<retain>\<frame.+\/\>)(?<suffix>.*?)", "${retain}");
 
@@ -88,33 +84,31 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var lines = input.Split('\n');
             foreach (var line in lines) {
                 if (string.IsNullOrWhiteSpace(line)) {
+
                     continue;
                 }
-                // foreach line, check if XML
                 try {
                     using (var sreader = new StringReader(line)) {
                         using (var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null })) {
                             if (reader.Read()) {
                                 // seems to be XML; process attributes only if all 3 are there
-                                var pdbGuid = Guid.Parse(reader.GetAttribute("guid"));
-                                var moduleName = reader.GetAttribute("module").ToLower(); // TODO check case-sensitivity
-                                var pdbName = reader.GetAttribute("pdb").ToLower();
-                                var pdbAge = int.Parse(reader.GetAttribute("age"));
+                                var moduleName = Path.GetFileNameWithoutExtension(reader.GetAttribute("module"));
                                 if (!syms.ContainsKey(moduleName)) {
-                                    syms.Add(moduleName, new Symbol() { PDBName = pdbName, PDBAge = pdbAge, PDBGuid = pdbGuid.ToString("N") });
+                                    syms.Add(moduleName, new Symbol() { PDBName = reader.GetAttribute("pdb").ToLower(), PDBAge = int.Parse(reader.GetAttribute("age")), PDBGuid = Guid.Parse(reader.GetAttribute("guid")).ToString("N") });
                                 }
-
                                 // transform the XML into a simple module+offset notation
-                                outCallstack.AppendFormat($"{moduleName}+{reader.GetAttribute("rva")}{Environment.NewLine}");
+                                outCallstack.AppendFormat($"{reader.GetAttribute("id")} {moduleName}+{reader.GetAttribute("rva")}{Environment.NewLine}");
+                                continue;
                             }
                         }
                     }
                 } catch (Exception ex) {
-                    if (ex is ArgumentNullException || ex is XmlException) {
-                        // pass-through this line as it is not XML
-                        outCallstack.AppendLine(line);
+                    if (ex is ArgumentNullException || ex is NullReferenceException || ex is XmlException) {
                     } else { throw; }
                 }
+
+                // pass-through this line as it is either non-XML, 0-length or whitespace-only
+                outCallstack.AppendLine(line);
             }
 
             return (syms, outCallstack.ToString());

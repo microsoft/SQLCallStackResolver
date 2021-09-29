@@ -98,7 +98,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Internal helper function to return the symbolized frame text (not including source info)
-        internal static string GetSymbolizedFrame(string moduleName, IDiaSymbol mysym, bool useUndecorateLogic, bool includeOffset, int displacement) {
+        internal static string GetSymbolizedFrame(int frameNum, string moduleName, IDiaSymbol mysym, bool useUndecorateLogic, bool includeOffset, int displacement) {
             string funcname2;
             if (!useUndecorateLogic) {
                 funcname2 = mysym.name;
@@ -119,7 +119,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 offsetStr = string.Format(CultureInfo.CurrentCulture, "+{0}", displacement);
             }
 
-            return string.Format(CultureInfo.CurrentCulture, "{0}!{1}{2}", moduleName, funcname2, offsetStr);
+            var optionalFrameNum = frameNum != int.MinValue ? string.Format(CultureInfo.CurrentCulture, "{0:x2} ", frameNum) : string.Empty;
+
+            return string.Format(CultureInfo.CurrentCulture, "{3}{0}!{1}{2}", moduleName, funcname2, offsetStr, optionalFrameNum);
         }
 
         /// Internal helper function to obtain source information for given symbol
@@ -160,7 +162,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 foreach (IDiaSymbol inlineFrame in enumInlinees) {
                     var inlineeOffset = (int)(rva - inlineFrame.relativeVirtualAddress);
                     sbInline.Append("(Inline Function) ");
-                    sbInline.Append(DiaUtil.GetSymbolizedFrame(moduleName, inlineFrame, useUndecorateLogic, includeOffset, inlineeOffset));
+                    sbInline.Append(DiaUtil.GetSymbolizedFrame(int.MinValue, moduleName, inlineFrame, useUndecorateLogic, includeOffset, inlineeOffset));
                     if (includeSourceInfo) {
                         inlineFrame.findInlineeLinesByRVA(inlineRVA, 0, out IDiaEnumLineNumbers enumLineNums);
                         sbInline.Append("\t");

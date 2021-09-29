@@ -72,8 +72,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// Runs through each of the frames in a call stack and looks up symbols for each
         private string ResolveSymbols(Dictionary<string, DiaUtil> _diautils, string[] callStackLines, bool includeSourceInfo, bool relookupSource, bool includeOffsets, bool showInlineFrames) {
             var finalCallstack = new StringBuilder();
-            var rgxModuleName = new Regex(@"(?<module>\w+)(\.(dll|exe))*\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*");
-            var rgxAlreadySymbolizedFrame = new Regex(@"(?<module>\w+)(\.(dll|exe))*!(?<symbolizedfunc>.+?)\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*");
+            var rgxModuleName = new Regex(@"((?<framenum>\d+)\s+)*(?<module>\w+)(\.(dll|exe))*\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*");
+            var rgxAlreadySymbolizedFrame = new Regex(@"((?<framenum>\d+)\s+)*(?<module>\w+)(\.(dll|exe))*!(?<symbolizedfunc>.+?)\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*");
             foreach (var iterFrame in callStackLines) {
                 // hard-coded find-replace for XML markup - useful when importing from XML histograms
                 var currentFrame = iterFrame.Replace("&lt;", "<").Replace("&gt;", ">");
@@ -124,8 +124,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 var match = rgxModuleName.Match(currentFrame);
                 if (match.Success) {
                     var matchedModuleName = match.Groups["module"].Value;
+                    int frameNum = string.IsNullOrWhiteSpace(match.Groups["framenum"].Value) ? int.MinValue : Convert.ToInt32(match.Groups["framenum"].Value, 16);
                     if (_diautils.ContainsKey(matchedModuleName)) {
-                        string processedFrame = ProcessFrameModuleOffset(_diautils, matchedModuleName, match.Groups["offset"].Value, includeSourceInfo, includeOffsets, showInlineFrames);
+                        string processedFrame = ProcessFrameModuleOffset(_diautils, frameNum, matchedModuleName, match.Groups["offset"].Value, includeSourceInfo, includeOffsets, showInlineFrames);
                         if (!string.IsNullOrEmpty(processedFrame)) {
                             // typically this is because we could not find the offset in any known function range
                             finalCallstack.AppendLine(processedFrame);
@@ -167,7 +168,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         /// This is the most important function in this whole utility! It uses DIA to lookup the symbol based on RVA offset
         /// It also looks up line number information if available and then formats all of this information for returning to caller
-        private string ProcessFrameModuleOffset(Dictionary<string, DiaUtil> _diautils, string moduleName, string offset, bool includeSourceInfo, bool includeOffset, bool showInlineFrames) {
+        private string ProcessFrameModuleOffset(Dictionary<string, DiaUtil> _diautils, int frameNum, string moduleName, string offset, bool includeSourceInfo, bool includeOffset, bool showInlineFrames) {
             bool useUndecorateLogic = false;
 
             // the offsets in the XE output are in hex, so we convert to base-10 accordingly
@@ -227,7 +228,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 _diautils[moduleName]._IDiaSession.findLinesByRVA(rva, 0, out IDiaEnumLineNumbers enumLineNums);
                 sourceInfo = DiaUtil.GetSourceInfo(enumLineNums, pdbHasSourceInfo);
             }
-            var symbolizedFrame = DiaUtil.GetSymbolizedFrame(moduleName, mysym, useUndecorateLogic, includeOffset, displacement);
+            var symbolizedFrame = DiaUtil.GetSymbolizedFrame(frameNum, moduleName, mysym, useUndecorateLogic, includeOffset, displacement);
             // Process inline functions, but only if private PDBs are in use
             string inlineFrameAndSourceInfo = string.Empty;
             if (showInlineFrames && pdbHasSourceInfo) {
