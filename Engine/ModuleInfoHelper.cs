@@ -82,29 +82,29 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             // split into multiple lines
             var syms = new Dictionary<string, Symbol>();
             var lines = input.Split('\n');
+            bool readStatus = false;
             foreach (var line in lines) {
-                if (string.IsNullOrWhiteSpace(line)) {
-
-                    continue;
-                }
-                try {
-                    using (var sreader = new StringReader(line)) {
-                        using (var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null })) {
-                            if (reader.Read()) {
-                                // seems to be XML; process attributes only if all 3 are there
-                                var moduleName = Path.GetFileNameWithoutExtension(reader.GetAttribute("module"));
-                                if (!syms.ContainsKey(moduleName)) {
-                                    syms.Add(moduleName, new Symbol() { PDBName = reader.GetAttribute("pdb").ToLower(), PDBAge = int.Parse(reader.GetAttribute("age")), PDBGuid = Guid.Parse(reader.GetAttribute("guid")).ToString("N") });
+                if (!string.IsNullOrWhiteSpace(line)) {
+                    try {
+                        using (var sreader = new StringReader(line)) {
+                            using (var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null })) {
+                                readStatus = reader.Read();
+                                if (readStatus) {
+                                    // seems to be XML; process attributes only if all 3 are there
+                                    var moduleName = Path.GetFileNameWithoutExtension(reader.GetAttribute("module"));
+                                    if (!syms.ContainsKey(moduleName)) {
+                                        syms.Add(moduleName, new Symbol() { PDBName = reader.GetAttribute("pdb").ToLower(), PDBAge = int.Parse(reader.GetAttribute("age")), PDBGuid = Guid.Parse(reader.GetAttribute("guid")).ToString("N") });
+                                    }
+                                    // transform the XML into a simple module+offset notation
+                                    outCallstack.AppendFormat($"{reader.GetAttribute("id")} {moduleName}+{reader.GetAttribute("rva")}{Environment.NewLine}");
+                                    continue;
                                 }
-                                // transform the XML into a simple module+offset notation
-                                outCallstack.AppendFormat($"{reader.GetAttribute("id")} {moduleName}+{reader.GetAttribute("rva")}{Environment.NewLine}");
-                                continue;
                             }
                         }
+                    } catch (Exception ex) {
+                        if (ex is ArgumentNullException || ex is NullReferenceException || ex is XmlException) {
+                        } else { throw; }
                     }
-                } catch (Exception ex) {
-                    if (ex is ArgumentNullException || ex is NullReferenceException || ex is XmlException) {
-                    } else { throw; }
                 }
 
                 // pass-through this line as it is either non-XML, 0-length or whitespace-only
