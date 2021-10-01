@@ -82,7 +82,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 parent.globalCounter = 0;
                 foreach (var item in callstackSlots.OrderByDescending(key => key.Value)) {
                     xmlEquivalent.AppendFormat(CultureInfo.CurrentCulture,
-                        "<Slot count=\"{0}\"><value>{1}</value></Slot>",
+                        "<Slot count=\"{0}\"><value><![CDATA[{1}]]></value></Slot>",
                         item.Value,
                         item.Key);
                     xmlEquivalent.AppendLine();
