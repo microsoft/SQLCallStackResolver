@@ -7,6 +7,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     using System.IO;
     using System.Text;
     using System.Text.RegularExpressions;
+    using System.Threading.Tasks;
     using System.Xml;
 
     public static class ModuleInfoHelper {
@@ -71,47 +72,55 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             return retval;
         }
 
-        public static (Dictionary<string, Symbol>, string) ParseModuleInfoXML(string input) {
-            Contract.Requires(!string.IsNullOrEmpty(input));
-            var outCallstack = new StringBuilder();
-            // use a multi-line regex replace to reassemble XML fragments which were split across lines
-            input = Regex.Replace(input, @"(?<prefix>\<frame[^\/\>]*?)(?<newline>(\r\n|\n))(?<suffix>.*?\/\>\s*?$)", @"${prefix}${suffix}", RegexOptions.Multiline);
-            // next, replace any pre-post stuff from the XML frame lines
-            input = Regex.Replace(input, @"(?<prefix>.*?)(?<retain>\<frame.+\/\>)(?<suffix>.*?)", "${retain}");
-
-            // split into multiple lines
+        public static (Dictionary<string, Symbol>, List<StackWithCount>) ParseModuleInfoXML(List<StackWithCount> listOfCallStacks) {
             var syms = new Dictionary<string, Symbol>();
-            var lines = input.Split('\n');
-            bool readStatus = false;
-            foreach (var line in lines) {
-                if (!string.IsNullOrWhiteSpace(line)) {
-                    try {
-                        using (var sreader = new StringReader(line)) {
-                            using (var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null })) {
-                                readStatus = reader.Read();
-                                if (readStatus) {
-                                    // seems to be XML; process attributes only if all 3 are there
-                                    var moduleName = Path.GetFileNameWithoutExtension(reader.GetAttribute("module"));
-                                    if (!syms.ContainsKey(moduleName)) {
-                                        syms.Add(moduleName, new Symbol() { PDBName = reader.GetAttribute("pdb").ToLower(), PDBAge = int.Parse(reader.GetAttribute("age")), PDBGuid = Guid.Parse(reader.GetAttribute("guid")).ToString("N") });
+
+            Parallel.ForEach(listOfCallStacks, currItem => {
+                var outCallstack = new StringBuilder();
+                // use a multi-line regex replace to reassemble XML fragments which were split across lines
+                currItem.Callstack = Regex.Replace(currItem.Callstack, @"(?<prefix>\<frame[^\/\>]*?)(?<newline>(\r\n|\n))(?<suffix>.*?\/\>\s*?$)", @"${prefix}${suffix}", RegexOptions.Multiline);
+                // ensure that each <frame> element starts on a newline
+                currItem.Callstack = Regex.Replace(currItem.Callstack, @"/\>\s*\<frame", "/>\r\n<frame");
+                // next, replace any pre-post stuff from the XML frame lines
+                currItem.Callstack = Regex.Replace(currItem.Callstack, @"(?<prefix>.*?)(?<retain>\<frame.+\/\>)(?<suffix>.*?)", "${retain}");
+
+                // split into multiple lines
+                var lines = currItem.Callstack.Split('\n');
+                bool readStatus = false;
+                foreach (var line in lines) {
+                    if (!string.IsNullOrWhiteSpace(line)) {
+                        try {
+                            using (var sreader = new StringReader(line)) {
+                                using (var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null })) {
+                                    readStatus = reader.Read();
+                                    if (readStatus) {
+                                        // seems to be XML; process attributes only if all 3 are there
+                                        var moduleName = Path.GetFileNameWithoutExtension(reader.GetAttribute("module"));
+                                        lock (syms) {
+                                            if (!syms.ContainsKey(moduleName)) {
+                                                syms.Add(moduleName, new Symbol() { PDBName = reader.GetAttribute("pdb").ToLower(), PDBAge = int.Parse(reader.GetAttribute("age")), PDBGuid = Guid.Parse(reader.GetAttribute("guid")).ToString("N") });
+                                            }
+                                        }
+                                        // transform the XML into a simple module+offset notation
+                                        outCallstack.AppendFormat($"{reader.GetAttribute("id")} {moduleName}+{reader.GetAttribute("rva")}{Environment.NewLine}");
+                                        continue;
                                     }
-                                    // transform the XML into a simple module+offset notation
-                                    outCallstack.AppendFormat($"{reader.GetAttribute("id")} {moduleName}+{reader.GetAttribute("rva")}{Environment.NewLine}");
-                                    continue;
                                 }
                             }
+                        } catch (Exception ex) {
+                            if (ex is ArgumentNullException || ex is NullReferenceException || ex is XmlException) {
+                            } else { throw; }
                         }
-                    } catch (Exception ex) {
-                        if (ex is ArgumentNullException || ex is NullReferenceException || ex is XmlException) {
-                        } else { throw; }
                     }
+
+                    // pass-through this line as it is either non-XML, 0-length or whitespace-only
+                    outCallstack.AppendLine(line);
                 }
 
-                // pass-through this line as it is either non-XML, 0-length or whitespace-only
-                outCallstack.AppendLine(line);
-            }
+                currItem.Callstack = outCallstack.ToString();
+            });
 
-            return (syms, outCallstack.ToString());
+            return (syms, listOfCallStacks);
         }
     }
 }
