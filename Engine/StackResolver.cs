@@ -358,7 +358,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                 // handle the case wherein we are dealing with a ring buffer output with individual events and not a histogram
                 if (0 == allstacknodes.Count) {
-                    allstacknodes = xmldoc.SelectNodes("//event[count(./action[@name = 'callstack']) > 0]");
+                    allstacknodes = xmldoc.SelectNodes("//event[count(./action[contains(@name, 'callstack')]) > 0]");
 
                     if (allstacknodes.Count > 0) {
                         this.StatusMessage = "Preprocessing XEvent events...";
@@ -368,7 +368,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                                 return "Operation cancelled.";
                             }
 
-                            var callstackTextNode = currstack.SelectSingleNode("./action[@name = 'callstack'][1]/value[1]");
+                            var callstackTextNode = currstack.SelectSingleNode("./action[contains(@name, 'callstack')][1]/value[1]");
                             var callstackText = callstackTextNode.InnerText;
                             // proceed to extract the surrounding XML markup
                             callstackTextNode.ParentNode.RemoveChild(callstackTextNode);
