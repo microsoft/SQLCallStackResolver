@@ -2,12 +2,13 @@
 // Licensed under the MIT License - see LICENSE file in this repo.
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     using Dia;
-    using Microsoft.Diagnostics.Runtime.Utilities;
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Linq;
+    using System.Reflection.PortableExecutable;
     using System.Runtime.InteropServices;
     using System.Text;
     using System.Text.RegularExpressions;
@@ -591,14 +592,16 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                 if (!string.IsNullOrEmpty(finalFilePath)) {
                     using (var dllFileStream = new FileStream(finalFilePath, FileMode.Open, FileAccess.Read, FileShare.Read)) {
-                        using (var dllImage = new PEImage(dllFileStream, false)) {
-                            var internalPDBName = dllImage.DefaultPdb.Path;
-                            var pdbGuid = dllImage.DefaultPdb.Guid;
-                            var pdbAge = dllImage.DefaultPdb.Revision;
+                        using (var reader = new PEReader(dllFileStream)) {
+                            var lastPdbInfo = PEHelper.ReadPdbs(reader).Last();
+                            var internalPDBName = lastPdbInfo.Path;
+                            var pdbGuid = lastPdbInfo.Guid;
+                            var pdbAge = lastPdbInfo.Age;
                             var usablePDBName = Path.GetFileNameWithoutExtension(internalPDBName);
+                            var fileVer = FileVersionInfo.GetVersionInfo(finalFilePath).FileVersion;
                             var newSymbol = new Symbol() {PDBName = usablePDBName, InternalPDBName = internalPDBName,
                                 DownloadURL = string.Format(CultureInfo.CurrentCulture, @"https://msdl.microsoft.com/download/symbols/{0}.pdb/{1}/{0}.pdb",
-                                    usablePDBName, pdbGuid.ToString("N", CultureInfo.CurrentCulture) + pdbAge.ToString(CultureInfo.CurrentCulture)), FileVersion = dllImage.GetFileVersionInfo().FileVersion};
+                                    usablePDBName, pdbGuid.ToString("N", CultureInfo.CurrentCulture) + pdbAge.ToString(CultureInfo.CurrentCulture)), FileVersion = fileVer};
 
                             newSymbol.DownloadVerified = Symbol.IsURLValid(new Uri(newSymbol.DownloadURL));
 

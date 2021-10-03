@@ -36,9 +36,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         public void RegularSymbolHexOffset() {
             using (var csr = new StackResolver()) {
                 var ret = csr.ResolveCallstacks("sqldk+0x40609\r\nsqldk+40609", @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, true, false, false, null);
-
                 var expectedSymbol = "sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644";
-
                 Assert.Equal(expectedSymbol + Environment.NewLine + expectedSymbol, ret.Trim());
             }
         }
@@ -151,11 +149,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         public void RegularSymbolHexOffsetNoOutputOffset() {
             using (var csr = new StackResolver()) {
                 var dllPaths = new List<string>{@"..\..\..\Tests\TestCases\TestOrdinal"};
-
                 var ret = csr.ResolveCallstacks("sqldk+0x40609", @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, false, false, false, null);
-
                 var expectedSymbol = "sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode";
-
                 Assert.Equal(expectedSymbol, ret.Trim());
             }
         }
@@ -167,11 +162,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         public void RegularSymbolHexOffsetNoOutputOffsetWithFrameNums() {
             using (var csr = new StackResolver()) {
                 var dllPaths = new List<string> { @"..\..\..\Tests\TestCases\TestOrdinal" };
-
                 var ret = csr.ResolveCallstacks("00 sqldk+0x40609", @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, false, false, false, null);
-
                 var expectedSymbol = "00 sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode";
-
                 Assert.Equal(expectedSymbol, ret.Trim());
             }
         }
