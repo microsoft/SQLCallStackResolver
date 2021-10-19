@@ -72,8 +72,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// Runs through each of the frames in a call stack and looks up symbols for each
         private string ResolveSymbols(Dictionary<string, DiaUtil> _diautils, string[] callStackLines, bool includeSourceInfo, bool relookupSource, bool includeOffsets, bool showInlineFrames) {
             var finalCallstack = new StringBuilder();
-            var rgxModuleName = new Regex(@"(?<module>\w+)(\.(dll|exe))*\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*");
-            var rgxAlreadySymbolizedFrame = new Regex(@"(?<module>\w+)(\.(dll|exe))*!(?<symbolizedfunc>.+?)\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*");
+            var rgxModuleName = new Regex(@"((?<framenum>\d+)\s+)*(?<module>\w+)(\.(dll|exe))*\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*");
+            var rgxAlreadySymbolizedFrame = new Regex(@"((?<framenum>\d+)\s+)*(?<module>\w+)(\.(dll|exe))*!(?<symbolizedfunc>.+?)\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*");
             foreach (var iterFrame in callStackLines) {
                 // hard-coded find-replace for XML markup - useful when importing from XML histograms
                 var currentFrame = iterFrame.Replace("&lt;", "<").Replace("&gt;", ">");
@@ -124,8 +124,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 var match = rgxModuleName.Match(currentFrame);
                 if (match.Success) {
                     var matchedModuleName = match.Groups["module"].Value;
+                    int frameNum = string.IsNullOrWhiteSpace(match.Groups["framenum"].Value) ? int.MinValue : Convert.ToInt32(match.Groups["framenum"].Value, 16);
                     if (_diautils.ContainsKey(matchedModuleName)) {
-                        string processedFrame = ProcessFrameModuleOffset(_diautils, matchedModuleName, match.Groups["offset"].Value, includeSourceInfo, includeOffsets, showInlineFrames);
+                        string processedFrame = ProcessFrameModuleOffset(_diautils, frameNum, matchedModuleName, match.Groups["offset"].Value, includeSourceInfo, includeOffsets, showInlineFrames);
                         if (!string.IsNullOrEmpty(processedFrame)) {
                             // typically this is because we could not find the offset in any known function range
                             finalCallstack.AppendLine(processedFrame);
@@ -167,7 +168,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         /// This is the most important function in this whole utility! It uses DIA to lookup the symbol based on RVA offset
         /// It also looks up line number information if available and then formats all of this information for returning to caller
-        private string ProcessFrameModuleOffset(Dictionary<string, DiaUtil> _diautils, string moduleName, string offset, bool includeSourceInfo, bool includeOffset, bool showInlineFrames) {
+        private string ProcessFrameModuleOffset(Dictionary<string, DiaUtil> _diautils, int frameNum, string moduleName, string offset, bool includeSourceInfo, bool includeOffset, bool showInlineFrames) {
             bool useUndecorateLogic = false;
 
             // the offsets in the XE output are in hex, so we convert to base-10 accordingly
@@ -227,7 +228,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 _diautils[moduleName]._IDiaSession.findLinesByRVA(rva, 0, out IDiaEnumLineNumbers enumLineNums);
                 sourceInfo = DiaUtil.GetSourceInfo(enumLineNums, pdbHasSourceInfo);
             }
-            var symbolizedFrame = DiaUtil.GetSymbolizedFrame(moduleName, mysym, useUndecorateLogic, includeOffset, displacement);
+            var symbolizedFrame = DiaUtil.GetSymbolizedFrame(frameNum, moduleName, mysym, useUndecorateLogic, includeOffset, displacement);
             // Process inline functions, but only if private PDBs are in use
             string inlineFrameAndSourceInfo = string.Empty;
             if (showInlineFrames && pdbHasSourceInfo) {
@@ -309,13 +310,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             // check if the user has provided a list of modules, each with comma-separated which can be structured fairly flexibly as long as they contain the following pieces of info
             // per row, in different fields: PDB file name (including .pdb extension), OR module file name (.dll or .exe extension); a GUID representing the matching PDB GUID
             // the very last field in the row should be an integer specifying the PDB "age" field. in such cases, the below function will return a non-zero list of Symbol objects which internally contain these parsed values for PDB name, GUID and age
-            var syms = ModuleInfoHelper.ParseModuleInfo(inputCallstackText);
-            if (syms.Count > 0) {
-                // if the user has provided such a list of module info, proceed to actually use dbghelp.dll / symsrv.dll to download thos PDBs and get local paths for them
-                var paths = SymSrvHelpers.GetFolderPathsForPDBs(this, symPath, syms.Values.ToList());
-                // we then "inject" those local PDB paths as higher priority than any possible user provided paths
-                symPath = string.Join(";", paths) + ";" + symPath;
-            }
 
             this.cancelRequested = false;
             this.cachedSymbols.Clear();
@@ -364,7 +358,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                 // handle the case wherein we are dealing with a ring buffer output with individual events and not a histogram
                 if (0 == allstacknodes.Count) {
-                    allstacknodes = xmldoc.SelectNodes("//event[count(./action[@name = 'callstack']) > 0]");
+                    allstacknodes = xmldoc.SelectNodes("//event[count(./action[contains(@name, 'callstack')]) > 0]");
 
                     if (allstacknodes.Count > 0) {
                         this.StatusMessage = "Preprocessing XEvent events...";
@@ -374,7 +368,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                                 return "Operation cancelled.";
                             }
 
-                            var callstackTextNode = currstack.SelectSingleNode("./action[@name = 'callstack'][1]/value[1]");
+                            var callstackTextNode = currstack.SelectSingleNode("./action[contains(@name, 'callstack')][1]/value[1]");
                             var callstackText = callstackTextNode.InnerText;
                             // proceed to extract the surrounding XML markup
                             callstackTextNode.ParentNode.RemoveChild(callstackTextNode);
@@ -404,6 +398,23 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         stacknum++;
                         this.PercentComplete = (int)((double)stacknum / allstacknodes.Count * 100.0);
                     }
+                }
+            }
+
+            var syms = ModuleInfoHelper.ParseModuleInfo(inputCallstackText);
+            if (syms.Count > 0) {
+                // if the user has provided such a list of module info, proceed to actually use dbghelp.dll / symsrv.dll to download those PDBs and get local paths for them
+                var paths = SymSrvHelpers.GetFolderPathsForPDBs(this, symPath, syms.Values.ToList());
+                // we then "inject" those local PDB paths as higher priority than any possible user provided paths
+                symPath = string.Join(";", paths) + ";" + symPath;
+            } else {
+                // attempt to check if there are XML-formatted frames each with the related PDB attributes and if so replace those lines with the normalized versions
+                (syms, listOfCallStacks) = ModuleInfoHelper.ParseModuleInfoXML(listOfCallStacks);
+                if (syms.Count > 0) {
+                    // if the user has provided such a list of module info, proceed to actually use dbghelp.dll / symsrv.dll to download thos PDBs and get local paths for them
+                    var paths = SymSrvHelpers.GetFolderPathsForPDBs(this, symPath, syms.Values.ToList());
+                    // we then "inject" those local PDB paths as higher priority than any possible user provided paths
+                    symPath = string.Join(";", paths) + ";" + symPath;
                 }
             }
 

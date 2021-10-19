@@ -160,6 +160,22 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             }
         }
 
+        /// Test the resolution of a "regular" symbol with input specifying a hex offset into module
+        /// but do not include the resolved symbol's offset in final output. This variant has the 
+        /// frame numbers prefixed.
+        [Fact]
+        public void RegularSymbolHexOffsetNoOutputOffsetWithFrameNums() {
+            using (var csr = new StackResolver()) {
+                var dllPaths = new List<string> { @"..\..\Tests\TestCases\TestOrdinal" };
+
+                var ret = csr.ResolveCallstacks("00 sqldk+0x40609", @"..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, false, false, false, null);
+
+                var expectedSymbol = "00 sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode";
+
+                Assert.Equal(expectedSymbol, ret.Trim());
+            }
+        }
+
         /// Check whether symbol details for a given binary are correct.
         [Fact]
         public void TestGetSymDetails() {
@@ -401,6 +417,37 @@ Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143", ret.Trim());
             Assert.Equal(2, ret["sqlservr"].PDBAge);
         }
 
+        /// Tests the parsing and extraction of PDB details from a set of rows each with XML frames.
+        [Fact]
+        public void ExtractModuleInfoXMLFrames() {
+            var sample = new StackWithCount() {
+                Callstack = "Frame = <frame id=\"00\" pdb=\"ntdll.pdb\" age=\"1\" guid=\"C374E059-5793-9B92-6525-386A66A2D3F5\" module=\"ntdll.dll\" rva=\"0x9F7E4\" />        \r\n" +
+"Frame = <frame id=\"01\" pdb=\"kernelbase.pdb\" age=\"1\" guid=\"E77E26E7-D1C4-72BB-2C05-DD17624A9E58\" module=\"KERNELBASE.dll\" rva=\"0x38973\" />                          \n" +
+"Frame = <frame id=\"02\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-\r\n" +
+"d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x40609\" />                                    \r\n" +
+"<frame id=\"03\" pdb=\"vcruntime140.amd64.pdb\" age=\"1\" guid=\"AF138C3F-2933-4097-8883-C1071B13375E\" module=\"VCRUNTIME140.dll\" rva=\"0xB8F0\" />\r\n" +
+"Frame = <frame id=\"04\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x2249f\" />                                    \n", Count = 1
+            };
+            var param = new List<StackWithCount>();
+            param.Add(sample);
+            var result = ModuleInfoHelper.ParseModuleInfoXML(param);
+
+            var syms = result.Item1;
+            Assert.Equal(4, syms.Count);
+            Assert.Equal("ntdll.pdb", syms["ntdll"].PDBName);
+            Assert.Equal("C374E05957939B926525386A66A2D3F5", syms["ntdll"].PDBGuid, ignoreCase: true);
+            Assert.Equal(1, syms["ntdll"].PDBAge);
+            Assert.Equal("kernelbase.pdb", syms["KERNELBASE"].PDBName);
+            Assert.Equal("E77E26E7D1C472BB2C05DD17624A9E58", syms["KERNELBASE"].PDBGuid, ignoreCase: true);
+            Assert.Equal(1, syms["KERNELBASE"].PDBAge);
+            Assert.Equal("sqldk.pdb", syms["sqldk"].PDBName);
+            Assert.Equal("6a1934433512464b8b8ed905ad930ee6", syms["sqldk"].PDBGuid, ignoreCase: true);
+            Assert.Equal(2, syms["sqldk"].PDBAge);
+            Assert.Equal("vcruntime140.amd64.pdb", syms["VCRUNTIME140"].PDBName);
+            Assert.Equal("AF138C3F293340978883C1071B13375E", syms["VCRUNTIME140"].PDBGuid, ignoreCase: true);
+            Assert.Equal(1, syms["VCRUNTIME140"].PDBAge);
+        }
+
         /// Tests the parsing and extraction of PDB details from a set of rows each with commma-separated fields.
         [Fact]
         public void ExtractModuleInfoEmptyString() {
@@ -454,6 +501,80 @@ KERNELBASE!RaiseException+105
 "\"ntdll.dll\",\"10.0.17763.1490\",2019328,462107166,2009368,\"ntdll.pdb\",\"{C374E059-5793-9B92-6525-386A66A2D3F5}\",0,1\r\n" +
 "\"KERNELBASE.dll\",\"10.0.17763.1518\",2707456,4281343292,2763414,\"kernelbase.pdb\",\"{E77E26E7-D1C4-72BB-2C05-DD17624A9E58}\",0,1\r\n" +
 "\"VCRUNTIME140.dll\",\"14.16.27033.0\",86016,1563486943,105788,\"vcruntime140.amd64.pdb\",\"{AF138C3F-2933-4097-8883-C1071B13375E}\",0,1";
+                Assert.Equal(expected.Trim(), ret.Trim());
+            }
+        }
+
+
+        /// End-to-end test with stacks being resolved based on symbols from symsrv.
+        [Fact]
+        public void E2ESymSrvXMLFrames() {
+            using (var csr = new StackResolver()) {
+                var pdbPath = @"srv*https://msdl.microsoft.com/download/symbols";
+                var input = "Frame = <frame id=\"00\" pdb=\"ntdll.pdb\" age=\"1\" guid=\"C374E059-5793-9B92-6525-386A66A2D3F5\" module=\"ntdll.dll\" rva=\"0x9F7E4\" />        \r\n" +
+"Frame = <frame id=\"01\" pdb=\"kernelbase.pdb\" age=\"1\" guid=\"E77E26E7-D1C4-72BB-2C05-DD17624A9E58\" module=\"KERNELBASE.dll\" rva=\"0x38973\" />                          \n" +
+"Frame = <frame id=\"02\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-\r\n" +
+"d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x40609\" />                                    \r\n" +
+"<frame id=\"03\" pdb=\"vcruntime140.amd64.pdb\" age=\"1\" guid=\"AF138C3F-2933-4097-8883-C1071B13375E\" module=\"VCRUNTIME140.dll\" rva=\"0xB8F0\" />\r\n" +
+"Frame = <frame id=\"04\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x2249f\" />                                    \n";
+
+                var ret = csr.ResolveCallstacks(input, pdbPath, false, null, false, false, true, false, true, false, false, null);
+                var expected = @"00 ntdll!NtWaitForSingleObject+20
+01 KERNELBASE!WaitForSingleObjectEx+147
+02 sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644
+03 VCRUNTIME140!__C_specific_handler+160	(d:\agent\_work\2\s\src\vctools\crt\vcruntime\src\eh\riscchandler.cpp:290)
+04 sqldk!Spinlock<244,2,1>::SpinToAcquireWithExponentialBackoff+349";
+                Assert.Equal(expected.Trim(), ret.Trim());
+            }
+        }
+
+        /// End-to-end test with XE histogram target and XML frames.
+        [Fact]
+        public void E2ESymSrvXMLFramesHistogram() {
+            using (var csr = new StackResolver()) {
+                var pdbPath = @"srv*https://msdl.microsoft.com/download/symbols";
+                var input = "<HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value><![CDATA[<frame id=\"00\" pdb=\"ntdll.pdb\" age=\"1\" guid=\"C374E059-5793-9B92-6525-386A66A2D3F5\" module=\"ntdll.dll\" rva=\"0x9F7E4\" />" +
+"<frame id=\"01\" pdb=\"kernelbase.pdb\" age=\"1\" guid=\"E77E26E7-D1C4-72BB-2C05-DD17624A9E58\" module=\"KERNELBASE.dll\" rva=\"0x38973\" />" +
+"<frame id=\"02\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x40609\" />" +
+"]]></value></Slot><Slot count=\"3\"><value><![CDATA[<frame id=\"00\" pdb=\"vcruntime140.amd64.pdb\" age=\"1\" guid=\"AF138C3F-2933-4097-8883-C1071B13375E\" module=\"VCRUNTIME140.dll\" rva=\"0xB8F0\" />" +
+"<frame id=\"01\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x2249f\" />" +
+"]]></value></Slot></HistogramTarget>";
+
+                var ret = csr.ResolveCallstacks(input, pdbPath, false, null, false, false, true, false, true, false, false, null);
+                var expected = @"Slot_0	[count:5]:
+
+00 ntdll!NtWaitForSingleObject+20
+01 KERNELBASE!WaitForSingleObjectEx+147
+02 sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644
+
+Slot_1	[count:3]:
+
+00 VCRUNTIME140!__C_specific_handler+160	(d:\agent\_work\2\s\src\vctools\crt\vcruntime\src\eh\riscchandler.cpp:290)
+01 sqldk!Spinlock<244,2,1>::SpinToAcquireWithExponentialBackoff+349";
+                Assert.Equal(expected.Trim(), ret.Trim());
+            }
+        }
+
+        /// End-to-end test with stacks being resolved based on symbols from symsrv.
+        [Fact]
+        public void E2ESymSrvXMLFramesMixedLineEndings() {
+            using (var csr = new StackResolver()) {
+                var pdbPath = @"srv*https://msdl.microsoft.com/download/symbols";
+                var input = "<frame id=\"00\" pdb=\"ntdll.pdb\" age=\"1\" guid=\"C374E059-5793-9B92-6525-386A66A2D3F5\" module=\"ntdll.dll\" rva=\"0x9F7E4\" />" +
+"<frame id=\"01\" pdb=\"kernelbase.pdb\" age=\"1\" guid=\"E77E26E7-D1C4-72BB-2C05-DD17624A9E58\" module=\"KERNELBASE.dll\" rva=\"0x38973\" />" +
+"<frame id=\"02\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-\r\n" +
+"d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x40609\" />                                    \r\n" +
+"<frame id=\"03\" pdb=\"vcruntime140.amd64.pdb\" age=\"1\" guid=\"AF138C3F-2933-4097-8883-C1071B13375E\" module=\"VCRUNTIME140.dll\" rva=\"0xB8F0\" />" +
+"<frame id=\"04\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x2249f\" />                                    \n";
+
+                var ret = csr.ResolveCallstacks(input, pdbPath, false, null, false, false, true, false, true, false, false, null);
+                var expected = @"00 ntdll!NtWaitForSingleObject+20
+01 KERNELBASE!WaitForSingleObjectEx+147
+02 sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644
+03 VCRUNTIME140!__C_specific_handler+160	(d:\agent\_work\2\s\src\vctools\crt\vcruntime\src\eh\riscchandler.cpp:290)
+04 sqldk!Spinlock<244,2,1>::SpinToAcquireWithExponentialBackoff+349
+
+";
                 Assert.Equal(expected.Trim(), ret.Trim());
             }
         }

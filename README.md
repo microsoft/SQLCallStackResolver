@@ -49,17 +49,16 @@ select name, base_address from sys.dm_os_loaded_modules where name not like '%.r
 2. <a name="footnote2"></a>In this case, you need to press the Module Paths button where you will be prompted to enter the path to a folder containing the images of the DLLs involved. For example you can point to C:\Program Files\Microsoft SQL Server\MSSQL13.MSSQLSERVER\MSSQL\Binn for SQL 2016 RTM CU1
 3. <a name="footnote3"></a>This has to be path to a folder or a set of such paths (can be UNC as well) each separated with a semicolon (;). Use the checkbox to specify if sub-folders need to be checked in each case. If multiple paths might contain matching PDBs, the first path from the left which contained the PDB wins. There is no means to know if the PDB is matched with the build that your are using - you need to ensure that the folder path(s) are correct!
 4. <a name="footnote4"></a>To obtain public PDBs for major SQL releases, PowerShell scripts are available in the SQLCallStackResolver [Wiki](https://github.com/arvindshmicrosoft/SQLCallStackResolver/wiki/Obtaining-symbol-files-(.PDB)-for-SQL-Server-Releases)
-5. <a name="footnote5"></a>This is partial support at the moment - subsequently I will add a 'cleansing' option where it will strip out just the 'Short Stack Dump' sections and resolve the frames therein.
+5. <a name="footnote5"></a>The tool does not strip out just the 'Short Stack Dump' sections; instead it will preserve non-callstack text as-is.
 6. <a name="footnote6"></a>It is possible to use a symbol server in the symbol search path. For example, the symbol search path can be specified as `srv*c:\syms*https://msdl.microsoft.com/download/symbols`. In such a case, the corresponding callstack input should have a minimal set of details included in separate lines, each containing comma-separated values. Each of these lines should include the following minimum set of information:
 * DLL file name, for example `ntdll.dll`
 * PDB file name, for example `ntdll.pdb`
 * PDB GUID, for example `1EB9FACB-04C7-3C5D-EA71-60764CD333D0`
 * The very last comma-separated field will be taken as the PDB Age.
 
-    All other fields in the line are ignored. Here is an example of a complete line with the minimum information necessary:
-    `ntdll.dll,ntdll.pdb,1EB9FACB-04C7-3C5D-EA71-60764CD333D0,1`
+    Alternatively, this information can be provided as XML <frame> elements, with each `frame` element having attributes called `module`, `pdb`, `guid`, and `age` which fully describe the matching PDB information for that frame.
 
-    When such information is included (usually after the main callstack input), it is parsed and used to retrieve PDBs from the symbol server specified. If matching PDBs are not found locally for whatever reason (wrong paths, wrong metadata, failed download etc.), the symbol resolution step will just return back the original raw input.
+    When such information is included (in either CSV or XML format), it is parsed and used to retrieve PDBs from the symbol server specified. If matching PDBs are not found locally for whatever reason (wrong paths, wrong metadata, failed download etc.), the symbol resolution step will just return back the original raw input.
 
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
 For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or

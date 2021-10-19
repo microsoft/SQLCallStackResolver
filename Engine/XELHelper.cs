@@ -33,11 +33,13 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         },
                         evt => {
                             var allStacks = (from actTmp in evt.Actions
-                                             where relevantKeyNames.Contains(actTmp.Key.ToLower(CultureInfo.CurrentCulture))
+                                             from keyName in relevantKeyNames
+                                             where actTmp.Key.ToLower(CultureInfo.CurrentCulture).StartsWith(keyName)
                                              select actTmp.Value as string)
                                                 .Union(
                                                 from fldTmp in evt.Fields
-                                                where relevantKeyNames.Contains(fldTmp.Key.ToLower(CultureInfo.CurrentCulture))
+                                                from keyName in relevantKeyNames
+                                                where fldTmp.Key.ToLower(CultureInfo.CurrentCulture).StartsWith(keyName)
                                                 select fldTmp.Value as string);
 
                             foreach (var callStackString in allStacks) {
@@ -80,7 +82,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 parent.globalCounter = 0;
                 foreach (var item in callstackSlots.OrderByDescending(key => key.Value)) {
                     xmlEquivalent.AppendFormat(CultureInfo.CurrentCulture,
-                        "<Slot count=\"{0}\"><value>{1}</value></Slot>",
+                        "<Slot count=\"{0}\"><value><![CDATA[{1}]]></value></Slot>",
                         item.Value,
                         item.Key);
                     xmlEquivalent.AppendLine();
@@ -97,7 +99,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 var hasOverflow = false;
                 foreach (var item in callstackRaw.OrderBy(key => key.Key)) {
                     if (xmlEquivalent.Length < int.MaxValue * 0.90) {
-                        xmlEquivalent.AppendFormat(CultureInfo.CurrentCulture, "<event key=\"{0}\"><action name='callstack'><value>{1}</value></action></event>", item.Key, item.Value);
+                        xmlEquivalent.AppendFormat(CultureInfo.CurrentCulture, "<event key=\"{0}\"><action name='callstack'><value><![CDATA[{1}]]></value></action></event>", item.Key, item.Value);
                         xmlEquivalent.AppendLine();
                     }
                     else {
