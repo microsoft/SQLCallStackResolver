@@ -403,7 +403,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
             var syms = ModuleInfoHelper.ParseModuleInfo(inputCallstackText);
             if (syms.Count > 0) {
-                // if the user has provided such a list of module info, proceed to actually use dbghelp.dll / symsrv.dll to download thos PDBs and get local paths for them
+                // if the user has provided such a list of module info, proceed to actually use dbghelp.dll / symsrv.dll to download those PDBs and get local paths for them
                 var paths = SymSrvHelpers.GetFolderPathsForPDBs(this, symPath, syms.Values.ToList());
                 // we then "inject" those local PDB paths as higher priority than any possible user provided paths
                 symPath = string.Join(";", paths) + ";" + symPath;
