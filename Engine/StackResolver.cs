@@ -344,10 +344,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var listOfCallStacks = new List<StackWithCount>();
             if (!isXMLdoc) {
                 this.StatusMessage = "Input being treated as a single callstack...";
-                listOfCallStacks.Add(new StackWithCount() {
-                    Callstack = inputCallstackText,
-                    Count = 1
-                });
+                listOfCallStacks.Add(new StackWithCount() { Callstack = inputCallstackText, Count = 1 });
             }
             else {
                 this.StatusMessage = "Input is well formed XML, proceeding...";
@@ -380,7 +377,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         }
                     }
                     else {
-                        this.StatusMessage = "XML input was detected but it does not appear to be a known schema. Cannot proceed, sorry!";
+                        this.StatusMessage = "WARNING: XML input was detected but it does not appear to be a known schema!";
                     }
                 }
                 else {
@@ -408,6 +405,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 // we then "inject" those local PDB paths as higher priority than any possible user provided paths
                 symPath = string.Join(";", paths) + ";" + symPath;
             } else {
+                if (listOfCallStacks.Count == 0) {
+                    listOfCallStacks.Add(new StackWithCount() { Callstack = inputCallstackText, Count = 1 });
+                }
                 // attempt to check if there are XML-formatted frames each with the related PDB attributes and if so replace those lines with the normalized versions
                 (syms, listOfCallStacks) = ModuleInfoHelper.ParseModuleInfoXML(listOfCallStacks);
                 if (syms.Count > 0) {

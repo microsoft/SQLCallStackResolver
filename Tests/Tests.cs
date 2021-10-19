@@ -505,6 +505,17 @@ KERNELBASE!RaiseException+105
             }
         }
 
+        /// End-to-end test with stacks being resolved based on symbols from symsrv, but just one line of input
+        [Fact]
+        public void E2ESymSrvXMLSingleFrame() {
+            using (var csr = new StackResolver()) {
+                var pdbPath = @"srv*https://msdl.microsoft.com/download/symbols";
+                var input = "<frame id=\"00\" pdb=\"ntdll.pdb\" age=\"1\" guid=\"C374E059-5793-9B92-6525-386A66A2D3F5\" module=\"ntdll.dll\" rva=\"0x9F7E4\" />";
+                var ret = csr.ResolveCallstacks(input, pdbPath, false, null, false, false, true, false, true, false, false, null);
+                var expected = @"00 ntdll!NtWaitForSingleObject+20";
+                Assert.Equal(expected.Trim(), ret.Trim());
+            }
+        }
 
         /// End-to-end test with stacks being resolved based on symbols from symsrv.
         [Fact]
