@@ -611,5 +611,18 @@ KERNELBASE+0x396C9
                 Assert.Equal(input.Trim(), ret.Trim());
             }
         }
+
+        /// Test for exported symbols
+        [Fact]
+        public void CheckExportedSymbols() {
+            using (var csr = new StackResolver()) {
+                var ret = ExportedSymbol.GetExports(@"..\..\Tests\TestCases\TestOrdinal\sqldk.dll");
+                Assert.Equal(931, ret.Count);
+                Assert.Equal((uint)1095072, ret[15].Address);
+                Assert.Equal((uint)897568, ret[259].Address);
+                Assert.Equal((uint)58752, ret[684].Address);
+                Assert.Equal((uint)1447120, ret[1161].Address);
+            }
+        }
     }
 }
