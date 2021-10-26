@@ -7,30 +7,32 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v2
-      name: Checkout Code
+    - name: Checkout Code
+      uses: actions/checkout@v2.3.5      
     - name: Add msbuild to PATH
-      uses: microsoft/setup-msbuild@v1.0.2
+      uses: microsoft/setup-msbuild@v1.0.3
     - name: Copy DIA and DbgHelp binary dependencies
       run: .\downloadbinaries.ps1 '${{ secrets.DBGHELP_DIA_BIN_URL }}'
       working-directory: Engine
       shell: powershell
     - name: Setup NuGet
-      uses: NuGet/setup-nuget@v1
+      uses: NuGet/setup-nuget@v1.0.5
     - name: Restore NuGet Packages
       run: nuget restore SQLCallStackResolver.sln
     - name: Build SQLCallStackResolver
       run: msbuild SQLCallStackResolver.sln /p:Configuration=Release
     - name: Upload Artifact
-      uses: actions/upload-artifact@v1.0.0
+      uses: actions/upload-artifact@v2.2.4
       with:
         name: SQLCallStackResolver
-        path: Target\Release
+        path: |
+          Target\Release
+          !Target\Release\Tests
     - name: Prep for running tests
       run: .\downloadsyms.ps1 '${{ secrets.SQLDKDLL_URL }}' '${{ secrets.XESPINS_ZIP_URL }}' '${{ secrets.XEWAIT_URL }}'
       working-directory: Tests\TestCases
       shell: powershell
     - name: Run tests
-      run: ..\..\packages\xunit.runner.console.2.4.1\tools\net472\xunit.console.exe .\SQLCalLStackResolver.xUnit.Tests.dll -verbose
-      working-directory: Target\Release
+      run: ..\..\..\packages\xunit.runner.console.2.4.1\tools\net472\xunit.console.exe .\SQLCalLStackResolver.xUnit.Tests.dll -verbose
+      working-directory: Target\Release\Tests
       shell: powershell
