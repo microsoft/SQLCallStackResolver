@@ -27,6 +27,7 @@ jobs:
         name: SQLCallStackResolver
         path: |
           Target\Release
+          !Target\Release\*.xml
           !Target\Release\Tests
     - name: Prep for running tests
       run: .\downloadsyms.ps1 '${{ secrets.SQLDKDLL_URL }}' '${{ secrets.XESPINS_ZIP_URL }}' '${{ secrets.XEWAIT_URL }}'
