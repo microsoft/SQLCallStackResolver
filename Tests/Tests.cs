@@ -15,7 +15,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [Fact]
         public void BlockResolution() {
             using (var csr = new StackResolver()) {
-                var pdbPath = @"..\..\Tests\TestCases\TestBlockResolution";
+                var pdbPath = @"..\..\..\Tests\TestCases\TestBlockResolution";
                 var ret = csr.ResolveCallstacks("Return Addr: 00007FF830D4CDA4 Module(KERNELBASE+000000000009CDA4)", pdbPath, false, null, false, false, false, false, true, false, false, null);
                 Assert.Equal("KERNELBASE!SignalObjectAndWait+147716", ret.Trim());
             }
@@ -25,8 +25,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [Fact]
         public void OrdinalBasedSymbol() {
             using (var csr = new StackResolver()) {
-                var dllPaths = new List<string>{@"..\..\Tests\TestCases\TestOrdinal"};
-                var ret = csr.ResolveCallstacks("sqldk!Ordinal298+00000000000004A5", @"..\..\Tests\TestCases\TestOrdinal", false, dllPaths, false, false, false, false, true, false, false, null);
+                var dllPaths = new List<string>{@"..\..\..\Tests\TestCases\TestOrdinal"};
+                var ret = csr.ResolveCallstacks("sqldk!Ordinal298+00000000000004A5", @"..\..\..\Tests\TestCases\TestOrdinal", false, dllPaths, false, false, false, false, true, false, false, null);
                 Assert.Equal("sqldk!SOS_Scheduler::SwitchContext+941", ret.Trim());
             }
         }
@@ -35,7 +35,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [Fact]
         public void RegularSymbolHexOffset() {
             using (var csr = new StackResolver()) {
-                var ret = csr.ResolveCallstacks("sqldk+0x40609\r\nsqldk+40609", @"..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, true, false, false, null);
+                var ret = csr.ResolveCallstacks("sqldk+0x40609\r\nsqldk+40609", @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, true, false, false, null);
 
                 var expectedSymbol = "sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644";
 
@@ -49,7 +49,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             using (var csr = new StackResolver()) {
                 var moduleAddressesGood = @"c:\mssql\binn\sqldk.dll 00000001`00400000";
                 Assert.True(csr.ProcessBaseAddresses(moduleAddressesGood));
-                var ret = csr.ResolveCallstacks("0x000000010042249f", @"..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, true, false, false, null);
+                var ret = csr.ResolveCallstacks("0x000000010042249f", @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, true, false, false, null);
                 var expectedSymbol = "sqldk!Spinlock<244,2,1>::SpinToAcquireWithExponentialBackoff+349";
                 Assert.Equal(expectedSymbol, ret.Trim());
             }
@@ -76,7 +76,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [Fact]
         public void ModuleLoadAddressInputColHeaders() {
             using (var csr = new StackResolver()) {
-                var moduleAddressesColHeader = File.ReadAllText(@"..\..\Tests\TestCases\ImportXEL\xe_wait_base_addresses.txt");
+                var moduleAddressesColHeader = File.ReadAllText(@"..\..\..\Tests\TestCases\ImportXEL\xe_wait_base_addresses.txt");
                 var loadstatus = csr.ProcessBaseAddresses(moduleAddressesColHeader);
                 Assert.True(loadstatus);
                 Assert.Equal(26, csr.LoadedModules.Count);
@@ -150,9 +150,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [Fact]
         public void RegularSymbolHexOffsetNoOutputOffset() {
             using (var csr = new StackResolver()) {
-                var dllPaths = new List<string>{@"..\..\Tests\TestCases\TestOrdinal"};
+                var dllPaths = new List<string>{@"..\..\..\Tests\TestCases\TestOrdinal"};
 
-                var ret = csr.ResolveCallstacks("sqldk+0x40609", @"..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, false, false, false, null);
+                var ret = csr.ResolveCallstacks("sqldk+0x40609", @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, false, false, false, null);
 
                 var expectedSymbol = "sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode";
 
@@ -166,9 +166,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [Fact]
         public void RegularSymbolHexOffsetNoOutputOffsetWithFrameNums() {
             using (var csr = new StackResolver()) {
-                var dllPaths = new List<string> { @"..\..\Tests\TestCases\TestOrdinal" };
+                var dllPaths = new List<string> { @"..\..\..\Tests\TestCases\TestOrdinal" };
 
-                var ret = csr.ResolveCallstacks("00 sqldk+0x40609", @"..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, false, false, false, null);
+                var ret = csr.ResolveCallstacks("00 sqldk+0x40609", @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, false, false, false, null);
 
                 var expectedSymbol = "00 sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode";
 
@@ -179,7 +179,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// Check whether symbol details for a given binary are correct.
         [Fact]
         public void TestGetSymDetails() {
-            var dllPaths = new List<string>{@"..\..\Tests\TestCases\TestOrdinal"};
+            var dllPaths = new List<string>{@"..\..\..\Tests\TestCases\TestOrdinal"};
             var ret = StackResolver.GetSymbolDetailsForBinaries(dllPaths, true);
             Assert.Single(ret);
             Assert.Equal("https://msdl.microsoft.com/download/symbols/sqldk.pdb/6a1934433512464b8b8ed905ad930ee62/sqldk.pdb", ret[0].DownloadURL);
@@ -191,12 +191,12 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [Fact]
         public void SymbolFileCaching() {
             using (var csr = new StackResolver()) {
-                var ret = csr.ExtractFromXEL(new[] { @"..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, false);
+                var ret = csr.ExtractFromXEL(new[] { @"..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, false);
                 Assert.Equal(550, ret.Item1);
-                var status = csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\Tests\TestCases\ImportXEL\xe_wait_base_addresses.txt"));
+                var status = csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\..\Tests\TestCases\ImportXEL\xe_wait_base_addresses.txt"));
                 Assert.True(status);
                 Assert.Equal(26, csr.LoadedModules.Count);
-                var pdbPath = @"..\..\Tests\TestCases\sqlsyms\14.0.3192.2\x64";
+                var pdbPath = @"..\..\..\Tests\TestCases\sqlsyms\14.0.3192.2\x64";
                 var symres = csr.ResolveCallstacks(ret.Item2, pdbPath, false, null, false, false, false, false, false, false, true, null);
                 Assert.Contains(@"sqldk!XeSosPkg::wait_completed::Publish
 sqldk!SOS_Scheduler::UpdateWaitTimeStats
@@ -230,7 +230,7 @@ sqllang!CStmtQuery::InitQuery", symres.Trim(), StringComparison.CurrentCulture);
         [Fact]
         public void SourceInformation() {
             using (var csr = new StackResolver()) {
-                var pdbPath = @"..\..\Tests\TestCases\SourceInformation";
+                var pdbPath = @"..\..\..\Tests\TestCases\SourceInformation";
                 var ret = csr.ResolveCallstacks("Wdf01000+17f27", pdbPath, false, null, false, false, true, false, true, false, false, null);
                 Assert.Equal("Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143\t(minkernel\\wdf\\framework\\shared\\inc\\private\\common\\FxPkgPnp.hpp:4127)", ret.Trim());
             }
@@ -241,7 +241,7 @@ sqllang!CStmtQuery::InitQuery", symres.Trim(), StringComparison.CurrentCulture);
         [Fact]
         public void SourceInformationLineInfoOff() {
             using (var csr = new StackResolver()) {
-                var pdbPath = @"..\..\Tests\TestCases\SourceInformation";
+                var pdbPath = @"..\..\..\Tests\TestCases\SourceInformation";
                 var ret = csr.ResolveCallstacks("Wdf01000+17f27", pdbPath, false, null, false, false, false, false, true, false, false, null);
                 Assert.Equal("Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143", ret.Trim());
             }
@@ -252,7 +252,7 @@ sqllang!CStmtQuery::InitQuery", symres.Trim(), StringComparison.CurrentCulture);
         [Fact]
         public void RelookupSourceInformation() {
             using (var csr = new StackResolver()) {
-                var pdbPath = @"..\..\Tests\TestCases\SourceInformation";
+                var pdbPath = @"..\..\..\Tests\TestCases\SourceInformation";
                 var ret = csr.ResolveCallstacks("Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143", pdbPath, false, null, false, false, true, true, true, false, false, null);
                 Assert.Equal("Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143\t(minkernel\\wdf\\framework\\shared\\inc\\private\\common\\FxPkgPnp.hpp:4127)", ret.Trim());
             }
@@ -262,7 +262,7 @@ sqllang!CStmtQuery::InitQuery", symres.Trim(), StringComparison.CurrentCulture);
         [Fact]
         public void ImportBinResolveXELEvents() {
             using (var csr = new StackResolver()) {
-                var ret = csr.ExtractFromXEL(new[] { @"..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, true);
+                var ret = csr.ExtractFromXEL(new[] { @"..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, true);
                 Assert.Equal(4, ret.Item1);
 
                 var xmldoc = new XmlDocument() { XmlResolver = null };
@@ -288,9 +288,9 @@ sqllang!CStmtQuery::InitQuery", symres.Trim(), StringComparison.CurrentCulture);
                 }
 
                 Assert.Equal(3051540, eventCountFromXML);
-                csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\Tests\TestCases\ImportXEL\base_addresses.txt"));
+                csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\..\Tests\TestCases\ImportXEL\base_addresses.txt"));
                 Assert.Equal(31, csr.LoadedModules.Count);
-                var pdbPath = @"..\..\Tests\TestCases\sqlsyms\13.0.4001.0\x64";
+                var pdbPath = @"..\..\..\Tests\TestCases\sqlsyms\13.0.4001.0\x64";
                 var symres = csr.ResolveCallstacks(ret.Item2, pdbPath, false, null, false, false, true, false, true, false, false, null);
                 Assert.Contains(@"sqldk!XeSosPkg::spinlock_backoff::Publish+425
 sqldk!SpinlockBase::Sleep+182
@@ -323,7 +323,7 @@ sqllang!process_commands_internal+735", symres, StringComparison.CurrentCulture)
         [Fact]
         public void ImportIndividualXELEvents() {
             using (var csr = new StackResolver()) {
-                var ret = csr.ExtractFromXEL(new[] { @"..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, false);
+                var ret = csr.ExtractFromXEL(new[] { @"..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, false);
                 Assert.Equal(550, ret.Item1);
             }
         }
@@ -332,9 +332,9 @@ sqllang!process_commands_internal+735", symres, StringComparison.CurrentCulture)
         [Fact]
         public void SingleLineCallStack() {
             using (var csr = new StackResolver()) {
-                csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\Tests\TestCases\ImportXEL\base_addresses.txt"));
+                csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\..\Tests\TestCases\ImportXEL\base_addresses.txt"));
                 Assert.Equal(31, csr.LoadedModules.Count);
-                var pdbPath = @"..\..\Tests\TestCases\sqlsyms\13.0.4001.0\x64";
+                var pdbPath = @"..\..\..\Tests\TestCases\sqlsyms\13.0.4001.0\x64";
                 var callStack = @"callstack	0x00007FFEABD0D919  0x00007FFEABC4D45D  0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  0x00007FFEAC1EE447  0x00007FFEAC1EE6F5  0x00007FFEAC1D48B0  0x00007FFEAC71475A  0x00007FFEA9A708F1  0x00007FFEA9991FB9  0x00007FFEA9993D21  0x00007FFEA99B59F1  0x00007FFEA99B5055  0x00007FFEA99B2B8F  0x00007FFEA9675AD1  0x00007FFEA9671EFB  0x00007FFEAA37D83D  0x00007FFEAA37D241  0x00007FFEAA379F98  0x00007FFEA96719CA  0x00007FFEA9672933  0x00007FFEA9672041  0x00007FFEA967A82B  0x00007FFEA9681542  ";
                 var symres = csr.ResolveCallstacks(callStack, pdbPath, false, null, false, true, true, false, true, false, false, null);
                 Assert.Equal(@"callstack
@@ -370,7 +370,7 @@ sqllang!process_commands_internal+735", symres.Trim());
         [Fact]
         public void InlineFrameResolution() {
             using (var csr = new StackResolver()) {
-                var pdbPath = @"..\..\Tests\TestCases\SourceInformation";
+                var pdbPath = @"..\..\..\Tests\TestCases\SourceInformation";
                 var ret = csr.ResolveCallstacks("Wdf01000+17f27", pdbPath, false, null, false, false, true, false, true, true, false, null);
                 Assert.Equal(
                     @"(Inline Function) Wdf01000!Mx::MxLeaveCriticalRegion+12	(minkernel\wdf\framework\shared\inc\primitives\km\MxGeneralKm.h:198)
@@ -386,7 +386,7 @@ Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143	(minkernel\wdf\framework\share
         [Fact]
         public void InlineFrameResolutionNoSourceInfo() {
             using (var csr = new StackResolver()) {
-                var pdbPath = @"..\..\Tests\TestCases\SourceInformation";
+                var pdbPath = @"..\..\..\Tests\TestCases\SourceInformation";
                 var ret = csr.ResolveCallstacks("Wdf01000+17f27", pdbPath, false, null, false, false, false, false, true, true, false, null);
                 Assert.Equal(@"(Inline Function) Wdf01000!Mx::MxLeaveCriticalRegion+12
 (Inline Function) Wdf01000!FxWaitLockInternal::ReleaseLock+62
@@ -616,7 +616,7 @@ KERNELBASE+0x396C9
         [Fact]
         public void CheckExportedSymbols() {
             using (var csr = new StackResolver()) {
-                var ret = ExportedSymbol.GetExports(@"..\..\Tests\TestCases\TestOrdinal\sqldk.dll");
+                var ret = ExportedSymbol.GetExports(@"..\..\..\Tests\TestCases\TestOrdinal\sqldk.dll");
                 Assert.Equal(931, ret.Count);
                 Assert.Equal((uint)1095072, ret[15].Address);
                 Assert.Equal((uint)897568, ret[259].Address);
