@@ -104,6 +104,16 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 }
             }
 
+            if (string.IsNullOrEmpty(outputFilePath.Text) && callStackInput.Text.Length > 0.1 * int.MaxValue) {
+                if (DialogResult.Yes == MessageBox.Show(this,
+                    "The input seems quite large; output might be truncated unless the option to output to a file is selected and a suitable file path specified. " +
+                    "It is recommended that you first do that. Do you want to exit (select Yes in that case) or continue at your own risk (select No in that case)?",
+                    "Input is large, risk of truncation or errors",
+                    MessageBoxButtons.YesNo)) {
+                    return;
+                }
+            }
+
             this.backgroundTask = Task.Run(() => {
                 return this._resolver.ResolveCallstacks(callStackInput.Text,
                     pdbPaths.Text,

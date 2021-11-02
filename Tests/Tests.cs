@@ -387,15 +387,30 @@ Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143", ret.Trim());
             }
         }
 
+        [Fact]
+        public void InlineFrameResolutionNoSourceInfoWithInputFrameNums() {
+            using (var csr = new StackResolver()) {
+                var pdbPath = @"..\..\..\Tests\TestCases\SourceInformation;..\..\..\Tests\TestCases\TestOrdinal";
+                var ret = csr.ResolveCallstacks("00 sqldk+0x40609\r\n01 Wdf01000+17f27\r\n02 sqldk+0x40609", pdbPath, false, null, false, false, false, false, true, true, false, null);
+                Assert.Equal(@"00 sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644
+01 (Inline Function) Wdf01000!Mx::MxLeaveCriticalRegion+12
+02 (Inline Function) Wdf01000!FxWaitLockInternal::ReleaseLock+62
+03 (Inline Function) Wdf01000!FxEnumerationInfo::ReleaseParentPowerStateLock+62
+04 Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143
+05 sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644", ret.Trim());
+            }
+        }
+
         /// Tests the parsing and extraction of PDB details from a set of rows each with commma-separated fields. This sample mixes up \r\n and \n line-endings.
         [Fact]
         public void ExtractModuleInfo() {
-            var ret = ModuleInfoHelper.ParseModuleInfo("\"ntdll.dll\",\"10.0.19041.662\",2056192,666871280,2084960,\"ntdll.pdb\",\"{1EB9FACB-04C7-3C5D-EA71-60764CD333D0}\",0,1\r\n" +
+            var ret = ModuleInfoHelper.ParseModuleInfo(new List<StackWithCount>() { new StackWithCount() {
+                Callstack = "\"ntdll.dll\",\"10.0.19041.662\",2056192,666871280,2084960,\"ntdll.pdb\",\"{1EB9FACB-04C7-3C5D-EA71-60764CD333D0}\",0,1\r\n" +
 "\"VCRUNTIME140.dll\",\"14.16.27033.0\",86016,1563486943,105788,\"vcruntime140.amd64.pdb\",\"{AF138C3F-2933-4097-8883-C1071B13375E}\",0,1\r\n" +
 "\r\n" +
 "sqlservr.exe,7ef4ea08-777a-43b7-8bce-4da6f0fa43c7,2\r\n" +
 "\"KERNELBASE.dll\",\"10.0.19041.662\",2920448,3965251605,2936791,\"kernelbase.pdb\",\"{1FBE0B2B-89D1-37F0-1510-431FFFBA123E}\",0,1\n" +
-"\"kernel32.dll\",\"10.0.19041.662\",774144,1262097423,770204,\"kernel32.pdb\",\"{54448D8E-EFC5-AB3C-7193-D2C7A6DF9008}\",0,1\r\n");
+"\"kernel32.dll\",\"10.0.19041.662\",774144,1262097423,770204,\"kernel32.pdb\",\"{54448D8E-EFC5-AB3C-7193-D2C7A6DF9008}\",0,1\r\n", Count = 1 }});
 
             Assert.Equal(5, ret.Count);
             Assert.Equal("ntdll.pdb", ret["ntdll"].PDBName);
@@ -420,8 +435,7 @@ Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143", ret.Trim());
 "<frame id=\"03\" pdb=\"vcruntime140.amd64.pdb\" age=\"1\" guid=\"AF138C3F-2933-4097-8883-C1071B13375E\" module=\"VCRUNTIME140.dll\" rva=\"0xB8F0\" />\r\n" +
 "Frame = <frame id=\"04\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x2249f\" />                                    \n", Count = 1
             };
-            var param = new List<StackWithCount>();
-            param.Add(sample);
+            var param = new List<StackWithCount> { sample };
             var result = ModuleInfoHelper.ParseModuleInfoXML(param);
 
             var syms = result.Item1;
@@ -443,20 +457,19 @@ Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143", ret.Trim());
         /// Tests the parsing and extraction of PDB details from a set of rows each with commma-separated fields.
         [Fact]
         public void ExtractModuleInfoEmptyString() {
-            var ret = ModuleInfoHelper.ParseModuleInfo(string.Empty);
+            var ret = ModuleInfoHelper.ParseModuleInfo(new List<StackWithCount>() { new StackWithCount() { Callstack = string.Empty, Count = 1 } });
             Assert.Empty(ret);
         }
 
         /// Test obtaining a local path for symbols downloaded from a symbol server.
         [Fact]
         public void SymSrvLocalPaths() {
-            var ret = ModuleInfoHelper.ParseModuleInfo(
-                "\"ntdll.dll\",\"10.0.19041.662\",2056192,666871280,2084960,\"ntdll.pdb\",\"{1EB9FACB-04C7-3C5D-EA71-60764CD333D0}\",0,1\r\n" +
+            var ret = ModuleInfoHelper.ParseModuleInfo(new List<StackWithCount>() { new StackWithCount() { Callstack = "\"ntdll.dll\",\"10.0.19041.662\",2056192,666871280,2084960,\"ntdll.pdb\",\"{1EB9FACB-04C7-3C5D-EA71-60764CD333D0}\",0,1\r\n" +
 "\"VCRUNTIME140.dll\",\"14.16.27033.0\",86016,1563486943,105788,\"vcruntime140.amd64.pdb\",\"{AF138C3F-2933-4097-8883-C1071B13375E}\",0,1\r\n" +
 "\r\n" +
 "sqlservr.exe,7ef4ea08-777a-43b7-8bce-4da6f0fa43c7,2\r\n" +
 "\"KERNELBASE.dll\",\"10.0.19041.662\",2920448,3965251605,2936791,\"kernelbase.pdb\",\"{1FBE0B2B-89D1-37F0-1510-431FFFBA123E}\",0,1\n" +
-"\"kernel32.dll\",\"10.0.19041.662\",774144,1262097423,770204,\"kernel32.pdb\",\"{54448D8E-EFC5-AB3C-7193-D2C7A6DF9008}\",0,1\r\n");
+"\"kernel32.dll\",\"10.0.19041.662\",774144,1262097423,770204,\"kernel32.pdb\",\"{54448D8E-EFC5-AB3C-7193-D2C7A6DF9008}\",0,1\r\n", Count = 1 } });
 
             using (var csr = new StackResolver()) {
                 var paths = SymSrvHelpers.GetFolderPathsForPDBs(csr, "srv*https://msdl.microsoft.com/download/symbols", ret.Values.ToList());
