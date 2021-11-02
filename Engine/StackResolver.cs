@@ -73,8 +73,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// Runs through each of the frames in a call stack and looks up symbols for each
         private string ResolveSymbols(Dictionary<string, DiaUtil> _diautils, string[] callStackLines, bool includeSourceInfo, bool relookupSource, bool includeOffsets, bool showInlineFrames) {
             var finalCallstack = new StringBuilder();
-            var rgxModuleName = new Regex(@"((?<framenum>\d+)\s+)*(?<module>\w+)(\.(dll|exe))*\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*");
+            var rgxModuleName = new Regex(@"((?<framenum>[0-9a-fA-F]+)\s+)*(?<module>\w+)(\.(dll|exe))*\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*");
             var rgxAlreadySymbolizedFrame = new Regex(@"((?<framenum>\d+)\s+)*(?<module>\w+)(\.(dll|exe))*!(?<symbolizedfunc>.+?)\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*");
+            int frameNum = int.MinValue;
             foreach (var iterFrame in callStackLines) {
                 // hard-coded find-replace for XML markup - useful when importing from XML histograms
                 var currentFrame = iterFrame.Replace("&lt;", "<").Replace("&gt;", ">");
@@ -125,9 +126,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 var match = rgxModuleName.Match(currentFrame);
                 if (match.Success) {
                     var matchedModuleName = match.Groups["module"].Value;
-                    int frameNum = string.IsNullOrWhiteSpace(match.Groups["framenum"].Value) ? int.MinValue : Convert.ToInt32(match.Groups["framenum"].Value, 16);
+                    frameNum = string.IsNullOrWhiteSpace(match.Groups["framenum"].Value) ? int.MinValue : frameNum == int.MinValue ? Convert.ToInt32(match.Groups["framenum"].Value, 16) : frameNum;
                     if (_diautils.ContainsKey(matchedModuleName)) {
-                        string processedFrame = ProcessFrameModuleOffset(_diautils, frameNum, matchedModuleName, match.Groups["offset"].Value, includeSourceInfo, includeOffsets, showInlineFrames);
+                        string processedFrame = ProcessFrameModuleOffset(_diautils, ref frameNum, matchedModuleName, match.Groups["offset"].Value, includeSourceInfo, includeOffsets, showInlineFrames);
                         if (!string.IsNullOrEmpty(processedFrame)) {
                             // typically this is because we could not find the offset in any known function range
                             finalCallstack.AppendLine(processedFrame);
@@ -169,7 +170,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         /// This is the most important function in this whole utility! It uses DIA to lookup the symbol based on RVA offset
         /// It also looks up line number information if available and then formats all of this information for returning to caller
-        private string ProcessFrameModuleOffset(Dictionary<string, DiaUtil> _diautils, int frameNum, string moduleName, string offset, bool includeSourceInfo, bool includeOffset, bool showInlineFrames) {
+        private string ProcessFrameModuleOffset(Dictionary<string, DiaUtil> _diautils, ref int frameNum, string moduleName, string offset, bool includeSourceInfo, bool includeOffset, bool showInlineFrames) {
             bool useUndecorateLogic = false;
 
             // the offsets in the XE output are in hex, so we convert to base-10 accordingly
@@ -181,69 +182,73 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 result = this.cachedSymbols[symKey];
             }
             this.rwLockCachedSymbols.ExitReadLock();
+            if (string.IsNullOrEmpty(result)) {
+                // process the function name (symbol); initially we look for 'block' symbols, which have a parent function; typically this is seen in kernelbase.dll 
+                // (not very important for XE callstacks but important if you have an assert or non-yielding stack in SQLDUMPnnnn.txt files...)
+                _diautils[moduleName]._IDiaSession.findSymbolByRVAEx(rva, SymTagEnum.SymTagBlock, out IDiaSymbol mysym, out int displacement);
+                if (mysym != null) {
+                    uint blockAddress = mysym.addressOffset;
 
-            if (!string.IsNullOrEmpty(result)) {
-                // value was in cache
-                return result;
-            }
+                    // if we did find a block symbol then we look for its parent till we find either a function or public symbol
+                    // an addition check is on the name of the symbol being non-null and non-empty
+                    while (!(mysym.symTag == (uint)SymTagEnum.SymTagFunction || mysym.symTag == (uint)Dia.SymTagEnum.SymTagPublicSymbol) && string.IsNullOrEmpty(mysym.name)) {
+                        mysym = mysym.lexicalParent;
+                    }
 
-            // process the function name (symbol); initially we look for 'block' symbols, which have a parent function; typically this is seen in kernelbase.dll 
-            // (not very important for XE callstacks but important if you have an assert or non-yielding stack in SQLDUMPnnnn.txt files...)
-            _diautils[moduleName]._IDiaSession.findSymbolByRVAEx(rva, SymTagEnum.SymTagBlock, out IDiaSymbol mysym, out int displacement);
-            if (mysym != null) {
-                uint blockAddress = mysym.addressOffset;
+                    // Calculate offset into the function by assuming that the final lexical parent we found in the loop above
+                    // is the actual start of the function. Then the difference between (the original block start function start + displacement) 
+                    // and final lexical parent's start addresses is the final "displacement" / offset to be displayed
+                    displacement = (int)(blockAddress - mysym.addressOffset + displacement);
+                } else {
+                    // we did not find a block symbol, so let's see if we get a Function symbol itself
+                    // generally this is going to return mysym as null for most users (because public PDBs do not tag the functions as Function
+                    // they instead are tagged as PublicSymbol)
+                    _diautils[moduleName]._IDiaSession.findSymbolByRVAEx(rva, SymTagEnum.SymTagFunction, out mysym, out displacement);
+                    if (mysym == null) {
+                        useUndecorateLogic = true;
 
-                // if we did find a block symbol then we look for its parent till we find either a function or public symbol
-                // an addition check is on the name of the symbol being non-null and non-empty
-                while (!(mysym.symTag == (uint)SymTagEnum.SymTagFunction || mysym.symTag == (uint)Dia.SymTagEnum.SymTagPublicSymbol) && string.IsNullOrEmpty(mysym.name)) {
-                    mysym = mysym.lexicalParent;
+                        // based on previous remarks, look for public symbol near the offset / RVA
+                        _diautils[moduleName]._IDiaSession.findSymbolByRVAEx(rva, SymTagEnum.SymTagPublicSymbol, out mysym, out displacement);
+                    }
                 }
 
-                // Calculate offset into the function by assuming that the final lexical parent we found in the loop above
-                // is the actual start of the function. Then the difference between (the original block start function start + displacement) 
-                // and final lexical parent's start addresses is the final "displacement" / offset to be displayed
-                displacement = (int)(blockAddress - mysym.addressOffset + displacement);
-            }
-            else {
-                // we did not find a block symbol, so let's see if we get a Function symbol itself
-                // generally this is going to return mysym as null for most users (because public PDBs do not tag the functions as Function
-                // they instead are tagged as PublicSymbol)
-                _diautils[moduleName]._IDiaSession.findSymbolByRVAEx(rva, SymTagEnum.SymTagFunction, out mysym, out displacement);
                 if (mysym == null) {
-                    useUndecorateLogic = true;
-
-                    // based on previous remarks, look for public symbol near the offset / RVA
-                    _diautils[moduleName]._IDiaSession.findSymbolByRVAEx(rva, SymTagEnum.SymTagPublicSymbol, out mysym, out displacement);
+                    // if all attempts to locate a matching symbol have failed, return null
+                    return null;
                 }
+
+                // try to find if we have source and line number info and include it based on the param
+                string sourceInfo = string.Empty;
+                var pdbHasSourceInfo = _diautils[moduleName].HasSourceInfo;
+                if (includeSourceInfo) {
+                    _diautils[moduleName]._IDiaSession.findLinesByRVA(rva, 0, out IDiaEnumLineNumbers enumLineNums);
+                    sourceInfo = DiaUtil.GetSourceInfo(enumLineNums, pdbHasSourceInfo);
+                }
+                // Process inline functions, but only if private PDBs are in use
+                string inlineFrameAndSourceInfo = string.Empty;
+                if (showInlineFrames && pdbHasSourceInfo) {
+                    inlineFrameAndSourceInfo = DiaUtil.ProcessInlineFrames(moduleName, useUndecorateLogic, includeOffset, includeSourceInfo, rva, mysym, pdbHasSourceInfo);
+                }
+                var symbolizedFrame = DiaUtil.GetSymbolizedFrame(moduleName, mysym, useUndecorateLogic, includeOffset, displacement, false);
+                // make sure we cleanup COM allocations for the resolved sym
+                Marshal.FinalReleaseComObject(mysym);
+                result = (inlineFrameAndSourceInfo + symbolizedFrame + "\t" + sourceInfo).Trim();
+                this.rwLockCachedSymbols.EnterWriteLock();
+                if (!this.cachedSymbols.ContainsKey(symKey)) {
+                    this.cachedSymbols.Add(symKey, result);
+                }
+                this.rwLockCachedSymbols.ExitWriteLock();
             }
 
-            if (mysym == null) {
-                // if all attempts to locate a matching symbol have failed, return null
-                return null;
+            if (frameNum != int.MinValue) {
+                var withFrameNums = new StringBuilder();
+                var resultLines = result.Split('\n');
+                foreach (var line in resultLines) {
+                    withFrameNums.AppendLine($"{frameNum:x2} {line.Trim('\r')}");
+                    frameNum++;
+                }
+                result = withFrameNums.ToString().Trim();
             }
-
-            // try to find if we have source and line number info and include it based on the param
-            string sourceInfo = string.Empty;
-            var pdbHasSourceInfo = _diautils[moduleName].HasSourceInfo;
-            if (includeSourceInfo) {
-                _diautils[moduleName]._IDiaSession.findLinesByRVA(rva, 0, out IDiaEnumLineNumbers enumLineNums);
-                sourceInfo = DiaUtil.GetSourceInfo(enumLineNums, pdbHasSourceInfo);
-            }
-            var symbolizedFrame = DiaUtil.GetSymbolizedFrame(frameNum, moduleName, mysym, useUndecorateLogic, includeOffset, displacement);
-            // Process inline functions, but only if private PDBs are in use
-            string inlineFrameAndSourceInfo = string.Empty;
-            if (showInlineFrames && pdbHasSourceInfo) {
-                inlineFrameAndSourceInfo = DiaUtil.ProcessInlineFrames(moduleName, useUndecorateLogic, includeOffset, includeSourceInfo, rva, mysym, pdbHasSourceInfo);
-            }
-            result = (inlineFrameAndSourceInfo + symbolizedFrame + "\t" + sourceInfo).Trim();
-            // make sure we cleanup COM allocations for the resolved sym
-            Marshal.FinalReleaseComObject(mysym);
-            this.rwLockCachedSymbols.EnterWriteLock();
-            if (!this.cachedSymbols.ContainsKey(symKey)) {
-                this.cachedSymbols.Add(symKey, result);
-            }
-            this.rwLockCachedSymbols.ExitWriteLock();
-
             return result;
         }
 
@@ -308,10 +313,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         public string ResolveCallstacks(string inputCallstackText, string symPath, bool searchPDBsRecursively, List<string> dllPaths,
             bool searchDLLRecursively, bool framesOnSingleLine, bool includeSourceInfo, bool relookupSource, bool includeOffsets,
             bool showInlineFrames, bool cachePDB, string outputFilePath) {
-            // check if the user has provided a list of modules, each with comma-separated which can be structured fairly flexibly as long as they contain the following pieces of info
-            // per row, in different fields: PDB file name (including .pdb extension), OR module file name (.dll or .exe extension); a GUID representing the matching PDB GUID
-            // the very last field in the row should be an integer specifying the PDB "age" field. in such cases, the below function will return a non-zero list of Symbol objects which internally contain these parsed values for PDB name, GUID and age
-
             this.cancelRequested = false;
             this.cachedSymbols.Clear();
 
@@ -359,7 +360,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     allstacknodes = xmldoc.SelectNodes("//event[count(./action[contains(@name, 'callstack')]) > 0]");
 
                     if (allstacknodes.Count > 0) {
-                        this.StatusMessage = "Preprocessing XEvent events...";
+                        this.StatusMessage = "Pre-processing XEvent events...";
                         // process individual callstacks
                         foreach (XmlNode currstack in allstacknodes) {
                             if (this.cancelRequested) {
@@ -399,8 +400,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 }
             }
 
-            var syms = ModuleInfoHelper.ParseModuleInfo(inputCallstackText);
+            this.StatusMessage = "Checking for embedded symbol information...";
+            var syms = ModuleInfoHelper.ParseModuleInfo(listOfCallStacks);
             if (syms.Count > 0) {
+                this.StatusMessage = "Downloading symbols as needed...";
                 // if the user has provided such a list of module info, proceed to actually use dbghelp.dll / symsrv.dll to download those PDBs and get local paths for them
                 var paths = SymSrvHelpers.GetFolderPathsForPDBs(this, symPath, syms.Values.ToList());
                 // we then "inject" those local PDB paths as higher priority than any possible user provided paths
@@ -409,6 +412,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 if (listOfCallStacks.Count == 0) {
                     listOfCallStacks.Add(new StackWithCount() { Callstack = inputCallstackText, Count = 1 });
                 }
+                this.StatusMessage = "Looking for embedded XML-formatted frames and symbol information...";
                 // attempt to check if there are XML-formatted frames each with the related PDB attributes and if so replace those lines with the normalized versions
                 (syms, listOfCallStacks) = ModuleInfoHelper.ParseModuleInfoXML(listOfCallStacks);
                 if (syms.Count > 0) {
@@ -426,6 +430,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.dllMapHelper.Initialize();
 
             // Create a pool of threads to process in parallel
+            this.StatusMessage = "Creating thread pool to process frames...";
             int numThreads = Math.Min(listOfCallStacks.Count, Environment.ProcessorCount);
             List<Thread> threads = new List<Thread>();
             for (int threadOrdinal = 0; threadOrdinal < numThreads; threadOrdinal++) {
@@ -436,6 +441,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     searchDLLRecursively = searchDLLRecursively, searchPDBsRecursively = searchPDBsRecursively, symPath = symPath, threadOrdinal = threadOrdinal, cachePDB = cachePDB});
             }
 
+            this.StatusMessage = "Waiting for threads to finish...";
             foreach (var tmpThread in threads) {
                 tmpThread.Join();
             }
@@ -481,12 +487,16 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                     if (!string.IsNullOrEmpty(currstack.Resolvedstack)) {
                         finalCallstack.AppendLine(currstack.Resolvedstack);
-                    }
-                    else {
+                    } else {
                         if (!string.IsNullOrEmpty(currstack.Callstack)) {
                             finalCallstack = new StringBuilder("WARNING: No output to show. This may indicate an internal error!");
                             break;
                         }
+                    }
+
+                    if (finalCallstack.Length > int.MaxValue * 0.1) {
+                        this.StatusMessage = "WARNING: output is too large to display on screen. Use the option to output to file directly (instead of screen). Re-run after specifying file path!";
+                        break;
                     }
 
                     this.globalCounter++;

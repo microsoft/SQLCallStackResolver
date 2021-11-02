@@ -5,6 +5,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     using System.Collections.Generic;
     using System.Diagnostics.Contracts;
     using System.IO;
+    using System.Linq;
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading.Tasks;
@@ -16,58 +17,66 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         /// Given a set of rows each containing several comma-separated fields, return a set of resolved Symbol
         /// objects each of which have PDB GUID and age details.
-        public static Dictionary<string, Symbol> ParseModuleInfo(string input) {
+        public static Dictionary<string, Symbol> ParseModuleInfo(List<StackWithCount> listOfCallStacks) {
             var retval = new Dictionary<string, Symbol>();
-            Contract.Requires(!string.IsNullOrEmpty(input));
-            // split into multiple lines
-            var lines = input.Split('\n');
+            Parallel.ForEach(listOfCallStacks.Select(c => c.Callstack), input => {
+                Contract.Requires(!string.IsNullOrEmpty(input));
+                // split into multiple lines
+                var lines = input.Split('\n');
 
-            foreach (var line in lines) {
-                Guid pdbGuid = Guid.Empty;
-                string moduleName = null;
-                string pdbName = null;
+                foreach (var line in lines) {
+                    Guid pdbGuid = Guid.Empty;
+                    string moduleName = null;
+                    string pdbName = null;
 
-                // foreach line, split into comma-delimited fields
-                var fields = line.Split(',');
-                foreach (var rawfield in fields) {
-                    var field = rawfield.Trim().TrimEnd('"').TrimStart('"');
-                    Guid tmpGuid = Guid.Empty;
-                    // for each field, attempt using regexes to detect file name and GUIDs
-                    if (Guid.TryParse(field, out tmpGuid)) {
-                        pdbGuid = tmpGuid;
-                    }
+                    // foreach line, split into comma-delimited fields
+                    var fields = line.Split(',');
+                    // only attempt to process further if this line does look like it has delimited fields
+                    if (fields.Length >= 3) {
+                        foreach (var rawfield in fields) {
+                            var field = rawfield.Trim().TrimEnd('"').TrimStart('"');
+                            Guid tmpGuid = Guid.Empty;
+                            // for each field, attempt using regexes to detect file name and GUIDs
+                            if (Guid.TryParse(field, out tmpGuid)) {
+                                pdbGuid = tmpGuid;
+                            }
 
-                    if (string.IsNullOrEmpty(moduleName)) {
-                        var matchFilename = rgxFileName.Match(field);
-                        if (matchFilename.Success) {
-                            moduleName = matchFilename.Groups["module"].Value;
+                            if (string.IsNullOrEmpty(moduleName)) {
+                                var matchFilename = rgxFileName.Match(field);
+                                if (matchFilename.Success) {
+                                    moduleName = matchFilename.Groups["module"].Value;
+                                }
+                            }
+
+                            if (string.IsNullOrEmpty(pdbName)) {
+                                var matchPDBName = rgxPDBName.Match(field);
+                                if (matchPDBName.Success) {
+                                    pdbName = matchPDBName.Groups["pdb"].Value;
+                                }
+                            }
+                        }
+
+                        // assumption is that last field is pdbAge - TODO parameterize
+                        _ = int.TryParse(fields[fields.Length - 1], out int pdbAge);
+
+                        if (string.IsNullOrEmpty(pdbName)) {
+                            // fall back to module name as PDB name
+                            pdbName = moduleName;
+                        }
+
+                        // check if we have all 3 details
+                        if (!string.IsNullOrEmpty(pdbName)
+                            && pdbAge != int.MinValue
+                            && pdbGuid != Guid.Empty) {
+                            lock (retval) {
+                                if (!retval.ContainsKey(moduleName)) {
+                                    retval.Add(moduleName, new Symbol() { PDBName = pdbName + ".pdb", PDBAge = pdbAge, PDBGuid = pdbGuid.ToString("N") });
+                                }
+                            }
                         }
                     }
-
-                    if (string.IsNullOrEmpty(pdbName)) {
-                        var matchPDBName = rgxPDBName.Match(field);
-                        if (matchPDBName.Success) {
-                            pdbName = matchPDBName.Groups["pdb"].Value;
-                        }
-                    }
                 }
-
-                int pdbAge = int.MinValue;
-                // assumption is that last field is pdbAge - TODO parameterize
-                _ = int.TryParse(fields[fields.Length - 1], out pdbAge);
-
-                if (string.IsNullOrEmpty(pdbName)) {
-                    // fall back to module name as PDB name
-                    pdbName = moduleName;
-                }
-
-                // check if we have all 3 details
-                if (!string.IsNullOrEmpty(pdbName)
-                    && pdbAge != int.MinValue
-                    && pdbGuid != Guid.Empty) {
-                    retval.Add(moduleName, new Symbol() { PDBName = pdbName + ".pdb", PDBAge = pdbAge, PDBGuid = pdbGuid.ToString("N") });
-                }
-            }
+            });
 
             return retval;
         }
@@ -77,47 +86,53 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
             Parallel.ForEach(listOfCallStacks, currItem => {
                 var outCallstack = new StringBuilder();
-                // use a multi-line regex replace to reassemble XML fragments which were split across lines
-                currItem.Callstack = Regex.Replace(currItem.Callstack, @"(?<prefix>\<frame[^\/\>]*?)(?<newline>(\r\n|\n))(?<suffix>.*?\/\>\s*?$)", @"${prefix}${suffix}", RegexOptions.Multiline);
-                // ensure that each <frame> element starts on a newline
-                currItem.Callstack = Regex.Replace(currItem.Callstack, @"/\>\s*\<frame", "/>\r\n<frame");
-                // next, replace any pre-post stuff from the XML frame lines
-                currItem.Callstack = Regex.Replace(currItem.Callstack, @"(?<prefix>.*?)(?<retain>\<frame.+\/\>)(?<suffix>.*?)", "${retain}");
+                // sniff test to allow for quick exit if input has no XML at all
+                if (currItem.Callstack.Contains("<frame")) {
+                    // use a multi-line regex replace to reassemble XML fragments which were split across lines
+                    currItem.Callstack = Regex.Replace(currItem.Callstack, @"(?<prefix>\<frame[^\/\>]*?)(?<newline>(\r\n|\n))(?<suffix>.*?\/\>\s*?$)", @"${prefix}${suffix}", RegexOptions.Multiline);
+                    // ensure that each <frame> element starts on a newline
+                    currItem.Callstack = Regex.Replace(currItem.Callstack, @"/\>\s*\<frame", "/>\r\n<frame");
+                    // next, replace any pre-post stuff from the XML frame lines
+                    currItem.Callstack = Regex.Replace(currItem.Callstack, @"(?<prefix>.*?)(?<retain>\<frame.+\/\>)(?<suffix>.*?)", "${retain}");
 
-                // split into multiple lines
-                var lines = currItem.Callstack.Split('\n');
-                bool readStatus = false;
-                foreach (var line in lines) {
-                    if (!string.IsNullOrWhiteSpace(line)) {
-                        try {
-                            using (var sreader = new StringReader(line)) {
-                                using (var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null })) {
-                                    readStatus = reader.Read();
-                                    if (readStatus) {
-                                        // seems to be XML; process attributes only if all 3 are there
-                                        var moduleName = Path.GetFileNameWithoutExtension(reader.GetAttribute("module"));
-                                        lock (syms) {
-                                            if (!syms.ContainsKey(moduleName)) {
-                                                syms.Add(moduleName, new Symbol() { PDBName = reader.GetAttribute("pdb").ToLower(), PDBAge = int.Parse(reader.GetAttribute("age")), PDBGuid = Guid.Parse(reader.GetAttribute("guid")).ToString("N") });
+                    // split into multiple lines
+                    var lines = currItem.Callstack.Split('\n');
+                    bool readStatus = false;
+                    foreach (var line in lines) {
+                        if (!string.IsNullOrWhiteSpace(line)) {
+                            // only attempt further formal XML parsing if a simple text check works
+                            if (line.StartsWith("<frame")) {
+                                try {
+                                    using (var sreader = new StringReader(line)) {
+                                        using (var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null })) {
+                                            readStatus = reader.Read();
+                                            if (readStatus) {
+                                                // seems to be XML; process attributes only if all 3 are there
+                                                var moduleName = Path.GetFileNameWithoutExtension(reader.GetAttribute("module"));
+                                                lock (syms) {
+                                                    if (!syms.ContainsKey(moduleName)) {
+                                                        syms.Add(moduleName, new Symbol() { PDBName = reader.GetAttribute("pdb").ToLower(), PDBAge = int.Parse(reader.GetAttribute("age")), PDBGuid = Guid.Parse(reader.GetAttribute("guid")).ToString("N") });
+                                                    }
+                                                }
+                                                var frameNumHex = string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:x2}", int.Parse(reader.GetAttribute("id")));
+                                                // transform the XML into a simple module+offset notation
+                                                outCallstack.AppendFormat($"{frameNumHex} {moduleName}+{reader.GetAttribute("rva")}{Environment.NewLine}");
+                                                continue;
                                             }
                                         }
-                                        // transform the XML into a simple module+offset notation
-                                        outCallstack.AppendFormat($"{reader.GetAttribute("id")} {moduleName}+{reader.GetAttribute("rva")}{Environment.NewLine}");
-                                        continue;
                                     }
+                                } catch (Exception ex) {
+                                    if (ex is ArgumentNullException || ex is NullReferenceException || ex is XmlException) {
+                                    } else { throw; }
                                 }
                             }
-                        } catch (Exception ex) {
-                            if (ex is ArgumentNullException || ex is NullReferenceException || ex is XmlException) {
-                            } else { throw; }
                         }
+
+                        // pass-through this line as it is either non-XML, 0-length or whitespace-only
+                        outCallstack.AppendLine(line);
                     }
-
-                    // pass-through this line as it is either non-XML, 0-length or whitespace-only
-                    outCallstack.AppendLine(line);
+                    currItem.Callstack = outCallstack.ToString();
                 }
-
-                currItem.Callstack = outCallstack.ToString();
             });
 
             return (syms, listOfCallStacks);
