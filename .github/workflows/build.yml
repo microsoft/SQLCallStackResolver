@@ -1,7 +1,12 @@
 name: Build SQLCallStackResolver
 on:
- - pull_request
- - workflow_dispatch
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      testcategories:
+        description: 'The xUnit test categories to run'
+        default: '-trait "Category=Unit" -trait "Category=Perf"'
+        required: false
 
 jobs:
   build:
@@ -34,6 +39,8 @@ jobs:
       working-directory: Tests\TestCases
       shell: powershell
     - name: Run tests
-      run: ..\..\..\packages\xunit.runner.console.2.4.1\tools\net472\xunit.console.exe .\SQLCalLStackResolver.xUnit.Tests.dll -verbose
+      env:
+        DEFAULT_TESTS: '-trait "Category=Unit"'
+      run: ..\..\..\packages\xunit.runner.console.2.4.1\tools\net472\xunit.console.exe .\SQLCalLStackResolver.xUnit.Tests.dll -verbose ${{ github.event.inputs.testcategories || env.DEFAULT_TESTS }}
       working-directory: Target\Release\Tests
       shell: powershell
