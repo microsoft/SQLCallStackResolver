@@ -12,7 +12,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     /// Class implementing xUnit tests.
     public class Tests {
         /// Validate that "block symbols" in a PDB are resolved correctly.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void BlockResolution() {
             using (var csr = new StackResolver()) {
                 var pdbPath = @"..\..\..\Tests\TestCases\TestBlockResolution";
@@ -22,7 +22,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Test the resolution of OrdinalNNN symbols to their actual names.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void OrdinalBasedSymbol() {
             using (var csr = new StackResolver()) {
                 var dllPaths = new List<string>{@"..\..\..\Tests\TestCases\TestOrdinal"};
@@ -32,7 +32,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Test the resolution of a "regular" symbol with input specifying a hex offset into module.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void RegularSymbolHexOffset() {
             using (var csr = new StackResolver()) {
                 var ret = csr.ResolveCallstacks("sqldk+0x40609\r\nsqldk+40609", @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, true, false, false, null);
@@ -42,7 +42,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Test the resolution of a "regular" symbol with virtual address as input.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void RegularSymbolVirtualAddress() {
             using (var csr = new StackResolver()) {
                 var moduleAddressesGood = @"c:\mssql\binn\sqldk.dll 00000001`00400000";
@@ -53,8 +53,35 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             }
         }
 
+        /// Perf / scale test. We randomly generate 750K XEvents each with 25 frame callstacks, and then resolve them.
+        [Fact][Trait("Category", "Perf")]
+        public void LargeXEventsInput() {
+            using (var csr = new StackResolver()) {
+                var moduleAddressesGood = @"c:\mssql\binn\sqldk.dll 00000001`00400000";
+                Assert.True(csr.ProcessBaseAddresses(moduleAddressesGood));
+                var xeventInput = new System.Text.StringBuilder();
+                xeventInput.AppendLine("<Events>");
+                // generate random events with offsets in the module range
+                var rng = new Random();
+                // generate 750K XEvents, each with 25 frames, each frame having a random address between 0000000100400000 and 00000001008c8000, which is a 5013503 byte range
+                for (var eventNum = 0; eventNum < 750000; eventNum++) {
+                    xeventInput.AppendLine($"<event key=\"File: C:\\temp\\test.xel, Timestamp: {DateTime.UtcNow.ToLongTimeString()}, UUID: {Guid.NewGuid()}\"><action name='callstack'><value>");
+                    for (int frameNum = 0; frameNum < 25; frameNum++) {
+                        xeventInput.AppendLine("0x" + (0x0000000100400000 + rng.Next(0, 5013503)).ToString("x2"));
+                    }
+                    xeventInput.AppendLine($"</value></action></event>");
+                }
+                xeventInput.AppendLine("</Events>");
+                var timer = new System.Diagnostics.Stopwatch();
+                timer.Start();
+                var ret = csr.ResolveCallstacks(xeventInput.ToString(), @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, true, false, false, Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
+                timer.Stop();
+                Assert.True(timer.Elapsed.TotalSeconds < 45 * 60);  // 45 minutes max on GitHub hosted DSv2 runner (2 vCPU, 7 GiB RAM).
+            }
+        }
+
         /// Check the processing of module base address information.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void ModuleLoadAddressInputEmptyString() {
             using (var csr = new StackResolver()) {
                 Assert.True(csr.ProcessBaseAddresses(string.Empty));
@@ -62,7 +89,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Check the processing of module base address information.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void ModuleLoadAddressInputJunkString() {
             using (var csr = new StackResolver()) {
                 var moduleAddressesBad = @"hello wor1213ld";
@@ -71,7 +98,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Check the processing of module base address information.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void ModuleLoadAddressInputColHeaders() {
             using (var csr = new StackResolver()) {
                 var moduleAddressesColHeader = File.ReadAllText(@"..\..\..\Tests\TestCases\ImportXEL\xe_wait_base_addresses.txt");
@@ -87,7 +114,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Check the processing of module base address information.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void ModuleLoadAddressInputFullPathSingleLine() {
             using (var csr = new StackResolver()) {
                 var moduleAddressesGood = @"c:\mssql\binn\sqldk.dll 0000000100400000";
@@ -98,7 +125,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Check the processing of module base address information.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void ModuleLoadAddressInputSingleLineBacktick() {
             using (var csr = new StackResolver()) {
                 var moduleAddressesGoodBacktick = @"c:\mssql\binn\sqldk.dll 00000001`00400000";
@@ -109,7 +136,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Check the processing of module base address information.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void ModuleLoadAddressInputModuleNameOnlySingleLine() {
             using (var csr = new StackResolver()) {
                 var moduleAddressesGoodModuleNameOnly0x = @"sqldk.dll 0000000100400000";
@@ -120,7 +147,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Check the processing of module base address information.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void ModuleLoadAddressInputModuleNameOnlySingleLine0x() {
             using (var csr = new StackResolver()) {
                 var moduleAddressesGoodModuleNameOnly0x = @"sqldk.dll 0x0000000100400000";
@@ -131,7 +158,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Check the processing of module base address information.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void ModuleLoadAddressInputFullPathsTwoModules() {
             using (var csr = new StackResolver()) {
                 var moduleAddressesGood = @"c:\mssql\binn\sqldk.dll 0000000100400000
@@ -145,7 +172,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         /// Test the resolution of a "regular" symbol with input specifying a hex offset into module
         /// but do not include the resolved symbol's offset in final output.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void RegularSymbolHexOffsetNoOutputOffset() {
             using (var csr = new StackResolver()) {
                 var dllPaths = new List<string>{@"..\..\..\Tests\TestCases\TestOrdinal"};
@@ -158,7 +185,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// Test the resolution of a "regular" symbol with input specifying a hex offset into module
         /// but do not include the resolved symbol's offset in final output. This variant has the 
         /// frame numbers prefixed.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void RegularSymbolHexOffsetNoOutputOffsetWithFrameNums() {
             using (var csr = new StackResolver()) {
                 var dllPaths = new List<string> { @"..\..\..\Tests\TestCases\TestOrdinal" };
@@ -169,7 +196,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Check whether symbol details for a given binary are correct.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void TestGetSymDetails() {
             var dllPaths = new List<string>{@"..\..\..\Tests\TestCases\TestOrdinal"};
             var ret = StackResolver.GetSymbolDetailsForBinaries(dllPaths, true);
@@ -180,7 +207,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Make sure that caching PDB files is working. To do this we must use XEL input to trigger multiple worker threads.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void SymbolFileCaching() {
             using (var csr = new StackResolver()) {
                 var ret = csr.ExtractFromXEL(new[] { @"..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, false);
@@ -219,7 +246,7 @@ sqllang!CStmtQuery::InitQuery", symres.Trim(), StringComparison.CurrentCulture);
 
         /// Validate that source information is retrieved correctly. This test uses symbols for a Windows Driver Kit module, Wdf01000.sys,
         /// because private PDBs for that module are legitimately available on the Microsoft public symbols servers. https://github.com/microsoft/Windows-Driver-Frameworks/releases if interested.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void SourceInformation() {
             using (var csr = new StackResolver()) {
                 var pdbPath = @"..\..\..\Tests\TestCases\SourceInformation";
@@ -230,7 +257,7 @@ sqllang!CStmtQuery::InitQuery", symres.Trim(), StringComparison.CurrentCulture);
 
         /// Validate that source information is retrieved correctly.This test uses symbols for a Windows Driver Kit module, Wdf01000.sys,
         /// because private PDBs for that module are legitimately available on the Microsoft public symbols servers. https://github.com/microsoft/Windows-Driver-Frameworks/releases if interested.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void SourceInformationLineInfoOff() {
             using (var csr = new StackResolver()) {
                 var pdbPath = @"..\..\..\Tests\TestCases\SourceInformation";
@@ -241,7 +268,7 @@ sqllang!CStmtQuery::InitQuery", symres.Trim(), StringComparison.CurrentCulture);
 
         /// Validate that source information is retrieved correctly when "re-looking up" a symbol based on input which was already symbolized (but missing source info).
         /// This test uses symbols for a Windows Driver Kit module, Wdf01000.sys, because private PDBs for that module are legitimately available on the Microsoft public symbols servers.https://github.com/microsoft/Windows-Driver-Frameworks/releases if interested.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void RelookupSourceInformation() {
             using (var csr = new StackResolver()) {
                 var pdbPath = @"..\..\..\Tests\TestCases\SourceInformation";
@@ -251,7 +278,7 @@ sqllang!CStmtQuery::InitQuery", symres.Trim(), StringComparison.CurrentCulture);
         }
 
         /// Validate importing callstack events from XEL files into histogram buckets.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void ImportBinResolveXELEvents() {
             using (var csr = new StackResolver()) {
                 var ret = csr.ExtractFromXEL(new[] { @"..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, true);
@@ -312,7 +339,7 @@ sqllang!process_commands_internal+735", symres, StringComparison.CurrentCulture)
         }
 
         /// Validate importing individual callstack events from XEL files.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void ImportIndividualXELEvents() {
             using (var csr = new StackResolver()) {
                 var ret = csr.ExtractFromXEL(new[] { @"..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, false);
@@ -321,7 +348,7 @@ sqllang!process_commands_internal+735", symres, StringComparison.CurrentCulture)
         }
 
         /// Validate importing "single-line" callstack (such as when the input is copy-pasted from SSMS).
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void SingleLineCallStack() {
             using (var csr = new StackResolver()) {
                 csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\..\Tests\TestCases\ImportXEL\base_addresses.txt"));
@@ -359,7 +386,7 @@ sqllang!process_commands_internal+735", symres.Trim());
 
         /// Test for inline frame resolution. This test uses symbols for a Windows Driver Kit module, Wdf01000.sys, because private PDBs for that module are legitimately available on the
         /// Microsoft public symbols servers. https://github.com/microsoft/Windows-Driver-Frameworks/releases if interested.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void InlineFrameResolution() {
             using (var csr = new StackResolver()) {
                 var pdbPath = @"..\..\..\Tests\TestCases\SourceInformation";
@@ -375,7 +402,7 @@ Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143	(minkernel\wdf\framework\share
 
         /// Test for inline frame resolution without source lines included This test uses symbols for a Windows Driver Kit module, Wdf01000.sys,
         /// because private PDBs for that module are legitimately available on the Microsoft public symbols servers. https://github.com/microsoft/Windows-Driver-Frameworks/releases if interested.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void InlineFrameResolutionNoSourceInfo() {
             using (var csr = new StackResolver()) {
                 var pdbPath = @"..\..\..\Tests\TestCases\SourceInformation";
@@ -387,7 +414,7 @@ Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143", ret.Trim());
             }
         }
 
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void InlineFrameResolutionNoSourceInfoWithInputFrameNums() {
             using (var csr = new StackResolver()) {
                 var pdbPath = @"..\..\..\Tests\TestCases\SourceInformation;..\..\..\Tests\TestCases\TestOrdinal";
@@ -402,7 +429,7 @@ Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143", ret.Trim());
         }
 
         /// Tests the parsing and extraction of PDB details from a set of rows each with commma-separated fields. This sample mixes up \r\n and \n line-endings.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void ExtractModuleInfo() {
             var ret = ModuleInfoHelper.ParseModuleInfo(new List<StackWithCount>() { new StackWithCount() {
                 Callstack = "\"ntdll.dll\",\"10.0.19041.662\",2056192,666871280,2084960,\"ntdll.pdb\",\"{1EB9FACB-04C7-3C5D-EA71-60764CD333D0}\",0,1\r\n" +
@@ -425,7 +452,7 @@ Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143", ret.Trim());
         }
 
         /// Tests the parsing and extraction of PDB details from a set of rows each with XML frames.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void ExtractModuleInfoXMLFrames() {
             var sample = new StackWithCount() {
                 Callstack = "Frame = <frame id=\"00\" pdb=\"ntdll.pdb\" age=\"1\" guid=\"C374E059-5793-9B92-6525-386A66A2D3F5\" module=\"ntdll.dll\" rva=\"0x9F7E4\" />        \r\n" +
@@ -455,14 +482,14 @@ Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143", ret.Trim());
         }
 
         /// Tests the parsing and extraction of PDB details from a set of rows each with commma-separated fields.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void ExtractModuleInfoEmptyString() {
             var ret = ModuleInfoHelper.ParseModuleInfo(new List<StackWithCount>() { new StackWithCount() { Callstack = string.Empty, Count = 1 } });
             Assert.Empty(ret);
         }
 
         /// Test obtaining a local path for symbols downloaded from a symbol server.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void SymSrvLocalPaths() {
             var ret = ModuleInfoHelper.ParseModuleInfo(new List<StackWithCount>() { new StackWithCount() { Callstack = "\"ntdll.dll\",\"10.0.19041.662\",2056192,666871280,2084960,\"ntdll.pdb\",\"{1EB9FACB-04C7-3C5D-EA71-60764CD333D0}\",0,1\r\n" +
 "\"VCRUNTIME140.dll\",\"14.16.27033.0\",86016,1563486943,105788,\"vcruntime140.amd64.pdb\",\"{AF138C3F-2933-4097-8883-C1071B13375E}\",0,1\r\n" +
@@ -478,7 +505,7 @@ Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143", ret.Trim());
         }
 
         /// End-to-end test with stacks being resolved based on symbols from symsrv.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void E2ESymSrv() {
             using (var csr = new StackResolver()) {
                 var pdbPath = @"srv*https://msdl.microsoft.com/download/symbols";
@@ -511,7 +538,7 @@ KERNELBASE!RaiseException+105
         }
 
         /// End-to-end test with stacks being resolved based on symbols from symsrv, but just one line of input
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void E2ESymSrvXMLSingleFrame() {
             using (var csr = new StackResolver()) {
                 var pdbPath = @"srv*https://msdl.microsoft.com/download/symbols";
@@ -523,7 +550,7 @@ KERNELBASE!RaiseException+105
         }
 
         /// End-to-end test with stacks being resolved based on symbols from symsrv.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void E2ESymSrvXMLFrames() {
             using (var csr = new StackResolver()) {
                 var pdbPath = @"srv*https://msdl.microsoft.com/download/symbols";
@@ -545,7 +572,7 @@ KERNELBASE!RaiseException+105
         }
 
         /// End-to-end test with XE histogram target and XML frames.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void E2ESymSrvXMLFramesHistogram() {
             using (var csr = new StackResolver()) {
                 var pdbPath = @"srv*https://msdl.microsoft.com/download/symbols";
@@ -572,7 +599,7 @@ Slot_1	[count:3]:
         }
 
         /// End-to-end test with stacks being resolved based on symbols from symsrv.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void E2ESymSrvXMLFramesMixedLineEndings() {
             using (var csr = new StackResolver()) {
                 var pdbPath = @"srv*https://msdl.microsoft.com/download/symbols";
@@ -596,7 +623,7 @@ Slot_1	[count:3]:
         }
 
         /// End-to-end test with stacks being resolved based on symbols from symsrv.
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void E2ESymSrvNoSympath() {
             using (var csr = new StackResolver()) {
                 var pdbPath = string.Empty;
@@ -618,7 +645,7 @@ KERNELBASE+0x396C9
         }
 
         /// Test for exported symbols
-        [Fact]
+        [Fact][Trait("Category", "Unit")]
         public void CheckExportedSymbols() {
             using (var csr = new StackResolver()) {
                 var ret = ExportedSymbol.GetExports(@"..\..\..\Tests\TestCases\TestOrdinal\sqldk.dll");
