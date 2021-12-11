@@ -188,7 +188,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [Fact][Trait("Category", "Unit")]
         public void RegularSymbolHexOffsetNoOutputOffsetWithFrameNums() {
             using (var csr = new StackResolver()) {
-                var dllPaths = new List<string> { @"..\..\..\Tests\TestCases\TestOrdinal" };
+                var dllPaths = new List<string>{@"..\..\..\Tests\TestCases\TestOrdinal"};
                 var ret = csr.ResolveCallstacks("00 sqldk+0x40609", @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, false, false, false, null);
                 var expectedSymbol = "00 sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode";
                 Assert.Equal(expectedSymbol, ret.Trim());
@@ -481,6 +481,24 @@ Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143", ret.Trim());
             Assert.Equal(1, syms["VCRUNTIME140"].PDBAge);
         }
 
+        /// Tests the parsing and extraction of PDB details from a set of rows each with XML frames. Some of those XML frames do not have sym info or RVA included.
+        [Fact][Trait("Category", "Unit")]
+        public void ExtractModuleInfoXMLFramesWithCalcBaseAddress() {
+            var input = new StackWithCount() {
+                Callstack = "Frame = <frame id=\"02\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-\r\n" +
+                "d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x40609\" address = \"0x100440609\"/>\r\n" +
+                "<frame id=\"04\" name=\"sqldk.dll\" address=\"0x10042249f\" />\n", Count = 1 };
+            var param = new List<StackWithCount> { input };
+            var result = ModuleInfoHelper.ParseModuleInfoXML(param);
+
+            var syms = result.Item1;
+            Assert.Single(syms);
+            Assert.Equal("sqldk.pdb", syms["sqldk"].PDBName);
+            Assert.Equal("6a1934433512464b8b8ed905ad930ee6", syms["sqldk"].PDBGuid, ignoreCase: true);
+            Assert.Equal(2, syms["sqldk"].PDBAge);
+            Assert.Equal((ulong)0x100400000, syms["sqldk"].CalculatedModuleBaseAddress);
+        }
+
         /// Tests the parsing and extraction of PDB details from a set of rows each with commma-separated fields.
         [Fact][Trait("Category", "Unit")]
         public void ExtractModuleInfoEmptyString() {
@@ -567,6 +585,22 @@ KERNELBASE!RaiseException+105
 02 sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644
 03 VCRUNTIME140!__C_specific_handler+160	(d:\agent\_work\2\s\src\vctools\crt\vcruntime\src\eh\riscchandler.cpp:290)
 04 sqldk!Spinlock<244,2,1>::SpinToAcquireWithExponentialBackoff+349";
+                Assert.Equal(expected.Trim(), ret.Trim());
+            }
+        }
+
+        /// End-to-end test with stacks being resolved based on symbols from symsrv, with a frame that needs "calculated base address" handling
+        [Fact][Trait("Category", "Unit")]
+        public void E2ESymSrvXMLFramesWithCalcBaseAddress() {
+            var input = "Frame = <frame id=\"02\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-\r\n" +
+            "d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x40609\" address = \"0x100440609\"/>\r\n" +
+            "<frame id=\"03\" name=\"sqldk.dll\" address=\"0x10042249f\" />\n";
+
+            using (var csr = new StackResolver()) {
+                var pdbPath = @"srv*https://msdl.microsoft.com/download/symbols";
+                var ret = csr.ResolveCallstacks(input, pdbPath, false, null, false, false, true, false, true, false, false, null);
+                var expected = @"02 sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644
+03 sqldk!Spinlock<244,2,1>::SpinToAcquireWithExponentialBackoff+349";
                 Assert.Equal(expected.Trim(), ret.Trim());
             }
         }

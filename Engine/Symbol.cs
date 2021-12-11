@@ -17,6 +17,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [JsonIgnore]
         public int PDBAge;
 
+        [JsonIgnore]
+        public ulong CalculatedModuleBaseAddress;
+
         public string DownloadURL;
 
         public bool DownloadVerified;
