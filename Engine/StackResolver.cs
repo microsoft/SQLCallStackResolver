@@ -575,14 +575,21 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// This method generates a PowerShell script to automate download of matched PDBs from the public symbol server.
-        public static List<Symbol> GetSymbolDetailsForBinaries(List<string> dllPaths, bool recurse) {
+        public static List<Symbol> GetSymbolDetailsForBinaries(List<string> dllPaths, bool recurse, List<Symbol> existingSymbols = null) {
             if (dllPaths == null || dllPaths.Count == 0) {
                 return new List<Symbol>();
             }
 
             var symbolsFound = new List<Symbol>();
-            var moduleNames = new string[] { "ntdll", "kernel32", "kernelbase", "ntoskrnl", "sqldk", "sqlmin", "sqllang", "sqltses", "sqlaccess", "qds", "hkruntime", "hkengine", "hkcompile", "sqlos", "sqlservr" };
+            var moduleNames = new string[] { "ntdll", "kernel32", "kernelbase", "ntoskrnl", "sqldk", "sqlmin", "sqllang", "sqltses", "sqlaccess", "qds", "hkruntime", "hkengine", "hkcompile", "sqlos", "sqlservr", "SqlServerSpatial*" };
             foreach (var currentModule in moduleNames) {
+                if (null != existingSymbols) {
+                    var syms = existingSymbols.Where(s => string.Equals(s.PDBName, currentModule, StringComparison.InvariantCultureIgnoreCase));
+                    if (syms.Any()) {
+                        symbolsFound.Add(syms.First());
+                        continue;
+                    }
+                }
                 string finalFilePath = null;
 
                 foreach (var currPath in dllPaths) {
