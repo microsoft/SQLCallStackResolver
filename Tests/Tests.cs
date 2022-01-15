@@ -53,6 +53,22 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             }
         }
 
+        /// Test the resolution of a "regular" symbol with virtual address as input.
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void RegularSymbolVirtualAddressMultipleFramesInSingleLine() {
+            using (var csr = new StackResolver()) {
+                var moduleAddressesGood = @"c:\mssql\binn\sqldk.dll 00000001`00400000";
+                Assert.True(csr.ProcessBaseAddresses(moduleAddressesGood));
+                var ret = csr.ResolveCallstacks("prologue   0x000000010042249f     0x0000000100440609   epilogue", @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, true, false, false, true, false, false, null);
+                var expectedSymbol = @"prologue
+sqldk!Spinlock<244,2,1>::SpinToAcquireWithExponentialBackoff+349
+sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644
+epilogue";
+                Assert.Equal(expectedSymbol, ret.Trim());
+            }
+        }
+
         /// Perf / scale test. We randomly generate 750K XEvents each with 25 frame callstacks, and then resolve them.
         [Fact][Trait("Category", "Perf")]
         public void LargeXEventsInput() {

@@ -54,7 +54,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 if (matchVA.Success) {
                     ulong virtAddress = Convert.ToUInt64(matchVA.Groups["vaddress"].Value, 16);
                     if (TryObtainModuleOffset(virtAddress, out string moduleName, out uint offset)) {
-                        // finalCallstack.AppendLine(ProcessFrameModuleOffset(moduleName, offset.ToString()));
                         retval[frameNum] = string.Format(CultureInfo.CurrentCulture, "{0}+0x{1:X}", moduleName, offset);
                     }
                     else {
@@ -400,6 +399,17 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 }
             }
 
+            // sometimes we see call stacks which are arranged horizontally (this typically is seen when copy-pasting directly
+            // from the SSMS XEvent window (copying the callstack field without opening it in its own viewer)
+            // in that case, space is a valid delimiter, and we need to support that as an option
+            foreach (var s in listOfCallStacks) {
+                var delims = framesOnSingleLine ? new char[3] { ' ', '\t', '\n' } : new char[1] { '\n' };
+                if (framesOnSingleLine) {
+                    s.Callstack = Regex.Replace(s.Callstack, @" {2,}", " ");
+                }
+                s.Callstack = string.Join("\n", s.Callstack.Replace("\r", string.Empty).Split(delims));
+            }
+
             this.StatusMessage = "Checking for embedded symbol information...";
             var syms = ModuleInfoHelper.ParseModuleInfo(listOfCallStacks);
             if (syms.Count > 0) {
@@ -486,7 +496,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     }
 
                     if (!string.IsNullOrEmpty(currstack.Resolvedstack)) {
-                        finalCallstack.AppendLine(currstack.Resolvedstack);
+                        finalCallstack.Append(currstack.Resolvedstack);
                     } else {
                         if (!string.IsNullOrEmpty(currstack.Callstack)) {
                             finalCallstack = new StringBuilder("WARNING: No output to show. This may indicate an internal error!");
@@ -538,17 +548,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 }
 
                 var currstack = tp.listOfCallStacks[tmpStackIndex];
-                // split the callstack into lines, and for each line try to resolve
-                string ordinalresolvedstack;
-                ordinalresolvedstack = this.dllMapHelper.LoadDllsIfApplicable(currstack.Callstack, tp.searchDLLRecursively, tp.dllPaths);
-                // sometimes we see call stacks which are arranged horizontally (this typically is seen when copy-pasting directly
-                // from the SSMS XEvent window (copying the callstack field without opening it in its own viewer)
-                // in that case, space is a valid delimiter, and we need to support that as an option
-                var delims = tp.framesOnSingleLine ? new char[3] { ' ', '\t', '\n' } : new char[1] { '\n' };
-                var callStackLines = ordinalresolvedstack.Replace('\r', ' ').Split(delims, StringSplitOptions.RemoveEmptyEntries);
-
+                var ordinalresolvedstack = this.dllMapHelper.LoadDllsIfApplicable(currstack.Callstack, tp.searchDLLRecursively, tp.dllPaths);
                 // process any frames which are purely virtual address (in such cases, the caller should have specified base addresses)
-                callStackLines = PreProcessVAs(callStackLines);
+                var callStackLines = PreProcessVAs(ordinalresolvedstack.Split('\n'));
 
                 // locate the PDBs and populate their DIA session helper classes
                 if (DiaUtil.LocateandLoadPDBs(_diautils, tp.symPath, tp.searchPDBsRecursively, Preprocessors.EnumModuleNames(callStackLines), tp.cachePDB)) {
