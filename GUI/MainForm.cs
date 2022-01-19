@@ -49,9 +49,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 return;
             }
 
-            int numLinesOfInput = callStackInput.Text.Length - callStackInput.Text.Replace(Environment.NewLine, string.Empty).Length;
+            bool isSingleLineInput = callStackInput.Text.Length == callStackInput.Text.Replace(Environment.NewLine, string.Empty).Length ? true : false;
 
-            if (1 == numLinesOfInput && !FramesOnSingleLine.Checked) {
+            if (isSingleLineInput && !FramesOnSingleLine.Checked) {
                 if (DialogResult.Yes == MessageBox.Show(this,
                     "Maybe this is intentional, but your input seems to have all the frames on a single line, but the 'Callstack frames are in single line' checkbox is unchecked. " +
                     "This may cause problems resolving symbols. Would you like to enable this?",
@@ -64,7 +64,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 }
             }
 
-            if (numLinesOfInput > 1 && FramesOnSingleLine.Checked) {
+            if (!isSingleLineInput && FramesOnSingleLine.Checked) {
                 if (DialogResult.Yes == MessageBox.Show(this,
                     "Your input seems to have multiple lines, but the 'Callstack frames are in single line' checkbox is checked. " +
                     "This may cause problems resolving symbols. Would you like to uncheck this setting?",
