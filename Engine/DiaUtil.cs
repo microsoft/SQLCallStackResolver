@@ -53,10 +53,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// This function builds up the PDB map, by searching for matched PDBs (based on name) and constructing the DIA session for each
         /// It is VERY important to specify the PDB search paths correctly, because there is no 'signature' information available 
         /// to match the PDB in any automatic way.
-        internal static bool LocateandLoadPDBs(Dictionary<string, DiaUtil> _diautils, string rootPaths, bool recurse, List<string> moduleNames, bool cachePDB) {
+        internal static bool LocateandLoadPDBs(Dictionary<string, DiaUtil> _diautils, string rootPaths, bool recurse, List<string> moduleNames, bool cachePDB, List<string> modulesToIgnore) {
             // loop through each module, trying to find matched PDB files
             var splitRootPaths = rootPaths.Split(';');
             foreach (string currentModule in moduleNames) {
+                if (modulesToIgnore.Contains(currentModule)) continue;
                 if (!_diautils.ContainsKey(currentModule)) {
                     // check if the PDB is already cached locally
                     var cachedPDBFile = Path.Combine(Path.GetTempPath(), "SymCache", currentModule + ".pdb");
@@ -91,6 +92,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         } catch (COMException) {
                             return false;
                         }
+                    } else {
+                        if (!modulesToIgnore.Contains(currentModule)) modulesToIgnore.Add(currentModule);
                     }
                 }
             }
