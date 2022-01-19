@@ -82,7 +82,6 @@
     <Compile Include="DLLOrdinalHelper.cs" />
     <Compile Include="ModuleInfoHelper.cs" />
     <Compile Include="PEHelper.cs" />
-    <Compile Include="Preprocessors.cs" />
     <Compile Include="SafeNativeMethods.cs" />
     <Compile Include="DiaUtil.cs" />
     <Compile Include="ExportedSymbol.cs" />

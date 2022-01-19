@@ -19,11 +19,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// objects each of which have PDB GUID and age details.
         public static Dictionary<string, Symbol> ParseModuleInfo(List<StackWithCount> listOfCallStacks) {
             var retval = new Dictionary<string, Symbol>();
-            Parallel.ForEach(listOfCallStacks.Select(c => c.Callstack), input => {
-                Contract.Requires(!string.IsNullOrEmpty(input));
-                // split into multiple lines
-                var lines = input.Split('\n');
-
+            Parallel.ForEach(listOfCallStacks.Select(c => c.CallstackFrames), lines => {
+                Contract.Requires(lines.Length > 0);
                 foreach (var line in lines) {
                     Guid pdbGuid = Guid.Empty;
                     string moduleName = null;

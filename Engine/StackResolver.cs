@@ -43,8 +43,12 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Convert virtual-address only type frames to their module+offset format
-        private string[] PreProcessVAs(string[] callStackLines) {
-            var rgxVAOnly = new Regex(@"^\s*0[xX](?<vaddress>[0-9a-fA-F]+)\s*$");
+        private string[] PreProcessVAs(string[] callStackLines, Regex rgxVAOnly) {
+            if (!this.LoadedModules.Any()) {
+                // only makes sense doing the rest of the work in this function if have loaded module information
+                return callStackLines;
+            }
+
             string[] retval = new string[callStackLines.Length];
 
             int frameNum = 0;
@@ -70,10 +74,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Runs through each of the frames in a call stack and looks up symbols for each
-        private string ResolveSymbols(Dictionary<string, DiaUtil> _diautils, string[] callStackLines, bool includeSourceInfo, bool relookupSource, bool includeOffsets, bool showInlineFrames) {
+        private string ResolveSymbols(Dictionary<string, DiaUtil> _diautils, string[] callStackLines, bool includeSourceInfo, bool relookupSource, bool includeOffsets, bool showInlineFrames, Regex rgxAlreadySymbolizedFrame, Regex rgxModuleName, List<string> modulesToIgnore, ThreadParams tp) {
             var finalCallstack = new StringBuilder();
-            var rgxModuleName = new Regex(@"((?<framenum>[0-9a-fA-F]+)\s+)*(?<module>\w+)(\.(dll|exe))*\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*");
-            var rgxAlreadySymbolizedFrame = new Regex(@"((?<framenum>\d+)\s+)*(?<module>\w+)(\.(dll|exe))*!(?<symbolizedfunc>.+?)\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*");
             int frameNum = int.MinValue;
             foreach (var iterFrame in callStackLines) {
                 // hard-coded find-replace for XML markup - useful when importing from XML histograms
@@ -86,34 +88,40 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     // Microsoft internal cases where customers send us stacks resolved with public PDBs but internally we
                     // have private PDBs so we want to now leverage the extra information provided in the private PDBs.)
                     var matchAlreadySymbolized = rgxAlreadySymbolizedFrame.Match(currentFrame);
-                    if (matchAlreadySymbolized.Success && _diautils.ContainsKey(matchAlreadySymbolized.Groups["module"].Value)) {
-                        var myDIAsession = _diautils[matchAlreadySymbolized.Groups["module"].Value]._IDiaSession;
-                        myDIAsession.findChildrenEx(myDIAsession.globalScope, SymTagEnum.SymTagNull, matchAlreadySymbolized.Groups["symbolizedfunc"].Value, 0, out IDiaEnumSymbols matchedSyms);
-
-                        if (matchedSyms.count > 0) {
-                            for (uint tmpOrdinal = 0; tmpOrdinal < matchedSyms.count; tmpOrdinal++) {
-                                IDiaSymbol tmpSym = matchedSyms.Item(tmpOrdinal);
-                                var rva = tmpSym.relativeVirtualAddress;
-
-                                string offsetString = matchAlreadySymbolized.Groups["offset"].Value;
-                                int numberBase = offsetString.ToUpperInvariant().StartsWith("0X", StringComparison.CurrentCulture) ? 16 : 10;
-                                uint offset = Convert.ToUInt32(offsetString, numberBase);
-                                rva += offset;
-                                myDIAsession.findLinesByRVA(rva, 0, out IDiaEnumLineNumbers enumLineNums);
-                                string tmpsourceInfo = DiaUtil.GetSourceInfo(enumLineNums,
-                                    _diautils[matchAlreadySymbolized.Groups["module"].Value].HasSourceInfo);
-
-                                if (tmpOrdinal > 0) {
-                                    finalCallstack.Append(" OR ");
-                                }
-
-                                finalCallstack.AppendFormat(CultureInfo.CurrentCulture, "{0}!{1}{2}\t{3}", matchAlreadySymbolized.Groups["module"].Value,
-                                    matchAlreadySymbolized.Groups["symbolizedfunc"].Value, includeOffsets ? "+" + offsetString : string.Empty, tmpsourceInfo);
-                                Marshal.ReleaseComObject(tmpSym);
-                            }
-                            Marshal.ReleaseComObject(matchedSyms);
+                    if (matchAlreadySymbolized.Success) {
+                        var matchedModuleName = matchAlreadySymbolized.Groups["module"].Value;
+                        if (!_diautils.ContainsKey(matchedModuleName)) {
+                            DiaUtil.LocateandLoadPDBs(_diautils, tp.symPath, tp.searchPDBsRecursively, new List<string>() { matchedModuleName }, tp.cachePDB, modulesToIgnore);
                         }
-                        else {
+
+                        if (_diautils.ContainsKey(matchedModuleName)) {
+                            var myDIAsession = _diautils[matchedModuleName]._IDiaSession;
+                            myDIAsession.findChildrenEx(myDIAsession.globalScope, SymTagEnum.SymTagNull, matchAlreadySymbolized.Groups["symbolizedfunc"].Value, 0, out IDiaEnumSymbols matchedSyms);
+
+                            if (matchedSyms.count > 0) {
+                                for (uint tmpOrdinal = 0; tmpOrdinal < matchedSyms.count; tmpOrdinal++) {
+                                    IDiaSymbol tmpSym = matchedSyms.Item(tmpOrdinal);
+                                    var rva = tmpSym.relativeVirtualAddress;
+
+                                    string offsetString = matchAlreadySymbolized.Groups["offset"].Value;
+                                    int numberBase = offsetString.ToUpperInvariant().StartsWith("0X", StringComparison.CurrentCulture) ? 16 : 10;
+                                    uint offset = Convert.ToUInt32(offsetString, numberBase);
+                                    rva += offset;
+                                    myDIAsession.findLinesByRVA(rva, 0, out IDiaEnumLineNumbers enumLineNums);
+                                    string tmpsourceInfo = DiaUtil.GetSourceInfo(enumLineNums,
+                                        _diautils[matchedModuleName].HasSourceInfo);
+
+                                    if (tmpOrdinal > 0) {
+                                        finalCallstack.Append(" OR ");
+                                    }
+
+                                    finalCallstack.AppendFormat(CultureInfo.CurrentCulture, "{0}!{1}{2}\t{3}", matchedModuleName,
+                                        matchAlreadySymbolized.Groups["symbolizedfunc"].Value, includeOffsets ? "+" + offsetString : string.Empty, tmpsourceInfo);
+                                    Marshal.ReleaseComObject(tmpSym);
+                                }
+                                Marshal.ReleaseComObject(matchedSyms);
+                            }
+                        } else {
                             // in the rare case that the symbol does not exist, return frame as-is
                             finalCallstack.Append(currentFrame);
                         }
@@ -125,6 +133,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 var match = rgxModuleName.Match(currentFrame);
                 if (match.Success) {
                     var matchedModuleName = match.Groups["module"].Value;
+                    if (!_diautils.ContainsKey(matchedModuleName)) {
+                        // maybe we have a "not well-known" module, attempt to (best effort) find PDB for it.
+                        DiaUtil.LocateandLoadPDBs(_diautils, tp.symPath, tp.searchPDBsRecursively, new List<string>() { matchedModuleName }, tp.cachePDB, modulesToIgnore);
+                    }
+
                     frameNum = string.IsNullOrWhiteSpace(match.Groups["framenum"].Value) ? int.MinValue : frameNum == int.MinValue ? Convert.ToInt32(match.Groups["framenum"].Value, 16) : frameNum;
                     if (_diautils.ContainsKey(matchedModuleName)) {
                         string processedFrame = ProcessFrameModuleOffset(_diautils, ref frameNum, matchedModuleName, match.Groups["offset"].Value, includeSourceInfo, includeOffsets, showInlineFrames);
@@ -345,7 +358,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var listOfCallStacks = new List<StackWithCount>();
             if (!isXMLdoc) {
                 this.StatusMessage = "Input being treated as a single callstack...";
-                listOfCallStacks.Add(new StackWithCount() { Callstack = inputCallstackText, Count = 1 });
+                listOfCallStacks.Add(new StackWithCount(inputCallstackText, framesOnSingleLine, 1));
             }
             else {
                 this.StatusMessage = "Input is well formed XML, proceeding...";
@@ -372,7 +385,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                             callstackTextNode.ParentNode.RemoveChild(callstackTextNode);
                             var eventXMLMarkup = currstack.OuterXml.Replace("\r", string.Empty).Replace("\n", string.Empty);
                             var candidatestack = string.Format(CultureInfo.CurrentCulture, "Event details: {0}:{2}{2}{1}", eventXMLMarkup, callstackText, Environment.NewLine);
-                            listOfCallStacks.Add(new StackWithCount() {Callstack = candidatestack, Count = 1});
+                            listOfCallStacks.Add(new StackWithCount(candidatestack, framesOnSingleLine, 1));
                             stacknum++;
                             this.PercentComplete = (int)((double)stacknum / allstacknodes.Count * 100.0);
                         }
@@ -392,22 +405,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                         var slotcount = int.Parse(currstack.Attributes["count"].Value, CultureInfo.CurrentCulture);
                         var candidatestack = string.Format(CultureInfo.CurrentCulture, "Slot_{0}\t[count:{1}]:{3}{3}{2}", stacknum, slotcount, currstack.SelectSingleNode("./value[1]").InnerText, Environment.NewLine);
-                        listOfCallStacks.Add(new StackWithCount() {Callstack = candidatestack, Count = slotcount});
+                        listOfCallStacks.Add(new StackWithCount(candidatestack, framesOnSingleLine, slotcount));
                         stacknum++;
                         this.PercentComplete = (int)((double)stacknum / allstacknodes.Count * 100.0);
                     }
                 }
-            }
-
-            // sometimes we see call stacks which are arranged horizontally (this typically is seen when copy-pasting directly
-            // from the SSMS XEvent window (copying the callstack field without opening it in its own viewer)
-            // in that case, space is a valid delimiter, and we need to support that as an option
-            foreach (var s in listOfCallStacks) {
-                var delims = framesOnSingleLine ? new char[3] { ' ', '\t', '\n' } : new char[1] { '\n' };
-                if (framesOnSingleLine) {
-                    s.Callstack = Regex.Replace(s.Callstack, @" {2,}", " ");
-                }
-                s.Callstack = string.Join("\n", s.Callstack.Replace("\r", string.Empty).Split(delims));
             }
 
             this.StatusMessage = "Checking for embedded symbol information...";
@@ -420,7 +422,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 symPath = string.Join(";", paths) + ";" + symPath;
             } else {
                 if (listOfCallStacks.Count == 0) {
-                    listOfCallStacks.Add(new StackWithCount() { Callstack = inputCallstackText, Count = 1 });
+                    listOfCallStacks.Add(new StackWithCount(inputCallstackText, framesOnSingleLine, 1));
                 }
                 this.StatusMessage = "Looking for embedded XML-formatted frames and symbol information...";
                 // attempt to check if there are XML-formatted frames each with the related PDB attributes and if so replace those lines with the normalized versions
@@ -536,7 +538,12 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         private void ProcessCallStack(Object obj) {
             SafeNativeMethods.EstablishActivationContext();
             var tp = (ThreadParams)obj;
-            Dictionary<string, DiaUtil> _diautils = new Dictionary<string, DiaUtil>();
+            var _diautils = new Dictionary<string, DiaUtil>();
+            var rgxOptions = tp.listOfCallStacks.Count > 10 ? RegexOptions.Compiled : RegexOptions.None;
+            var rgxModuleName = new Regex(@"((?<framenum>[0-9a-fA-F]+)\s+)*(?<module>\w+)(\.(dll|exe))*\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*", rgxOptions);
+            var rgxVAOnly = new Regex(@"^\s*0[xX](?<vaddress>[0-9a-fA-F]+)\s*$", rgxOptions);
+            var rgxAlreadySymbolizedFrame = new Regex(@"((?<framenum>\d+)\s+)*(?<module>\w+)(\.(dll|exe))*!(?<symbolizedfunc>.+?)\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*", rgxOptions);
+            var modulesToIgnore = new List<string>();
 
             for (int tmpStackIndex = 0; tmpStackIndex < tp.listOfCallStacks.Count; tmpStackIndex++) {
                 if (this.cancelRequested) {
@@ -548,14 +555,14 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 }
 
                 var currstack = tp.listOfCallStacks[tmpStackIndex];
-                var ordinalresolvedstack = this.dllMapHelper.LoadDllsIfApplicable(currstack.Callstack, tp.searchDLLRecursively, tp.dllPaths);
+                var ordinalResolvedFrames = this.dllMapHelper.LoadDllsIfApplicable(currstack.CallstackFrames, tp.searchDLLRecursively, tp.dllPaths);
                 // process any frames which are purely virtual address (in such cases, the caller should have specified base addresses)
-                var callStackLines = PreProcessVAs(ordinalresolvedstack.Split('\n'));
+                var callStackLines = PreProcessVAs(ordinalResolvedFrames, rgxVAOnly);
 
-                // locate the PDBs and populate their DIA session helper classes
-                if (DiaUtil.LocateandLoadPDBs(_diautils, tp.symPath, tp.searchPDBsRecursively, Preprocessors.EnumModuleNames(callStackLines), tp.cachePDB)) {
+                // locate PDBs for well-known modules, and populate their DIA session helper classes
+                if (DiaUtil.LocateandLoadPDBs(_diautils, tp.symPath, tp.searchPDBsRecursively, wellKnownModuleNames.ToList(), tp.cachePDB, modulesToIgnore)) {
                     // resolve symbols by using DIA
-                    currstack.Resolvedstack = ResolveSymbols(_diautils, callStackLines, tp.includeSourceInfo, tp.relookupSource, tp.includeOffsets, tp.showInlineFrames);
+                    currstack.Resolvedstack = ResolveSymbols(_diautils, callStackLines, tp.includeSourceInfo, tp.relookupSource, tp.includeOffsets, tp.showInlineFrames, rgxAlreadySymbolizedFrame, rgxModuleName, modulesToIgnore, tp);
                 }
                 else {
                     currstack.Resolvedstack = string.Empty;
@@ -576,6 +583,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             SafeNativeMethods.DestroyActivationContext();
         }
 
+        static readonly string[] wellKnownModuleNames = new string[] { "ntdll", "kernel32", "kernelbase", "ntoskrnl", "sqldk", "sqlmin", "sqllang", "sqltses", "sqlaccess", "qds", "hkruntime", "hkengine", "hkcompile", "sqlos", "sqlservr", "SqlServerSpatial", "SqlServerSpatial110", "SqlServerSpatial120", "SqlServerSpatial130", "SqlServerSpatial140", "SqlServerSpatial150" };
+
         /// This method generates a PowerShell script to automate download of matched PDBs from the public symbol server.
         public static List<Symbol> GetSymbolDetailsForBinaries(List<string> dllPaths, bool recurse, List<Symbol> existingSymbols = null) {
             if (dllPaths == null || dllPaths.Count == 0) {
@@ -583,8 +592,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             }
 
             var symbolsFound = new List<Symbol>();
-            var moduleNames = new string[] { "ntdll", "kernel32", "kernelbase", "ntoskrnl", "sqldk", "sqlmin", "sqllang", "sqltses", "sqlaccess", "qds", "hkruntime", "hkengine", "hkcompile", "sqlos", "sqlservr", "SqlServerSpatial*" };
-            foreach (var currentModule in moduleNames) {
+            foreach (var currentModule in wellKnownModuleNames) {
                 if (null != existingSymbols) {
                     var syms = existingSymbols.Where(s => string.Equals(s.PDBName, currentModule, StringComparison.InvariantCultureIgnoreCase));
                     if (syms.Any()) {
