@@ -559,15 +559,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 // process any frames which are purely virtual address (in such cases, the caller should have specified base addresses)
                 var callStackLines = PreProcessVAs(ordinalResolvedFrames, rgxVAOnly);
 
-                // locate PDBs for well-known modules, and populate their DIA session helper classes
-                if (DiaUtil.LocateandLoadPDBs(_diautils, tp.symPath, tp.searchPDBsRecursively, wellKnownModuleNames.ToList(), tp.cachePDB, modulesToIgnore)) {
-                    // resolve symbols by using DIA
-                    currstack.Resolvedstack = ResolveSymbols(_diautils, callStackLines, tp.includeSourceInfo, tp.relookupSource, tp.includeOffsets, tp.showInlineFrames, rgxAlreadySymbolizedFrame, rgxModuleName, modulesToIgnore, tp);
-                }
-                else {
-                    currstack.Resolvedstack = string.Empty;
-                    break;
-                }
+                // resolve symbols by using DIA
+                currstack.Resolvedstack = ResolveSymbols(_diautils, callStackLines, tp.includeSourceInfo, tp.relookupSource, tp.includeOffsets, tp.showInlineFrames, rgxAlreadySymbolizedFrame, rgxModuleName, modulesToIgnore, tp);
 
                 var localCounter = Interlocked.Increment(ref this.globalCounter);
                 this.PercentComplete = (int)((double)localCounter / tp.listOfCallStacks.Count * 100.0);

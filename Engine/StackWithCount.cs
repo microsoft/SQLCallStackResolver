@@ -8,7 +8,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         public StackWithCount(string callStack, bool framesOnSingleLine, int count) {
             this._framesOnSingleLine = framesOnSingleLine;
             if (framesOnSingleLine) {
-                this._callStack = System.Text.RegularExpressions.Regex.Replace(callStack, @" {2,}", " ");
+                this._callStack = System.Text.RegularExpressions.Regex.Replace(callStack, @"\s{2,}", " ");
             }
             else {
                 this._callStack = callStack;

@@ -21,13 +21,14 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             }
         }
 
-        /// Test the resolution of OrdinalNNN symbols to their actual names.
+        /// Test the resolution of OrdinalNNN symbols to their actual names. We throw in some frames containing non-relevant info for good measure.
         [Fact][Trait("Category", "Unit")]
         public void OrdinalBasedSymbol() {
             using (var csr = new StackResolver()) {
                 var dllPaths = new List<string>{@"..\..\..\Tests\TestCases\TestOrdinal"};
-                var ret = csr.ResolveCallstacks("sqldk!Ordinal298+00000000000004A5", @"..\..\..\Tests\TestCases\TestOrdinal", false, dllPaths, false, false, false, false, true, false, false, null);
-                Assert.Equal("sqldk!SOS_Scheduler::SwitchContext+941", ret.Trim());
+                var ret = csr.ResolveCallstacks(@"sqldk!Ordinal298+00000000000004A5
+00007FF818405E70      Module(sqldk+0000000000003505) (Ordinal298 + 00000000000004A5)", @"..\..\..\Tests\TestCases\TestOrdinal", false, dllPaths, false, false, false, false, true, false, false, null);
+                Assert.Equal("sqldk!SOS_Scheduler::SwitchContext+941\r\nsqldk!SOS_Scheduler::SwitchContext+941", ret.Trim());
             }
         }
 
@@ -49,22 +50,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 Assert.True(csr.ProcessBaseAddresses(moduleAddressesGood));
                 var ret = csr.ResolveCallstacks("0x000000010042249f", @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, true, false, false, null);
                 var expectedSymbol = "sqldk!Spinlock<244,2,1>::SpinToAcquireWithExponentialBackoff+349";
-                Assert.Equal(expectedSymbol, ret.Trim());
-            }
-        }
-
-        /// Test the resolution of a "regular" symbol with virtual address as input.
-        [Fact]
-        [Trait("Category", "Unit")]
-        public void RegularSymbolVirtualAddressMultipleFramesInSingleLine() {
-            using (var csr = new StackResolver()) {
-                var moduleAddressesGood = @"c:\mssql\binn\sqldk.dll 00000001`00400000";
-                Assert.True(csr.ProcessBaseAddresses(moduleAddressesGood));
-                var ret = csr.ResolveCallstacks("prologue   0x000000010042249f     0x0000000100440609   epilogue", @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, true, false, false, true, false, false, null);
-                var expectedSymbol = @"prologue
-sqldk!Spinlock<244,2,1>::SpinToAcquireWithExponentialBackoff+349
-sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644
-epilogue";
                 Assert.Equal(expectedSymbol, ret.Trim());
             }
         }
@@ -370,8 +355,8 @@ sqllang!process_commands_internal+735", symres, StringComparison.CurrentCulture)
                 csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\..\Tests\TestCases\ImportXEL\base_addresses.txt"));
                 Assert.Equal(31, csr.LoadedModules.Count);
                 var pdbPath = @"..\..\..\Tests\TestCases\sqlsyms\13.0.4001.0\x64";
-                var callStack = @"callstack	0x00007FFEABD0D919  0x00007FFEABC4D45D  0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  0x00007FFEAC1EE447  0x00007FFEAC1EE6F5  0x00007FFEAC1D48B0  0x00007FFEAC71475A  0x00007FFEA9A708F1  0x00007FFEA9991FB9  0x00007FFEA9993D21  0x00007FFEA99B59F1  0x00007FFEA99B5055  0x00007FFEA99B2B8F  0x00007FFEA9675AD1  0x00007FFEA9671EFB  0x00007FFEAA37D83D  0x00007FFEAA37D241  0x00007FFEAA379F98  0x00007FFEA96719CA  0x00007FFEA9672933  0x00007FFEA9672041  0x00007FFEA967A82B  0x00007FFEA9681542  ";
-                var symres = csr.ResolveCallstacks(callStack, pdbPath, false, null, false, true, true, false, true, false, false, null);
+                var callStack = @"callstack	          0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  0x00007FFEAC1EE447  0x00007FFEAC1EE6F5  0x00007FFEAC1D48B0  0x00007FFEAC71475A  0x00007FFEA9A708F1  0x00007FFEA9991FB9  0x00007FFEA9993D21  0x00007FFEA99B59F1  0x00007FFEA99B5055  0x00007FFEA99B2B8F  0x00007FFEA9675AD1  0x00007FFEA9671EFB  0x00007FFEAA37D83D  0x00007FFEAA37D241  0x00007FFEAA379F98  0x00007FFEA96719CA  0x00007FFEA9672933  0x00007FFEA9672041  0x00007FFEA967A82B  0x00007FFEA9681542  ";
+                var symres = csr.ResolveCallstacks(callStack, pdbPath, false, null, false, true, false, false, true, false, false, null);
                 Assert.Equal(@"callstack
 sqldk!XeSosPkg::spinlock_backoff::Publish+425
 sqldk!SpinlockBase::Sleep+182
