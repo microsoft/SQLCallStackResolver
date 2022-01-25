@@ -175,8 +175,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 }
                 Marshal.ReleaseComObject(enumInlinees);
             } catch (COMException) {
-                sbInline.AppendLine(" -- WARN: Unable to process inline frames");
+                sbInline.AppendLine(" -- WARN: Unable to process inline frames; maybe symbols are mismatched?");
+            } catch (System.ArgumentException) {
+                sbInline.AppendLine(" -- WARN: Unable to process inline frames; maybe symbols are mismatched?");
             }
+
             return sbInline.ToString();
         }
     }

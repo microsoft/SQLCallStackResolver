@@ -75,7 +75,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 xeventInput.AppendLine("</Events>");
                 var timer = new System.Diagnostics.Stopwatch();
                 timer.Start();
-                var ret = csr.ResolveCallstacks(xeventInput.ToString(), @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, true, false, false, Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
+                csr.ResolveCallstacks(xeventInput.ToString(), @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, true, false, false, Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
                 timer.Stop();
                 Assert.True(timer.Elapsed.TotalSeconds < 45 * 60);  // 45 minutes max on GitHub hosted DSv2 runner (2 vCPU, 7 GiB RAM).
             }
@@ -400,6 +400,26 @@ Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143	(minkernel\wdf\framework\share
                     ret.Trim());
             }
         }
+
+        /// "Fuzz" test for inline frame resolution by providing random offsets into the module. This test uses symbols for a Windows Driver Kit module, Wdf01000.sys, because private PDBs for that module are legitimately available on the
+        /// Microsoft public symbols servers. https://github.com/microsoft/Windows-Driver-Frameworks/releases if interested.
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void RandomInlineFrameResolution() {
+            using (var csr = new StackResolver()) {
+                var pdbPath = @"..\..\..\Tests\TestCases\SourceInformation";
+                var callstackInput = new System.Text.StringBuilder();
+                // generate frames with random offsets
+                var rng = new Random();
+                // generate 1000 frames, each frame having a random offset into Wdf01000
+                for (int frameNum = 0; frameNum < 1000; frameNum++) {
+                    callstackInput.AppendLine($"Wdf01000+{rng.Next(0, 1000000)}");
+                }
+                csr.ResolveCallstacks(callstackInput.ToString(), pdbPath, false, null, false, false, true, false, true, true, false, null);
+                // We do not need to check anything; the criteria for the test passing is that the call did not throw an unhandled exception
+            }
+        }
+
 
         /// Test for inline frame resolution without source lines included This test uses symbols for a Windows Driver Kit module, Wdf01000.sys,
         /// because private PDBs for that module are legitimately available on the Microsoft public symbols servers. https://github.com/microsoft/Windows-Driver-Frameworks/releases if interested.

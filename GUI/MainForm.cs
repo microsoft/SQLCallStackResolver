@@ -11,7 +11,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     using System.Net;
     using System.Globalization;
     using System.Configuration;
-    using System.ComponentModel;
     using System.Threading.Tasks;
     using System.Threading;
 
@@ -133,6 +132,14 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.MonitorBackgroundTask(backgroundTask);
 
             finalOutput.Text = backgroundTask.Result;
+
+            if (backgroundTask.Result.Contains("-- WARN:")) {
+                MessageBox.Show(this,
+                    "One or more potential issues exist in the output. This is sometimes due to mismatched symbols, so please double-check symbol paths and re-run if needed.",
+                    "Potential issues with the output",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
         }
 
         private void DisableCancelButton() {
