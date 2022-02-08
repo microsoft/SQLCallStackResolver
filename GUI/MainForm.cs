@@ -133,7 +133,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
             finalOutput.Text = backgroundTask.Result;
 
-            if (backgroundTask.Result.Contains("-- WARN:")) {
+            if (backgroundTask.Result.Contains("WARNING:")) {
                 MessageBox.Show(this,
                     "One or more potential issues exist in the output. This is sometimes due to mismatched symbols, so please double-check symbol paths and re-run if needed.",
                     "Potential issues with the output",
