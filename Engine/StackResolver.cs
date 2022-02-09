@@ -126,7 +126,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                                             Marshal.FinalReleaseComObject(enumAllLineNums.Item(tmpOrdinalInner));
                                         }
                                     }
-
+                                    Marshal.FinalReleaseComObject(enumAllLineNums);
                                     Marshal.ReleaseComObject(tmpSym);
                                 }
                                 Marshal.ReleaseComObject(matchedSyms);
@@ -240,6 +240,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 if (includeSourceInfo) {
                     _diautils[moduleName]._IDiaSession.findLinesByRVA(rva, 0, out IDiaEnumLineNumbers enumLineNums);
                     sourceInfo = DiaUtil.GetSourceInfo(enumLineNums, pdbHasSourceInfo);
+                    Marshal.FinalReleaseComObject(enumLineNums);
                 }
                 if (showInlineFrames && pdbHasSourceInfo && !sourceInfo.Contains("-- WARNING:")) {
                     inlineFrameAndSourceInfo = DiaUtil.ProcessInlineFrames(moduleName, useUndecorateLogic, includeOffset, includeSourceInfo, rva, mysym, pdbHasSourceInfo);

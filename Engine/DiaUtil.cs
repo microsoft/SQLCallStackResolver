@@ -34,6 +34,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                 Marshal.ReleaseComObject(enumLineNums);
             }
+            Marshal.ReleaseComObject(matchedSyms);
         }
 
         public void Dispose() {
@@ -142,6 +143,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         enumLineNums.Item(tmpOrdinal).sourceFile.fileName,
                         enumLineNums.Item(tmpOrdinal).lineNumber));
 
+                    Marshal.FinalReleaseComObject(enumLineNums.Item(tmpOrdinal).sourceFile);
                     Marshal.FinalReleaseComObject(enumLineNums.Item(tmpOrdinal));
                 }
             }
@@ -168,6 +170,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         inlineFrame.findInlineeLinesByRVA(inlineRVA, 0, out IDiaEnumLineNumbers enumLineNums);
                         sbInline.Append("\t");
                         sbInline.Append(DiaUtil.GetSourceInfo(enumLineNums, pdbHasSourceInfo));
+                        Marshal.FinalReleaseComObject(enumLineNums);
                     }
                     inlineeIndex++;
                     Marshal.ReleaseComObject(inlineFrame);
