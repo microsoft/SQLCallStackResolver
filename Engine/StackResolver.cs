@@ -94,39 +94,38 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                             DiaUtil.LocateandLoadPDBs(_diautils, tp.symPath, tp.searchPDBsRecursively, new List<string>() { matchedModuleName }, tp.cachePDB, modulesToIgnore);
                         }
 
-                        if (_diautils.ContainsKey(matchedModuleName)) {
+                        if (_diautils.ContainsKey(matchedModuleName) && _diautils[matchedModuleName].HasSourceInfo) {
                             var myDIAsession = _diautils[matchedModuleName]._IDiaSession;
                             myDIAsession.findChildrenEx(myDIAsession.globalScope, SymTagEnum.SymTagNull, matchAlreadySymbolized.Groups["symbolizedfunc"].Value, 0, out IDiaEnumSymbols matchedSyms);
 
+                            var foundMatch = false;
                             if (matchedSyms.count > 0) {
                                 for (uint tmpOrdinal = 0; tmpOrdinal < matchedSyms.count; tmpOrdinal++) {
                                     IDiaSymbol tmpSym = matchedSyms.Item(tmpOrdinal);
-                                    var rva = tmpSym.relativeVirtualAddress;
-
                                     string offsetString = matchAlreadySymbolized.Groups["offset"].Value;
                                     int numberBase = offsetString.ToUpperInvariant().StartsWith("0X", StringComparison.CurrentCulture) ? 16 : 10;
-                                    uint offset = Convert.ToUInt32(offsetString, numberBase);
-                                    rva += offset;
-                                    myDIAsession.findLinesByRVA(rva, 0, out IDiaEnumLineNumbers enumLineNums);
-                                    string tmpsourceInfo = DiaUtil.GetSourceInfo(enumLineNums,
-                                        _diautils[matchedModuleName].HasSourceInfo);
+                                    var currAddress = (uint)(tmpSym.addressOffset + Convert.ToUInt32(offsetString, numberBase));
 
-                                    if (tmpOrdinal > 0) {
-                                        finalCallstack.Append(" OR ");
+                                    string tmpsourceInfo = String.Empty;
+                                    myDIAsession.findLinesByRVA(tmpSym.relativeVirtualAddress, (uint)tmpSym.length, out IDiaEnumLineNumbers enumAllLineNums);
+                                    if (enumAllLineNums.count > 0) {
+                                        for (uint tmpOrdinalInner = 0; tmpOrdinalInner < enumAllLineNums.count; tmpOrdinalInner++) {
+                                            // below, we search for a line of code whose address range covers the current address of interest, and if matched, we re-write the current line in the module+RVA format
+                                            if (enumAllLineNums.Item(tmpOrdinalInner).addressOffset <= currAddress
+                                                && currAddress < enumAllLineNums.Item(tmpOrdinalInner).addressOffset + enumAllLineNums.Item(tmpOrdinalInner).length) {
+                                                currentFrame = $"{matchedModuleName}+{currAddress - enumAllLineNums.Item(tmpOrdinalInner).addressOffset + enumAllLineNums.Item(tmpOrdinalInner).relativeVirtualAddress:X}" 
+                                                    + (foundMatch ? " -- WARNING: ambiguous symbol; relookup might be incorrect -- " : String.Empty);
+                                                foundMatch = true;
+                                            }
+                                            Marshal.FinalReleaseComObject(enumAllLineNums.Item(tmpOrdinalInner));
+                                        }
                                     }
 
-                                    finalCallstack.AppendFormat(CultureInfo.CurrentCulture, "{0}!{1}{2}\t{3}", matchedModuleName,
-                                        matchAlreadySymbolized.Groups["symbolizedfunc"].Value, includeOffsets ? "+" + offsetString : string.Empty, tmpsourceInfo);
                                     Marshal.ReleaseComObject(tmpSym);
                                 }
                                 Marshal.ReleaseComObject(matchedSyms);
                             }
-                        } else {
-                            // in the rare case that the symbol does not exist, return frame as-is
-                            finalCallstack.Append(currentFrame);
                         }
-                        finalCallstack.AppendLine();
-                        continue;
                     }
                 }
 
@@ -229,19 +228,19 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     return null;
                 }
 
-                // try to find if we have source and line number info and include it based on the param
-                string sourceInfo = string.Empty;
+                string sourceInfo = string.Empty;   // try to find if we have source and line number info and include it based on the param
+                string inlineFrameAndSourceInfo = string.Empty; // Process inline functions, but only if private PDBs are in use
                 var pdbHasSourceInfo = _diautils[moduleName].HasSourceInfo;
                 if (includeSourceInfo) {
                     _diautils[moduleName]._IDiaSession.findLinesByRVA(rva, 0, out IDiaEnumLineNumbers enumLineNums);
                     sourceInfo = DiaUtil.GetSourceInfo(enumLineNums, pdbHasSourceInfo);
                 }
-                // Process inline functions, but only if private PDBs are in use
-                string inlineFrameAndSourceInfo = string.Empty;
-                if (showInlineFrames && pdbHasSourceInfo) {
+                if (showInlineFrames && pdbHasSourceInfo && !sourceInfo.Contains("-- WARNING:")) {
                     inlineFrameAndSourceInfo = DiaUtil.ProcessInlineFrames(moduleName, useUndecorateLogic, includeOffset, includeSourceInfo, rva, mysym, pdbHasSourceInfo);
                 }
+
                 var symbolizedFrame = DiaUtil.GetSymbolizedFrame(moduleName, mysym, useUndecorateLogic, includeOffset, displacement, false);
+
                 // make sure we cleanup COM allocations for the resolved sym
                 Marshal.FinalReleaseComObject(mysym);
                 result = (inlineFrameAndSourceInfo + symbolizedFrame + "\t" + sourceInfo).Trim();

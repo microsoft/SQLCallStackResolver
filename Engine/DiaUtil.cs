@@ -134,7 +134,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             if (enumLineNums.count > 0) {
                 for (uint tmpOrdinal = 0; tmpOrdinal < enumLineNums.count; tmpOrdinal++) {
                     if (tmpOrdinal > 0) {
-                        sbOutput.Append(" -- WARN: multiple matches -- ");
+                        sbOutput.Append(" -- WARNING: multiple matches -- ");
                     }
 
                     sbOutput.Append(string.Format(CultureInfo.CurrentCulture,
@@ -147,7 +147,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             }
             else {
                 if (pdbHasSourceInfo) {
-                    sbOutput.Append("-- WARN: unable to find source info --");
+                    sbOutput.Append("-- WARNING: unable to find source info --");
                 }
             }
             Marshal.FinalReleaseComObject(enumLineNums);
@@ -175,9 +175,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 }
                 Marshal.ReleaseComObject(enumInlinees);
             } catch (COMException) {
-                sbInline.AppendLine(" -- WARN: Unable to process inline frames; maybe symbols are mismatched?");
+                sbInline.AppendLine(" -- WARNING: Unable to process inline frames; maybe symbols are mismatched?");
             } catch (System.ArgumentException) {
-                sbInline.AppendLine(" -- WARN: Unable to process inline frames; maybe symbols are mismatched?");
+                sbInline.AppendLine(" -- WARNING: Unable to process inline frames; maybe symbols are mismatched?");
             }
 
             return sbInline.ToString();
