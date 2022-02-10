@@ -594,6 +594,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 foreach (var diautil in _diautils.Values) {
                     diautil.Dispose();
                 }
+
+                _diautils.Clear();
             }
 
             SafeNativeMethods.DestroyActivationContext();
