@@ -25,16 +25,16 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this._IDiaSession.findChildrenEx(this._IDiaSession.globalScope, SymTagEnum.SymTagFunction, null, 0, out IDiaEnumSymbols matchedSyms);
             foreach (IDiaSymbol sym in matchedSyms) {
                 this._IDiaSession.findLinesByRVA(sym.relativeVirtualAddress, (uint)sym.length, out IDiaEnumLineNumbers enumLineNums);
-                Marshal.ReleaseComObject(sym);
+                Marshal.FinalReleaseComObject(sym);
                 if (enumLineNums.count > 0) {
                     // this PDB has at least 1 function with source info, so end the search
                     HasSourceInfo = true;
                     break;
                 }
 
-                Marshal.ReleaseComObject(enumLineNums);
+                Marshal.FinalReleaseComObject(enumLineNums);
             }
-            Marshal.ReleaseComObject(matchedSyms);
+            Marshal.FinalReleaseComObject(matchedSyms);
         }
 
         public void Dispose() {
@@ -173,10 +173,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         Marshal.FinalReleaseComObject(enumLineNums);
                     }
                     inlineeIndex++;
-                    Marshal.ReleaseComObject(inlineFrame);
+                    Marshal.FinalReleaseComObject(inlineFrame);
                     sbInline.AppendLine();
                 }
-                Marshal.ReleaseComObject(enumInlinees);
+                Marshal.FinalReleaseComObject(enumInlinees);
             } catch (COMException) {
                 sbInline.AppendLine(" -- WARNING: Unable to process inline frames; maybe symbols are mismatched?");
             } catch (System.ArgumentException) {

@@ -127,9 +127,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                                         }
                                     }
                                     Marshal.FinalReleaseComObject(enumAllLineNums);
-                                    Marshal.ReleaseComObject(tmpSym);
+                                    Marshal.FinalReleaseComObject(tmpSym);
                                 }
-                                Marshal.ReleaseComObject(matchedSyms);
+                                Marshal.FinalReleaseComObject(matchedSyms);
                             }
                         }
                     }
@@ -539,14 +539,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 }
             }
 
-            // Unfortunately the below is necessary to ensure that the handles to the cached PDB files opened by DIA 
-            // and later deleted at the next invocation of this function, are released deterministically
-            // This is despite we correctly releasing those interface pointers using Marshal.FinalReleaseComObject
-            // Thankfully we only need to resort to this if the caller wants to cache PDBs in the temp folder
-            if (cachePDB) {
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-            }
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
 
             this.StatusMessage = "Finished!";
             if (string.IsNullOrEmpty(outputFilePath)) {
