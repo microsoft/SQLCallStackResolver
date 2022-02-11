@@ -48,7 +48,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 return;
             }
 
-            bool isSingleLineInput = callStackInput.Text.Length == callStackInput.Text.Replace(Environment.NewLine, string.Empty).Length ? true : false;
+            bool isSingleLineInput = this._resolver.IsInputSingleLine(callStackInput.Text);
 
             if (isSingleLineInput && !FramesOnSingleLine.Checked) {
                 if (DialogResult.Yes == MessageBox.Show(this,

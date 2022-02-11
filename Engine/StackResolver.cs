@@ -73,6 +73,12 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             return retval;
         }
 
+        public bool IsInputSingleLine(string text) {
+            if (!Regex.IsMatch(text, "Histogram") && !text.Replace("\r", string.Empty).Trim().Contains('\n')) return true;
+            if (Regex.IsMatch(text, @"\<Slot.+\<\/Slot\>") && !Regex.IsMatch(text, @"\<frame")) return true;
+            return false;
+        }
+
         /// Runs through each of the frames in a call stack and looks up symbols for each
         private string ResolveSymbols(Dictionary<string, DiaUtil> _diautils, string[] callStackLines, bool includeSourceInfo, bool relookupSource, bool includeOffsets, bool showInlineFrames, Regex rgxAlreadySymbolizedFrame, Regex rgxModuleName, List<string> modulesToIgnore, ThreadParams tp) {
             var finalCallstack = new StringBuilder();
@@ -336,6 +342,14 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 Directory.CreateDirectory(symCacheFolder);
             }
 
+            var numHistogramTargets = Regex.Matches(inputCallstackText, @"\<\/HistogramTarget\>").Count;
+            if (numHistogramTargets > 0) {
+                inputCallstackText = Regex.Replace(inputCallstackText, @"(?<prefix>.*?)(?<starttag>\<HistogramTarget\s+)(?<trailing>.+?\<\/HistogramTarget\>)",
+                    (Match m) => { return $"{m.Groups["starttag"].Value} annotation=\"{System.Net.WebUtility.HtmlEncode(m.Groups["prefix"].Value.Replace("\r", string.Empty).Replace("\n", string.Empty).Trim())}\" {m.Groups["trailing"].Value}"; }
+                    , RegexOptions.Singleline);
+                inputCallstackText = $"<Histograms>{inputCallstackText}</Histograms>";
+            }
+
             var finalCallstack = new StringBuilder();
             var xmldoc = new XmlDocument() { XmlResolver = null };
             bool isXMLdoc = false;
@@ -364,7 +378,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                 // since the input was XML containing multiple stacks, construct the list of stacks to process
                 int stacknum = 0;
-                var allstacknodes = xmldoc.SelectNodes("/HistogramTarget/Slot");
+                var allstacknodes = xmldoc.SelectNodes("/Histograms/HistogramTarget/Slot");
 
                 // handle the case wherein we are dealing with a ring buffer output with individual events and not a histogram
                 if (0 == allstacknodes.Count) {
@@ -383,8 +397,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                             // proceed to extract the surrounding XML markup
                             callstackTextNode.ParentNode.RemoveChild(callstackTextNode);
                             var eventXMLMarkup = currstack.OuterXml.Replace("\r", string.Empty).Replace("\n", string.Empty);
-                            var candidatestack = string.Format(CultureInfo.CurrentCulture, "Event details: {0}:{2}{2}{1}", eventXMLMarkup, callstackText, Environment.NewLine);
-                            listOfCallStacks.Add(new StackWithCount(candidatestack, framesOnSingleLine, 1));
+                            listOfCallStacks.Add(new StackWithCount(callstackText, framesOnSingleLine, 1, $"Event details: {eventXMLMarkup}:{callstackText}"));
                             stacknum++;
                             this.PercentComplete = (int)((double)stacknum / allstacknodes.Count * 100.0);
                         }
@@ -396,15 +409,23 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 else {
                     this.StatusMessage = "Preprocessing XEvent histogram slots...";
 
+                    // special case to move any trailing text to the annotation for the last callstack
+                    var trailingText = xmldoc.SelectSingleNode("/Histograms[1]/text()")?.Value?.Trim();
+                    if (!string.IsNullOrWhiteSpace(trailingText)) {
+                        if (xmldoc.SelectSingleNode("/Histograms[1]/HistogramTarget[last()]").Attributes["annotation"] is null) xmldoc.SelectSingleNode("/Histograms[1]/HistogramTarget[last()]").Attributes.SetNamedItem(xmldoc.CreateNode(XmlNodeType.Attribute, "annotation", null));
+                        xmldoc.SelectSingleNode("/Histograms[1]/HistogramTarget[last()]").Attributes["annotation"].Value += trailingText;
+                    }
+
                     // process histograms
                     foreach (XmlNode currstack in allstacknodes) {
                         if (this.cancelRequested) {
                             return "Operation cancelled.";
                         }
 
+                        var annotation = currstack.ParentNode.Attributes["annotation"]?.Value;
+                        if (!string.IsNullOrWhiteSpace(annotation)) { annotation = annotation.Trim() + Environment.NewLine; }
                         var slotcount = int.Parse(currstack.Attributes["count"].Value, CultureInfo.CurrentCulture);
-                        var candidatestack = string.Format(CultureInfo.CurrentCulture, "Slot_{0}\t[count:{1}]:{3}{3}{2}", stacknum, slotcount, currstack.SelectSingleNode("./value[1]").InnerText, Environment.NewLine);
-                        listOfCallStacks.Add(new StackWithCount(candidatestack, framesOnSingleLine, slotcount));
+                        listOfCallStacks.Add(new StackWithCount(currstack.SelectSingleNode("./value[1]").InnerText, framesOnSingleLine, slotcount, $"{annotation}Slot_{stacknum}\t[count:{slotcount}]:"));
                         stacknum++;
                         this.PercentComplete = (int)((double)stacknum / allstacknodes.Count * 100.0);
                     }
