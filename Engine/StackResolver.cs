@@ -344,7 +344,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
             var numHistogramTargets = Regex.Matches(inputCallstackText, @"\<\/HistogramTarget\>").Count;
             if (numHistogramTargets > 0) {
-                inputCallstackText = Regex.Replace(inputCallstackText, @"(?<prefix>.*?)(?<starttag>\<HistogramTarget\s+)(?<trailing>.+?\<\/HistogramTarget\>)",
+                inputCallstackText = Regex.Replace(inputCallstackText, @"(?<prefix>.*?)(?<starttag>\<HistogramTarget)(?<trailing>.+?\<\/HistogramTarget\>)",
                     (Match m) => { return $"{m.Groups["starttag"].Value} annotation=\"{System.Net.WebUtility.HtmlEncode(m.Groups["prefix"].Value.Replace("\r", string.Empty).Replace("\n", string.Empty).Trim())}\" {m.Groups["trailing"].Value}"; }
                     , RegexOptions.Singleline);
                 inputCallstackText = $"<Histograms>{inputCallstackText}</Histograms>";
