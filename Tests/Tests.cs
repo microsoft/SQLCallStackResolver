@@ -782,6 +782,38 @@ sqlmin!MDL::LockGenericIdsLocal+101";
             }
         }
 
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void E2EHistogramAddressesFuzz() {
+            using (var csr = new StackResolver()) {
+                csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\..\Tests\TestCases\ImportXEL\base_addresses.txt"));
+                Assert.Equal(31, csr.LoadedModules.Count);
+                var pdbPath = @"..\..\..\Tests\TestCases\sqlsyms\13.0.4001.0\x64";
+                var input = "<HistogramTargetWrongTag truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value>0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  </value></Slot></HistogramTargetWrongTag>";
+                var ret = csr.ResolveCallstacks(input, pdbPath, false, null, false, true, false, false, true, false, false, null);
+                var expected = @"<HistogramTargetWrongTag
+truncated=""0""
+buckets=""256""><Slot
+count=""5""><value>0x00007FFEABD0D919
+sqldk!SpinlockBase::Sleep+182
+sqlmin!Spinlock<143,7,1>::SpinToAcquireWithExponentialBackoff+363
+sqlmin!lck_lockInternal+2042
+</value></Slot></HistogramTargetWrongTag>";
+                Assert.Equal(expected.Trim(), ret.Trim()); // we just expect the input text back as-is
+                input = "<HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value>0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  </value></Slot></HistogramTargetWrongTag>";
+                ret = csr.ResolveCallstacks(input, pdbPath, false, null, false, true, false, false, true, false, false, null);
+                expected = @"<HistogramTarget
+truncated=""0""
+buckets=""256""><Slot
+count=""5""><value>0x00007FFEABD0D919
+sqldk!SpinlockBase::Sleep+182
+sqlmin!Spinlock<143,7,1>::SpinToAcquireWithExponentialBackoff+363
+sqlmin!lck_lockInternal+2042
+</value></Slot></HistogramTargetWrongTag>";
+                Assert.Equal(expected.Trim(), ret.Trim()); // we just expect the input text back as-is
+            }
+        }
+
         /// End-to-end test with stacks being resolved based on symbols from symsrv.
         [Fact][Trait("Category", "Unit")]
         public void E2ESymSrvXMLFramesMixedLineEndings() {
