@@ -11,6 +11,24 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
     /// Class implementing xUnit tests.
     public class Tests {
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void SingleLineDetection() {
+            using (var csr = new StackResolver()) {
+                Assert.True(csr.IsInputSingleLine(@"callstack	          0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  0x00007FFEAC1EE447  0x00007FFEAC1EE6F5  0x00007FFEAC1D48B0  0x00007FFEAC71475A  0x00007FFEA9A708F1  0x00007FFEA9991FB9  0x00007FFEA9993D21  0x00007FFEA99B59F1  0x00007FFEA99B5055  0x00007FFEA99B2B8F  0x00007FFEA9675AD1  0x00007FFEA9671EFB  0x00007FFEAA37D83D  0x00007FFEAA37D241  0x00007FFEAA379F98  0x00007FFEA96719CA  0x00007FFEA9672933  0x00007FFEA9672041  0x00007FFEA967A82B  0x00007FFEA9681542  "));
+                Assert.True(csr.IsInputSingleLine(@"\r\ncallstack	          0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  0x00007FFEAC1EE447  0x00007FFEAC1EE6F5  0x00007FFEAC1D48B0  0x00007FFEAC71475A  0x00007FFEA9A708F1  0x00007FFEA9991FB9  0x00007FFEA9993D21  0x00007FFEA99B59F1  0x00007FFEA99B5055  0x00007FFEA99B2B8F  0x00007FFEA9675AD1  0x00007FFEA9671EFB  0x00007FFEAA37D83D  0x00007FFEAA37D241  0x00007FFEAA379F98  0x00007FFEA96719CA  0x00007FFEA9672933  0x00007FFEA9672041  0x00007FFEA967A82B  0x00007FFEA9681542    \r\n\r\n"));
+                Assert.True(csr.IsInputSingleLine("<HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value>0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  0x00007FFEAC1EE447  0x00007FFEAC1EE6F5  0x00007FFEAC1D48B0  0x00007FFEAC71475A  0x00007FFEA9A708F1  0x00007FFEA9991FB9  0x00007FFEA9993D21  0x00007FFEA99B59F1  0x00007FFEA99B5055  0x00007FFEA99B2B8F  0x00007FFEA9675AD1  0x00007FFEA9671EFB  0x00007FFEAA37D83D  0x00007FFEAA37D241  0x00007FFEAA379F98  0x00007FFEA96719CA  0x00007FFEA9672933  0x00007FFEA9672041  0x00007FFEA967A82B  0x00007FFEA9681542</value></Slot></HistogramTarget>"));
+                Assert.True(csr.IsInputSingleLine("annotation for histogram #1 0 <HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value>0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  0x00007FFEAC1EE447  0x00007FFEAC1EE6F5  0x00007FFEAC1D48B0  0x00007FFEAC71475A  0x00007FFEA9A708F1  0x00007FFEA9991FB9  0x00007FFEA9993D21  0x00007FFEA99B59F1  0x00007FFEA99B5055  0x00007FFEA99B2B8F  0x00007FFEA9675AD1  0x00007FFEA9671EFB  0x00007FFEAA37D83D  0x00007FFEAA37D241  0x00007FFEAA379F98  0x00007FFEA96719CA  0x00007FFEA9672933  0x00007FFEA9672041  0x00007FFEA967A82B  0x00007FFEA9681542</value></Slot></HistogramTarget>\r\n" +
+                    "annotation for histogram #2 1 <HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value>0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  0x00007FFEAC1EE447  0x00007FFEAC1EE6F5  0x00007FFEAC1D48B0  0x00007FFEAC71475A  0x00007FFEA9A708F1  0x00007FFEA9991FB9  0x00007FFEA9993D21  0x00007FFEA99B59F1  0x00007FFEA99B5055  0x00007FFEA99B2B8F  0x00007FFEA9675AD1  0x00007FFEA9671EFB  0x00007FFEAA37D83D  0x00007FFEAA37D241  0x00007FFEAA379F98  0x00007FFEA96719CA  0x00007FFEA9672933  0x00007FFEA9672041  0x00007FFEA967A82B  0x00007FFEA9681542</value></Slot></HistogramTarget>\r\n"));
+                Assert.False(csr.IsInputSingleLine("<HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value><![CDATA[<frame id=\"00\" pdb=\"ntdll.pdb\" age=\"1\" guid=\"C374E059-5793-9B92-6525-386A66A2D3F5\" module=\"ntdll.dll\" rva=\"0x9F7E4\" />" +
+"<frame id=\"01\" pdb=\"kernelbase.pdb\" age=\"1\" guid=\"E77E26E7-D1C4-72BB-2C05-DD17624A9E58\" module=\"KERNELBASE.dll\" rva=\"0x38973\" />" +
+"<frame id=\"02\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x40609\" />" +
+"]]></value></Slot><Slot count=\"3\"><value><![CDATA[<frame id=\"00\" pdb=\"vcruntime140.amd64.pdb\" age=\"1\" guid=\"AF138C3F-2933-4097-8883-C1071B13375E\" module=\"VCRUNTIME140.dll\" rva=\"0xB8F0\" />" +
+"<frame id=\"01\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x2249f\" />" +
+"]]></value></Slot></HistogramTarget>"));
+            }
+        }
+
         /// Validate that "block symbols" in a PDB are resolved correctly.
         [Fact][Trait("Category", "Unit")]
         public void BlockResolution() {
@@ -645,6 +663,121 @@ Slot_1	[count:3]:
 
 00 VCRUNTIME140!__C_specific_handler+160	(d:\agent\_work\2\s\src\vctools\crt\vcruntime\src\eh\riscchandler.cpp:290)
 01 sqldk!Spinlock<244,2,1>::SpinToAcquireWithExponentialBackoff+349";
+                Assert.Equal(expected.Trim(), ret.Trim());
+            }
+        }
+
+        /// End-to-end test with XE histogram target and module+offset frames.
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void E2EHistogramAddresses() {
+            using (var csr = new StackResolver()) {
+                csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\..\Tests\TestCases\ImportXEL\base_addresses.txt"));
+                Assert.Equal(31, csr.LoadedModules.Count);
+                var pdbPath = @"..\..\..\Tests\TestCases\sqlsyms\13.0.4001.0\x64";
+                var input = "<HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value>0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  </value></Slot></HistogramTarget>";
+
+                var ret = csr.ResolveCallstacks(input, pdbPath, false, null, false, true, false, false, true, false, false, null);
+                var expected = @"Slot_0	[count:5]:
+
+sqldk!XeSosPkg::spinlock_backoff::Publish+425
+sqldk!SpinlockBase::Sleep+182
+sqlmin!Spinlock<143,7,1>::SpinToAcquireWithExponentialBackoff+363
+sqlmin!lck_lockInternal+2042";
+                Assert.Equal(expected.Trim(), ret.Trim());
+            }
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void E2ESymSrvXMLFramesMultiHistogram() {
+            using (var csr = new StackResolver()) {
+                var pdbPath = @"srv*https://msdl.microsoft.com/download/symbols";
+                var input = "Annotation for histogram \r\n#1\r\n<HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value><![CDATA[<frame id=\"00\" pdb=\"ntdll.pdb\" age=\"1\" guid=\"C374E059-5793-9B92-6525-386A66A2D3F5\" module=\"ntdll.dll\" rva=\"0x9F7E4\" />" +
+"<frame id=\"01\" pdb=\"kernelbase.pdb\" age=\"1\" guid=\"E77E26E7-D1C4-72BB-2C05-DD17624A9E58\" module=\"KERNELBASE.dll\" rva=\"0x38973\" />" +
+"<frame id=\"02\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x40609\" />" +
+"]]></value></Slot></HistogramTarget>\r\n" +
+"Annotation for histogram \r\n#2\r\n<HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value><![CDATA[<frame id=\"00\" pdb=\"ntdll.pdb\" age=\"1\" guid=\"C374E059-5793-9B92-6525-386A66A2D3F5\" module=\"ntdll.dll\" rva=\"0x9F7E4\" />" +
+"<frame id=\"01\" pdb=\"kernelbase.pdb\" age=\"1\" guid=\"E77E26E7-D1C4-72BB-2C05-DD17624A9E58\" module=\"KERNELBASE.dll\" rva=\"0x38973\" />" +
+"<frame id=\"02\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x40609\" />" +
+"]]></value></Slot><Slot count=\"3\"><value><![CDATA[<frame id=\"00\" pdb=\"vcruntime140.amd64.pdb\" age=\"1\" guid=\"AF138C3F-2933-4097-8883-C1071B13375E\" module=\"VCRUNTIME140.dll\" rva=\"0xB8F0\" />" +
+"<frame id=\"01\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x2249f\" />" +
+"]]></value></Slot></HistogramTarget>";
+
+                var ret = csr.ResolveCallstacks(input, pdbPath, false, null, false, false, true, false, true, false, false, null);
+                var expected = @"Annotation for histogram #1
+Slot_0	[count:5]:
+
+00 ntdll!NtWaitForSingleObject+20
+01 KERNELBASE!WaitForSingleObjectEx+147
+02 sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644
+
+Annotation for histogram #2
+Slot_1	[count:5]:
+
+00 ntdll!NtWaitForSingleObject+20
+01 KERNELBASE!WaitForSingleObjectEx+147
+02 sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644
+
+Annotation for histogram #2
+Slot_2	[count:3]:
+
+00 VCRUNTIME140!__C_specific_handler+160	(d:\agent\_work\2\s\src\vctools\crt\vcruntime\src\eh\riscchandler.cpp:290)
+01 sqldk!Spinlock<244,2,1>::SpinToAcquireWithExponentialBackoff+349";
+                Assert.Equal(expected.Trim(), ret.Trim());
+            }
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void E2ESymSrvXMLFramesMultiHistogramAddressesSingleLine() {
+            using (var csr = new StackResolver()) {
+                csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\..\Tests\TestCases\ImportXEL\base_addresses.txt"));
+                Assert.Equal(31, csr.LoadedModules.Count);
+                var pdbPath = @"..\..\..\Tests\TestCases\sqlsyms\13.0.4001.0\x64";
+                var input = "Annotation for histogram #1    <HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value>0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF</value></Slot></HistogramTarget>" +
+                    "Annotation for histogram #2    <HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value>0x00007FFEAC0F80CF  0x00007FFEAC1EE447  0x00007FFEAC1EE6F5</value></Slot></HistogramTarget>";
+
+                var ret = csr.ResolveCallstacks(input, pdbPath, false, null, false, true, false, false, true, false, false, null);
+                var expected = @"Annotation for histogram #1
+Slot_0	[count:5]:
+
+sqldk!XeSosPkg::spinlock_backoff::Publish+425
+sqldk!SpinlockBase::Sleep+182
+sqlmin!Spinlock<143,7,1>::SpinToAcquireWithExponentialBackoff+363
+sqlmin!lck_lockInternal+2042
+Annotation for histogram #2
+Slot_1	[count:5]:
+
+sqlmin!lck_lockInternal+2042
+sqlmin!MDL::LockGenericLocal+382
+sqlmin!MDL::LockGenericIdsLocal+101";
+                Assert.Equal(expected.Trim(), ret.Trim());
+            }
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void E2ESymSrvXMLFramesMultiHistogramAddressesSingleLineTrailingText() {
+            using (var csr = new StackResolver()) {
+                csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\..\Tests\TestCases\ImportXEL\base_addresses.txt"));
+                Assert.Equal(31, csr.LoadedModules.Count);
+                var pdbPath = @"..\..\..\Tests\TestCases\sqlsyms\13.0.4001.0\x64";
+                var input = "Annotation for histogram #1    <HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value>0x00007FFEABD0D919        0x00007FFEABC4D45D      </value></Slot></HistogramTarget> trailing text 1" +
+                    "Annotation for histogram #2    <HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value>0x00007FFEAC1EE447  0x00007FFEAC1EE6F5</value></Slot></HistogramTarget>     trailing text 2";
+
+                var ret = csr.ResolveCallstacks(input, pdbPath, false, null, false, true, false, false, true, false, false, null);
+                var expected = @"Annotation for histogram #1
+Slot_0	[count:5]:
+
+sqldk!XeSosPkg::spinlock_backoff::Publish+425
+sqldk!SpinlockBase::Sleep+182
+
+trailing text 1Annotation for histogram #2trailing text 2
+Slot_1	[count:5]:
+
+sqlmin!MDL::LockGenericLocal+382
+sqlmin!MDL::LockGenericIdsLocal+101";
                 Assert.Equal(expected.Trim(), ret.Trim());
             }
         }

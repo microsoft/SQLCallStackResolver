@@ -1,11 +1,17 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
+using System.Text;
+
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     /// helper class for cases where we have XML output
     public class StackWithCount {
+        private string _annotation;
         private string _callStack;
         private bool _framesOnSingleLine;
-        public StackWithCount(string callStack, bool framesOnSingleLine, int count) {
+        private string _resolvedStack;
+
+        public StackWithCount(string callStack, bool framesOnSingleLine, int count, string annotation = null) {
+            this._annotation = annotation;
             this._framesOnSingleLine = framesOnSingleLine;
             if (framesOnSingleLine) {
                 this._callStack = System.Text.RegularExpressions.Regex.Replace(callStack, @"\s{2,}", " ");
@@ -33,6 +39,17 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 return this._callStack.Replace("\r", string.Empty).Split(delims);
             }
         }
-        public string Resolvedstack;
+        public string Resolvedstack {
+            get {
+                var sbOut = new StringBuilder();
+                if (!string.IsNullOrEmpty(this._annotation)) {
+                    sbOut.AppendLine(this._annotation);
+                    sbOut.AppendLine();
+                }
+                sbOut.Append(this._resolvedStack);
+                return sbOut.ToString();
+            }
+            set { this._resolvedStack = value; }
+        }
     }
 }
