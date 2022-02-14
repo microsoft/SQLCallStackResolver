@@ -126,10 +126,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                                             Marshal.FinalReleaseComObject(enumAllLineNums.Item(tmpOrdinalInner));
                                         }
                                     }
-
-                                    Marshal.ReleaseComObject(tmpSym);
+                                    Marshal.FinalReleaseComObject(enumAllLineNums);
+                                    Marshal.FinalReleaseComObject(tmpSym);
                                 }
-                                Marshal.ReleaseComObject(matchedSyms);
+                                Marshal.FinalReleaseComObject(matchedSyms);
                             }
                         }
                     }
@@ -240,6 +240,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 if (includeSourceInfo) {
                     _diautils[moduleName]._IDiaSession.findLinesByRVA(rva, 0, out IDiaEnumLineNumbers enumLineNums);
                     sourceInfo = DiaUtil.GetSourceInfo(enumLineNums, pdbHasSourceInfo);
+                    Marshal.FinalReleaseComObject(enumLineNums);
                 }
                 if (showInlineFrames && pdbHasSourceInfo && !sourceInfo.Contains("-- WARNING:")) {
                     inlineFrameAndSourceInfo = DiaUtil.ProcessInlineFrames(moduleName, useUndecorateLogic, includeOffset, includeSourceInfo, rva, mysym, pdbHasSourceInfo);
@@ -538,14 +539,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 }
             }
 
-            // Unfortunately the below is necessary to ensure that the handles to the cached PDB files opened by DIA 
-            // and later deleted at the next invocation of this function, are released deterministically
-            // This is despite we correctly releasing those interface pointers using Marshal.FinalReleaseComObject
-            // Thankfully we only need to resort to this if the caller wants to cache PDBs in the temp folder
-            if (cachePDB) {
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-            }
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
 
             this.StatusMessage = "Finished!";
             if (string.IsNullOrEmpty(outputFilePath)) {
@@ -593,6 +588,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 foreach (var diautil in _diautils.Values) {
                     diautil.Dispose();
                 }
+
+                _diautils.Clear();
             }
 
             SafeNativeMethods.DestroyActivationContext();
