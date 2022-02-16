@@ -74,8 +74,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         public bool IsInputSingleLine(string text) {
-            if (!Regex.IsMatch(text, "Histogram") && !text.Replace("\r", string.Empty).Trim().Contains('\n')) return true;
-            if (Regex.IsMatch(text, @"\<Slot.+\<\/Slot\>") && !Regex.IsMatch(text, @"\<frame")) return true;
+            if (!Regex.Match(text, "Histogram").Success && !text.Replace("\r", string.Empty).Trim().Contains('\n')) return true;
+            if (!Regex.Match(text, @"\<frame").Success) {
+                if (Regex.Match(text, @"\<Slot.+\<\/Slot\>").Success) return true;
+                if (Regex.Match(text, @"0x.+0x.+").Success) return true;
+            }
             return false;
         }
 
