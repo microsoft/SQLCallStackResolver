@@ -30,6 +30,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         internal static string LastUpdatedTimestampFormat = "yyyy-MM-dd HH:mm";
         internal static string LastUpdatedTimestampCulture = "en-US";
 
+        internal static string LatestReleaseTimestampFileName = @"latestrelease.txt";
+        internal static string LatestReleaseTimestampFormat = "yyyy-MM-dd HH:mm";
+        internal static string LatestReleaseTimestampCulture = "en-US";
+
         private void ResolveCallstacks_Click(object sender, EventArgs e) {
             List<string> dllPaths = null;
             if (!string.IsNullOrEmpty(binaryPaths.Text)) {
@@ -159,8 +163,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                 if (res == DialogResult.OK) {
                     this._baseAddressesString = baseAddressForm.baseaddressesstring;
-                }
-                else {
+                } else {
                     return;
                 }
             }
@@ -274,8 +277,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         allFilesContent.AppendLine(this._resolver.ExtractFromXEL(files, BucketizeXEL.Checked).Item2);
 
                         this.ShowStatus(string.Empty);
-                    }
-                    else {
+                    } else {
                         // handle the files as text input
                         foreach (var currFile in files) {
                             allFilesContent.AppendLine(File.ReadAllText(currFile));
@@ -336,94 +338,93 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         private void MainForm_Load(object sender, EventArgs e) {
+            DateTime latestReleaseDateTimeServer = DateTime.MinValue;
+            DateTime latestReleaseDateTimeLocal = DateTime.MinValue;
+            var latestReleaseURLs = ConfigurationManager.AppSettings["LatestReleaseURLs"].Split(';');
+            // get the timestamp contained within the first valid file within latestReleaseURLs
+            foreach (var url in latestReleaseURLs) {
+                string latestreleaseDate = Utils.GetFileContentsFromUrl(url);
+                if (!string.IsNullOrWhiteSpace(latestreleaseDate)) {
+                    latestReleaseDateTimeServer = DateTime.ParseExact(latestreleaseDate,
+                        LatestReleaseTimestampFormat, new CultureInfo(LatestReleaseTimestampCulture));
+                }
+
+                // get content of local latestrelease.txt (if it exists)
+                if (File.Exists(LatestReleaseTimestampFileName)) {
+                    using (var strm = new StreamReader(LatestReleaseTimestampFileName)) {
+                        latestreleaseDate = strm.ReadToEnd().Trim();
+                        this.Text += $" (release: {latestreleaseDate})"; // update form title bar
+                        latestReleaseDateTimeLocal = DateTime.ParseExact(latestreleaseDate,
+                            LatestReleaseTimestampFormat, new CultureInfo(LatestReleaseTimestampCulture));
+                    }
+                } else {
+                    latestReleaseDateTimeLocal = DateTime.MinValue;
+                }
+
+                if (latestReleaseDateTimeServer > latestReleaseDateTimeLocal) {
+                    // if the server timestamp > local timestamp, prompt to download
+                    MessageBox.Show(this,
+                        $"There is a newer release of SQLCallStackResolver ({latestreleaseDate}) available. You should exit, then download the latest release from https://aka.ms/SQLStack/releases. Then, extract the files from the release ZIP, overwriting and updating your older copy.",
+                        "New release available.",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+                }
+            }
+
             DateTime lastUpdDateTimeServer = DateTime.MinValue;
             DateTime lastUpdDateTimeLocal = DateTime.MinValue;
-
             var sqlBuildInfoUpdateURLs = ConfigurationManager.AppSettings["SQLBuildInfoUpdateURLs"].Split(';');
             var sqlBuildInfoURLs = ConfigurationManager.AppSettings["SQLBuildInfoURLs"].Split(';');
 
-            // get the timestamp of the first valid file within SQLBuildInfoURLs
+            // get the timestamp contained within the first valid file within SQLBuildInfoURLs
             foreach (var url in sqlBuildInfoUpdateURLs) {
-                HttpWebResponse httpResp = null;
-                var httpReq = (HttpWebRequest)WebRequest.Create(new Uri(url));
-
-                try {
-                    httpResp = (HttpWebResponse)httpReq.GetResponse();
-                } catch (WebException) {
+                string lastUpd = Utils.GetFileContentsFromUrl(url);
+                if (!string.IsNullOrWhiteSpace(lastUpd)) {
+                    lastUpdDateTimeServer = DateTime.ParseExact(lastUpd,
+                    LastUpdatedTimestampFormat, new CultureInfo(LastUpdatedTimestampCulture));
                 }
 
-                if (httpResp != null) {
-                    if (httpResp.StatusCode == HttpStatusCode.OK) {
-                        // get content of lastupdated.txt from upstream (GitHub) repo
-                        using (var strm = new StreamReader(httpResp.GetResponseStream())) {
-                            string lastUpd = strm.ReadToEnd().Trim();
-                            lastUpdDateTimeServer = DateTime.ParseExact(lastUpd,
-                                LastUpdatedTimestampFormat,
-                                new CultureInfo(LastUpdatedTimestampCulture)
-                                );
-                        }
+                // get content of local lastupdated.txt (if it exists)
+                if (File.Exists(LastUpdatedTimestampFileName)) {
+                    using (var strm = new StreamReader(LastUpdatedTimestampFileName)) {
+                        lastUpd = strm.ReadToEnd().Trim();
+                        lastUpdDateTimeLocal = DateTime.ParseExact(lastUpd,
+                            LastUpdatedTimestampFormat, new CultureInfo(LastUpdatedTimestampCulture));
+                    }
+                } else {
+                    lastUpdDateTimeLocal = DateTime.MinValue;
+                }
 
-                        // get content of local lastupdated.txt (if it exists)
-                        if (File.Exists(LastUpdatedTimestampFileName)) {
-                            using (var strm = new StreamReader(LastUpdatedTimestampFileName)) {
-                                string lastUpd = strm.ReadToEnd().Trim();
-                                lastUpdDateTimeLocal = DateTime.ParseExact(lastUpd,
-                                    LastUpdatedTimestampFormat,
-                                    new CultureInfo(LastUpdatedTimestampCulture)
-                                    );
+                if (lastUpdDateTimeServer > lastUpdDateTimeLocal) {
+                    // if the server timestamp > local timestamp, prompt to download
+                    var res = MessageBox.Show(this,
+                        "The SQLBuildInfo.json file was updated recently on GitHub. Do you wish to update your copy with the newer version?",
+                        "SQL Build info updated",
+                        MessageBoxButtons.YesNo);
+
+                    if (DialogResult.Yes == res) {
+                        foreach (var jsonURL in sqlBuildInfoURLs) {
+                            var jsonContent = Utils.GetFileContentsFromUrl(url);
+                            if (string.IsNullOrEmpty(jsonContent)) {
+                                MessageBox.Show(this,
+                                    "Could not download SQL Build Info file due to HTTP errors.",
+                                    "Error",
+                                    MessageBoxButtons.OK,
+                                    MessageBoxIcon.Error);
                             }
-                        } else {
-                            lastUpdDateTimeLocal = DateTime.MinValue;
-                        }
 
-                        if (lastUpdDateTimeServer > lastUpdDateTimeLocal) {
-                            // if the server timestamp > local timestamp, prompt to download
-                            var res = MessageBox.Show(this,
-                                "The SQLBuildInfo.json file was updated recently on GitHub. Do you wish to update your copy with the newer version?",
-                                "SQL Build info updated",
-                                MessageBoxButtons.YesNo);
+                            // update local copy of build info file
+                            using (var writer = new StreamWriter(SqlBuildInfoFileName)) {
+                                writer.Write(jsonContent);
+                                writer.Flush();
+                                writer.Close();
+                            }
 
-                            if (DialogResult.Yes == res) {
-                                foreach (var jsonURL in sqlBuildInfoURLs) {
-                                    httpResp = null;
-                                    httpReq = (HttpWebRequest)WebRequest.Create(new Uri(jsonURL));
-
-                                    try {
-                                        httpResp = (HttpWebResponse)httpReq.GetResponse();
-                                    } catch (WebException) {
-                                    }
-
-                                    if (httpResp != null) {
-                                        if (httpResp.StatusCode == HttpStatusCode.OK) {
-                                            try {
-                                                using (var strm = new StreamReader(httpResp.GetResponseStream())) {
-                                                    var jsonContent = strm.ReadToEnd();
-
-                                                    // update local copy of build info file
-                                                    using (var writer = new StreamWriter(SqlBuildInfoFileName)) {
-                                                        writer.Write(jsonContent);
-                                                        writer.Flush();
-                                                        writer.Close();
-                                                    }
-
-                                                    // update local last updated timestamp
-                                                    using (var wr = new StreamWriter(LastUpdatedTimestampFileName, false)) {
-                                                        wr.Write(lastUpdDateTimeServer.ToString(
-                                                            LastUpdatedTimestampFormat,
-                                                            new CultureInfo(LastUpdatedTimestampCulture)
-                                                            ));
-                                                    }
-                                                }
-                                            } catch (WebException) {
-                                                MessageBox.Show(this,
-                                                    "Could not download SQL Build Info file due to HTTP errors.",
-                                                    "Error",
-                                                    MessageBoxButtons.OK,
-                                                    MessageBoxIcon.Error);
-                                            }
-                                        }
-                                    }
-                                }
+                            // update local last updated timestamp
+                            using (var wr = new StreamWriter(LastUpdatedTimestampFileName, false)) {
+                                wr.Write(lastUpdDateTimeServer.ToString(
+                                    LastUpdatedTimestampFormat,
+                                    new CultureInfo(LastUpdatedTimestampCulture)));
                             }
                         }
 
