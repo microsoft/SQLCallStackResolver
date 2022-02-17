@@ -7,6 +7,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
     internal class Utils {
         internal static string GetFileContentsFromUrl(string url) {
+            if (string.IsNullOrEmpty(url)) return null;
             var httpReq = (HttpWebRequest)WebRequest.Create(new Uri(url));
 
             try {
