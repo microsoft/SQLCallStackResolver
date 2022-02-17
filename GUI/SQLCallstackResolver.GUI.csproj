@@ -68,6 +68,7 @@
     <Compile Include="SQLBuildsForm.Designer.cs">
       <DependentUpon>SQLBuildsForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Utils.cs" />
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
       <SubType>Designer</SubType>
@@ -106,6 +107,12 @@
       <Project>{782bbd60-ee45-43cd-8a4f-0505efe4ff1a}</Project>
       <Name>SQLCallstackResolver.Engine</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\latestrelease.txt">
+      <Link>latestrelease.txt</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
