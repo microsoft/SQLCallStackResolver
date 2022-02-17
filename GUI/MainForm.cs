@@ -364,7 +364,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 if (latestReleaseDateTimeServer > latestReleaseDateTimeLocal) {
                     // if the server timestamp > local timestamp, prompt to download
                     MessageBox.Show(this,
-                        $"There is a newer release of SQLCallStackResolver ({latestreleaseDate}) available. You should exit, then download the latest release from https://aka.ms/SQLStack/releases. Then, extract the files from the release ZIP, overwriting and updating your older copy.",
+                        $"You are currently on release {latestreleaseDate} of SQLCallStackResolver. There is a newer release ({latestReleaseDateTimeServer.ToString(LatestReleaseTimestampFormat, new CultureInfo(LatestReleaseTimestampCulture))}) available." + Environment.NewLine + "You should exit, then download the latest release from https://aka.ms/SQLStack/releases. Then, extract the files from the release ZIP, overwriting and updating your older copy.",
                         "New release available.",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Information);
