@@ -327,6 +327,14 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         private void SelectSQLPDB_Click(object sender, EventArgs e) {
+            if (!File.Exists(MainForm.SqlBuildInfoFileName)) {
+                MessageBox.Show(this,
+                    $"Could not find the SQL build info JSON file: {MainForm.SqlBuildInfoFileName}. You might need to manually obtain it from one of these locations: {ConfigurationManager.AppSettings["SQLBuildInfoURLs"]}",
+                    "SQL build info missing",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
             using (var sqlbuildsForm = new SQLBuildsForm {
                 pathToPDBs = ConfigurationManager.AppSettings["PDBDownloadFolder"]
             }) {
@@ -343,18 +351,19 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var latestReleaseURLs = ConfigurationManager.AppSettings["LatestReleaseURLs"].Split(';');
             // get the timestamp contained within the first valid file within latestReleaseURLs
             foreach (var url in latestReleaseURLs) {
-                string latestreleaseDate = Utils.GetFileContentsFromUrl(url);
-                if (!string.IsNullOrWhiteSpace(latestreleaseDate)) {
-                    latestReleaseDateTimeServer = DateTime.ParseExact(latestreleaseDate,
+                string latestReleaseDateStringServer = Utils.GetFileContentsFromUrl(url);
+                if (!string.IsNullOrWhiteSpace(latestReleaseDateStringServer)) {
+                    latestReleaseDateTimeServer = DateTime.ParseExact(latestReleaseDateStringServer,
                         LatestReleaseTimestampFormat, new CultureInfo(LatestReleaseTimestampCulture));
-                }
+                } else continue;
 
+                string latestReleaseDateStringLocal = "Unknown";
                 // get content of local latestrelease.txt (if it exists)
                 if (File.Exists(LatestReleaseTimestampFileName)) {
                     using (var strm = new StreamReader(LatestReleaseTimestampFileName)) {
-                        latestreleaseDate = strm.ReadToEnd().Trim();
-                        this.Text += $" (release: {latestreleaseDate})"; // update form title bar
-                        latestReleaseDateTimeLocal = DateTime.ParseExact(latestreleaseDate,
+                        latestReleaseDateStringLocal = strm.ReadToEnd().Trim();
+                        this.Text += $" (release: {latestReleaseDateStringLocal})"; // update form title bar
+                        latestReleaseDateTimeLocal = DateTime.ParseExact(latestReleaseDateStringLocal,
                             LatestReleaseTimestampFormat, new CultureInfo(LatestReleaseTimestampCulture));
                     }
                 } else {
@@ -364,7 +373,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 if (latestReleaseDateTimeServer > latestReleaseDateTimeLocal) {
                     // if the server timestamp > local timestamp, prompt to download
                     MessageBox.Show(this,
-                        $"You are currently on release {latestreleaseDate} of SQLCallStackResolver. There is a newer release ({latestReleaseDateTimeServer.ToString(LatestReleaseTimestampFormat, new CultureInfo(LatestReleaseTimestampCulture))}) available." + Environment.NewLine + "You should exit, then download the latest release from https://aka.ms/SQLStack/releases. Then, extract the files from the release ZIP, overwriting and updating your older copy.",
+                        $"You are currently on release: {latestReleaseDateStringLocal} of SQLCallStackResolver. There is a newer release ({latestReleaseDateStringServer}) available." + Environment.NewLine + "You should exit, then download the latest release from https://aka.ms/SQLStack/releases. Then, extract the files from the release ZIP, overwriting and updating your older copy.",
                         "New release available.",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Information);
@@ -382,7 +391,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 if (!string.IsNullOrWhiteSpace(lastUpd)) {
                     lastUpdDateTimeServer = DateTime.ParseExact(lastUpd,
                     LastUpdatedTimestampFormat, new CultureInfo(LastUpdatedTimestampCulture));
-                }
+                } else continue;
 
                 // get content of local lastupdated.txt (if it exists)
                 if (File.Exists(LastUpdatedTimestampFileName)) {
@@ -403,34 +412,39 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         MessageBoxButtons.YesNo);
 
                     if (DialogResult.Yes == res) {
+                        string jsonContent = null;
                         foreach (var jsonURL in sqlBuildInfoURLs) {
-                            var jsonContent = Utils.GetFileContentsFromUrl(url);
-                            if (string.IsNullOrEmpty(jsonContent)) {
-                                MessageBox.Show(this,
-                                    "Could not download SQL Build Info file due to HTTP errors.",
-                                    "Error",
-                                    MessageBoxButtons.OK,
-                                    MessageBoxIcon.Error);
-                            }
+                            jsonContent = Utils.GetFileContentsFromUrl(jsonURL);
+                            if (!string.IsNullOrWhiteSpace(jsonContent)) {
+                                // update local copy of build info file
+                                using (var writer = new StreamWriter(SqlBuildInfoFileName)) {
+                                    writer.Write(jsonContent);
+                                    writer.Flush();
+                                    writer.Close();
+                                }
 
-                            // update local copy of build info file
-                            using (var writer = new StreamWriter(SqlBuildInfoFileName)) {
-                                writer.Write(jsonContent);
-                                writer.Flush();
-                                writer.Close();
-                            }
+                                // update local last updated timestamp
+                                using (var wr = new StreamWriter(LastUpdatedTimestampFileName, false)) {
+                                    wr.Write(lastUpdDateTimeServer.ToString(
+                                        LastUpdatedTimestampFormat,
+                                        new CultureInfo(LastUpdatedTimestampCulture)));
+                                }
 
-                            // update local last updated timestamp
-                            using (var wr = new StreamWriter(LastUpdatedTimestampFileName, false)) {
-                                wr.Write(lastUpdDateTimeServer.ToString(
-                                    LastUpdatedTimestampFormat,
-                                    new CultureInfo(LastUpdatedTimestampCulture)));
+                                break;
                             }
                         }
 
-                        break;
+                        if (string.IsNullOrEmpty(jsonContent)) {
+                            MessageBox.Show(this,
+                                "Could not download the SQL Build Info file.",
+                                "Error",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Error);
+                        }
                     }
                 }
+
+                break;
             }
         }
 
