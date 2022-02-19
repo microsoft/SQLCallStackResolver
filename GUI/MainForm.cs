@@ -19,9 +19,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             InitializeComponent();
         }
 
-        private StackResolver _resolver = new StackResolver();
+        private readonly StackResolver _resolver = new StackResolver();
         private Task<string> backgroundTask;
-        private CancellationTokenSource backgroundCTS { get; set; }
+        private CancellationTokenSource BackgroundCTS { get; set; }
         private CancellationToken backgroundCT;
 
         private string _baseAddressesString = null;
@@ -53,7 +53,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             }
 
             bool isSingleLineInput = this._resolver.IsInputSingleLine(callStackInput.Text);
-
             if (isSingleLineInput && !FramesOnSingleLine.Checked) {
                 if (DialogResult.Yes == MessageBox.Show(this,
                     "Maybe this is intentional, but your input seems to have all the frames on a single line, but the 'Callstack frames are in single line' checkbox is unchecked. " +
@@ -209,7 +208,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             Application.DoEvents();
         }
 
-        private void LoadXELButton_Click(object sender, EventArgs e) {
+        private async void LoadXELButton_Click(object sender, EventArgs e) {
             genericOpenFileDlg.Multiselect = true;
             genericOpenFileDlg.CheckPathExists = true;
             genericOpenFileDlg.CheckFileExists = true;
@@ -218,25 +217,21 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             genericOpenFileDlg.Title = "Select XEL file";
 
             var res = genericOpenFileDlg.ShowDialog(this);
-
             if (res != DialogResult.Cancel) {
+                List<string> relevantXEFields = await GetUserSelectedXEFieldsAsync();
                 this.ShowStatus("Loading from XEL files; please wait. This may take a while!");
-
-                this.backgroundTask = Task.Run(() => {
-                    return this._resolver.ExtractFromXEL(genericOpenFileDlg.FileNames, BucketizeXEL.Checked).Item2;
+                this.backgroundTask = Task.Run(async () => {
+                    return (await this._resolver.ExtractFromXEL(genericOpenFileDlg.FileNames, GroupXEvents.Checked, relevantXEFields)).Item2;
                 });
-
                 this.MonitorBackgroundTask(backgroundTask);
-
                 callStackInput.Text = backgroundTask.Result;
-
                 this.ShowStatus("Finished importing callstacks from XEL file(s)!");
             }
         }
 
         private void MonitorBackgroundTask(Task backgroundTask) {
-            using (backgroundCTS = new CancellationTokenSource()) {
-                backgroundCT = backgroundCTS.Token;
+            using (BackgroundCTS = new CancellationTokenSource()) {
+                backgroundCT = BackgroundCTS.Token;
 
                 this.EnableCancelButton();
 
@@ -261,7 +256,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             }
         }
 
-        private void CallStackInput_DragDrop(object sender, DragEventArgs e) {
+        private async void CallStackInput_DragDrop(object sender, DragEventArgs e) {
             if (e.Data.GetDataPresent(DataFormats.FileDrop, false) == true) {
                 e.Effect = DragDropEffects.All;
 
@@ -273,9 +268,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     // if there is any other format in between, it will be rejected by the ExtractFromXEL code
                     if (Path.GetExtension(files[0]).ToLower(CultureInfo.CurrentCulture) == ".xel") {
                         this.ShowStatus("XEL file was dragged; please wait while we extract events from the file");
-
-                        allFilesContent.AppendLine(this._resolver.ExtractFromXEL(files, BucketizeXEL.Checked).Item2);
-
+                        List<string> relevantXEFields = await GetUserSelectedXEFieldsAsync();
+                        allFilesContent.AppendLine((await this._resolver.ExtractFromXEL(files, GroupXEvents.Checked, relevantXEFields)).Item2);
                         this.ShowStatus(string.Empty);
                     } else {
                         // handle the files as text input
@@ -289,6 +283,17 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             }
         }
 
+        private async Task<List<string>> GetUserSelectedXEFieldsAsync() {
+            using (var fieldsListDialog = new FieldSelection()) {
+                fieldsListDialog.Text = "Select relevant XEvent fields";
+                var xeEventItems = await this._resolver.GetDistinctXELFieldsAsync(genericOpenFileDlg.FileNames, 1000);
+                fieldsListDialog.AllActions = xeEventItems.Item1;
+                fieldsListDialog.AllFields = xeEventItems.Item2;
+                fieldsListDialog.StartPosition = FormStartPosition.CenterParent;
+                fieldsListDialog.ShowDialog(this);
+                return fieldsListDialog.SelectedEventItems;
+            }
+        }
         private void CallStackInput_DragOver(object sender, DragEventArgs e) {
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
                 e.Effect = DragDropEffects.Copy;
@@ -346,7 +351,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         private void MainForm_Load(object sender, EventArgs e) {
-            DateTime latestReleaseDateTimeServer = DateTime.MinValue;
+            DateTime latestReleaseDateTimeServer;
             DateTime latestReleaseDateTimeLocal = DateTime.MinValue;
             var latestReleaseURLs = ConfigurationManager.AppSettings["LatestReleaseURLs"].Split(';');
             // get the timestamp contained within the first valid file within latestReleaseURLs
@@ -448,7 +453,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             }
         }
 
-        private void outputFilePathPicker_Click(object sender, EventArgs e) {
+        private void OutputFilePathPicker_Click(object sender, EventArgs e) {
             genericSaveFileDlg.FileName = "resolvedstacks.txt";
             genericSaveFileDlg.Filter = "Text files (*.txt)|*.txt";
             genericSaveFileDlg.Title = "Save output as";
@@ -460,8 +465,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             }
         }
 
-        private void cancelButton_Click(object sender, EventArgs e) {
-            this.backgroundCTS.Cancel();
+        private void CancelButton_Click(object sender, EventArgs e) {
+            this.BackgroundCTS.Cancel();
         }
     }
 }
