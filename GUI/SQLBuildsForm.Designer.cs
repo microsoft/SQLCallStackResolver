@@ -3,20 +3,13 @@
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     partial class SQLBuildsForm {
         private System.ComponentModel.IContainer components = null;
-
         protected override void Dispose(bool disposing) {
             if (disposing && (components != null)) {
                 components.Dispose();
             }
             base.Dispose(disposing);
         }
-
         #region Windows Form Designer generated code
-
-        /// <summary>
-        /// Required method for Designer support - do not modify
-        /// the contents of this method with the code editor.
-        /// </summary>
         private void InitializeComponent() {
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.downloadStatus = new System.Windows.Forms.ToolStripStatusLabel();
@@ -39,9 +32,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.splitContainer2.Panel2.SuspendLayout();
             this.splitContainer2.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // statusStrip1
-            // 
             this.statusStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.downloadStatus,
@@ -52,19 +42,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.statusStrip1.Size = new System.Drawing.Size(548, 25);
             this.statusStrip1.TabIndex = 2;
             this.statusStrip1.Text = "statusStrip1";
-            // 
-            // downloadStatus
-            // 
             this.downloadStatus.Name = "downloadStatus";
             this.downloadStatus.Size = new System.Drawing.Size(0, 19);
-            // 
-            // downloadProgress
-            // 
             this.downloadProgress.Name = "downloadProgress";
             this.downloadProgress.Size = new System.Drawing.Size(100, 17);
-            // 
-            // splitContainer1
-            // 
             this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainer1.FixedPanel = System.Windows.Forms.FixedPanel.Panel2;
             this.splitContainer1.IsSplitterFixed = true;
@@ -72,21 +53,12 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.splitContainer1.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.splitContainer1.Name = "splitContainer1";
             this.splitContainer1.Orientation = System.Windows.Forms.Orientation.Horizontal;
-            // 
-            // splitContainer1.Panel1
-            // 
             this.splitContainer1.Panel1.Controls.Add(this.splitContainer2);
-            // 
-            // splitContainer1.Panel2
-            // 
             this.splitContainer1.Panel2.Controls.Add(this.checkPDBAvail);
             this.splitContainer1.Panel2.Controls.Add(this.dnldButton);
             this.splitContainer1.Size = new System.Drawing.Size(548, 670);
             this.splitContainer1.SplitterDistance = 600;
             this.splitContainer1.TabIndex = 3;
-            // 
-            // checkPDBAvail
-            // 
             this.checkPDBAvail.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.checkPDBAvail.Location = new System.Drawing.Point(88, 7);
             this.checkPDBAvail.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
@@ -96,9 +68,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.checkPDBAvail.Text = "Check PDB availability";
             this.checkPDBAvail.UseVisualStyleBackColor = true;
             this.checkPDBAvail.Click += new System.EventHandler(this.CheckPDBAvail_Click);
-            // 
-            // dnldButton
-            // 
             this.dnldButton.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.dnldButton.DialogResult = System.Windows.Forms.DialogResult.OK;
             this.dnldButton.Location = new System.Drawing.Point(265, 7);
@@ -109,56 +78,35 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.dnldButton.Text = "Download PDBs";
             this.dnldButton.UseVisualStyleBackColor = true;
             this.dnldButton.Click += new System.EventHandler(this.DownloadPDBs);
-            // 
-            // splitContainer2
-            // 
             this.splitContainer2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainer2.FixedPanel = System.Windows.Forms.FixedPanel.Panel1;
             this.splitContainer2.IsSplitterFixed = true;
             this.splitContainer2.Location = new System.Drawing.Point(0, 0);
             this.splitContainer2.Name = "splitContainer2";
             this.splitContainer2.Orientation = System.Windows.Forms.Orientation.Horizontal;
-            // 
-            // splitContainer2.Panel1
-            // 
             this.splitContainer2.Panel1.Controls.Add(this.findNext);
             this.splitContainer2.Panel1.Controls.Add(this.searchText);
             this.splitContainer2.Panel1.Controls.Add(this.searchLabel);
-            // 
-            // splitContainer2.Panel2
-            // 
             this.splitContainer2.Panel2.Controls.Add(this.treeviewSyms);
             this.splitContainer2.Size = new System.Drawing.Size(548, 600);
             this.splitContainer2.SplitterDistance = 35;
             this.splitContainer2.TabIndex = 0;
-            // 
-            // treeviewSyms
-            // 
             this.treeviewSyms.Dock = System.Windows.Forms.DockStyle.Fill;
             this.treeviewSyms.Location = new System.Drawing.Point(0, 0);
             this.treeviewSyms.Margin = new System.Windows.Forms.Padding(4);
             this.treeviewSyms.Name = "treeviewSyms";
             this.treeviewSyms.Size = new System.Drawing.Size(548, 561);
             this.treeviewSyms.TabIndex = 1;
-            // 
-            // searchLabel
-            // 
             this.searchLabel.AutoSize = true;
             this.searchLabel.Location = new System.Drawing.Point(10, 12);
             this.searchLabel.Name = "searchLabel";
             this.searchLabel.Size = new System.Drawing.Size(150, 17);
             this.searchLabel.TabIndex = 0;
             this.searchLabel.Text = "SQL version / keyword";
-            // 
-            // searchText
-            // 
             this.searchText.Location = new System.Drawing.Point(166, 9);
             this.searchText.Name = "searchText";
             this.searchText.Size = new System.Drawing.Size(296, 22);
             this.searchText.TabIndex = 1;
-            // 
-            // findNext
-            // 
             this.findNext.Location = new System.Drawing.Point(468, 9);
             this.findNext.Name = "findNext";
             this.findNext.Size = new System.Drawing.Size(75, 23);
@@ -166,9 +114,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.findNext.Text = "Find";
             this.findNext.UseVisualStyleBackColor = true;
             this.findNext.Click += new System.EventHandler(this.findNext_Click);
-            // 
-            // SQLBuildsForm
-            // 
             this.AcceptButton = this.dnldButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -195,9 +140,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.splitContainer2.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
-
         }
-
         #endregion
         private System.Windows.Forms.StatusStrip statusStrip1;
         private System.Windows.Forms.ToolStripStatusLabel downloadStatus;

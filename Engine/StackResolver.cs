@@ -13,6 +13,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading;
+    using System.Threading.Tasks;
     using System.Xml;
 
     public class StackResolver : IDisposable {
@@ -37,9 +38,13 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.cancelRequested = true;
         }
 
+        public Task<Tuple<List<string>, List<string>>> GetDistinctXELFieldsAsync(string[] xelFiles, int eventsToSample) {
+            return XELHelper.GetDistinctXELActionsFieldsAsync(xelFiles, eventsToSample);
+            }
+
         /// Public method which to help import XEL files
-        public Tuple<int, string> ExtractFromXEL(string[] xelFiles, bool bucketize) {
-            return XELHelper.ExtractFromXEL(this, xelFiles, bucketize);
+        public async Task<Tuple<int, string>> ExtractFromXEL(string[] xelFiles, bool groupEvents, List<string> relevantFields) {
+            return await XELHelper.ExtractFromXELAsync(this, xelFiles, groupEvents, relevantFields);
         }
 
         /// Convert virtual-address only type frames to their module+offset format

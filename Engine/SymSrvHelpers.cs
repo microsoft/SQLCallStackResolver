@@ -11,7 +11,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     using System.Text;
 
     public static class SymSrvHelpers {
-        static int processId = Process.GetCurrentProcess().Id;
+        static readonly int processId = Process.GetCurrentProcess().Id;
 
         /// Wrapper around the symsrv.dll functionality to initialize the symbol load handler for this process.
         private static bool InitSymSrv(string symPath) {

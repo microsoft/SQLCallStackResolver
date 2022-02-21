@@ -229,9 +229,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         /// Make sure that caching PDB files is working. To do this we must use XEL input to trigger multiple worker threads.
         [Fact][Trait("Category", "Unit")]
-        public void SymbolFileCaching() {
+        public async void SymbolFileCaching() {
             using (var csr = new StackResolver()) {
-                var ret = csr.ExtractFromXEL(new[] { @"..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, false);
+                var ret = await csr.ExtractFromXEL(new[] { @"..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, false, new List<string>(new String[] { "callstack" }));
                 Assert.Equal(550, ret.Item1);
                 var status = csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\..\Tests\TestCases\ImportXEL\xe_wait_base_addresses.txt"));
                 Assert.True(status);
@@ -300,9 +300,9 @@ sqllang!CStmtQuery::InitQuery", symres.Trim(), StringComparison.CurrentCulture);
 
         /// Validate importing callstack events from XEL files into histogram buckets.
         [Fact][Trait("Category", "Unit")]
-        public void ImportBinResolveXELEvents() {
+        public async void ImportBinResolveXELEvents() {
             using (var csr = new StackResolver()) {
-                var ret = csr.ExtractFromXEL(new[] { @"..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, true);
+                var ret = await csr.ExtractFromXEL(new[] { @"..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, true, new List<string>(new String[] { "callstack" }));
                 Assert.Equal(4, ret.Item1);
 
                 var xmldoc = new XmlDocument() { XmlResolver = null };
@@ -361,10 +361,36 @@ sqllang!process_commands_internal+735", symres, StringComparison.CurrentCulture)
 
         /// Validate importing individual callstack events from XEL files.
         [Fact][Trait("Category", "Unit")]
-        public void ImportIndividualXELEvents() {
+        public async void ImportIndividualXELEvents() {
             using (var csr = new StackResolver()) {
-                var ret = csr.ExtractFromXEL(new[] { @"..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, false);
+                var ret = await csr.ExtractFromXEL(new[] { @"..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, false, new List<string>(new String[] { "callstack" }));
                 Assert.Equal(550, ret.Item1);
+            }
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public async void XELActionsAndFieldsAsync() {
+            using (var csr = new StackResolver()) {
+                var ret = await csr.GetDistinctXELFieldsAsync(new[] { @"..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, 1000);
+                Assert.Single(ret.Item1);   // just the callstack action
+                Assert.Equal("callstack", ret.Item1.First());    // verify the name
+                Assert.Equal(5, ret.Item2.Count);   // 5 fields
+                Assert.Equal("duration", ret.Item2.First()); // first field in alphabetical order
+                Assert.Equal("wait_type", ret.Item2.Last()); // last field in alphabetical order
+            }
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public async void XELActionsAndFieldsAsyncMultipleFiles() {
+            using (var csr = new StackResolver()) {
+                var ret = await csr.GetDistinctXELFieldsAsync(new[] { @"..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel", @"..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, 1000);
+                Assert.Single(ret.Item1);   // just the callstack action
+                Assert.Equal("callstack", ret.Item1.First());    // verify the name
+                Assert.Equal(9, ret.Item2.Count);   // 9 fields in total across the 2 XEL files
+                Assert.Equal("backoffs", ret.Item2.First()); // first field across the 2 XEL files, in alphabetical order
+                Assert.Equal("worker", ret.Item2.Last()); // last field across the 2 XEL files, in alphabetical order
             }
         }
 

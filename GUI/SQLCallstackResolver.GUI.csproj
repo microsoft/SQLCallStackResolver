@@ -48,6 +48,12 @@
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FieldSelection.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FieldSelection.Designer.cs">
+      <DependentUpon>FieldSelection.cs</DependentUpon>
+    </Compile>
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -69,6 +75,10 @@
       <DependentUpon>SQLBuildsForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Utils.cs" />
+    <EmbeddedResource Include="FieldSelection.resx">
+      <DependentUpon>FieldSelection.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
       <SubType>Designer</SubType>
