@@ -37,40 +37,13 @@ foreach ($file in $diaFiles) {
     Write-Host $file.FullName":" $file.VersionInfo.FileVersion
 }
 
-# Get Windows SDK versions installed
-$win10SDKsRoot = (Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows Kits\Installed Roots").KitsRoot10
-if ($null -eq $win10SDKsRoot) {
-    Write-Error "No Windows 10 SDK installation found. Exiting..." -ErrorAction Stop    
-}
-
-$sdkVersionNumbers = Get-ChildItem -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows Kits\Installed Roots\10.*" | Select-Object PSChildName
-if ($sdkVersionNumbers.Length -eq 0) {
-    Write-Error "No suitable Windows 10 SDK installation found. Exiting..." -ErrorAction Stop    
-}
-$sdkVersionNumbers = ($sdkVersionNumbers | foreach { $_.PSChildName }) | Sort-Object -Descending
-
-Write-Host
-Write-Host "Windows SDK versions found:" ($sdkVersionNumbers -Join ",")
-Write-Host ("Using Windows SDK " + $sdkVersionNumbers[0] + " binaries at " + $win10SDKsRoot)
-
-if (-not (Test-Path "./DbgHelp")) {
-    mkdir DbgHelp
-}
-
-# DbgHelp + SymSrv
-copy "$win10SDKsRoot\Debuggers\x64\dbghelp.dll" ./DbgHelp/dbghelp.dll
-copy "$win10SDKsRoot\Debuggers\x64\symsrv.dll" ./DbgHelp/symsrv.dll
-
-Write-Host "Debugger file versions:"
-$dbgFiles = dir "./DbgHelp/*.dll"
-foreach ($file in $dbgFiles) {
-    Write-Host $file.FullName":" $file.VersionInfo.FileVersion
-}
-
 if ((Get-ChildItem ".\DIA\*.*").Length -ne 5) {
     Write-Error "You must manually obtain msdia140.dll, msdia140.dll.manifest and associated necessary Visual C++ runtime dependency DLLs (msvcp140.dll, vcruntime140.dll and vcruntime140_1.dll). Those are redistributable components of Visual Studio 2019 subject to terms as published here: https://docs.microsoft.com/en-us/visualstudio/releases/2019/redistribution." -ErrorAction Stop
 }
 
-if ((Get-ChildItem ".\DbgHelp\*.*").Length -ne 2) {
-    Write-Error "You must manually obtain dbghelp.dll and symsrv.dll from the Windows SDK installation. Those DLLs are redistributable components of the Windows SDK, as per the terms published at https://docs.microsoft.com/en-us/legal/windows-sdk/redist#debugging-tools-for-windows." -ErrorAction Stop
+Write-Host "Debugger file versions:"
+$dbgFiles = @(dir "../packages/Microsoft.Debugging.Platform.DbgEng.*/content/amd64/dbghelp.dll")
+$dbgFiles += dir "../packages/Microsoft.Debugging.Platform.SymSrv.*/content/amd64/symsrv.dll"
+foreach ($file in $dbgFiles) {
+    Write-Host $file.FullName":" $file.VersionInfo.FileVersion
 }
