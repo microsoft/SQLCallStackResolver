@@ -48,7 +48,7 @@
       <HintPath>..\packages\Microsoft.SqlServer.XEvent.XELite.2021.12.12.2\lib\net462\Microsoft.SqlServer.XEvent.XELite.dll</HintPath>
     </Reference>
     <Reference Include="msdia140typelib_clr0200">
-      <HintPath>c:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Team Tools\Performance Tools\Plugins\msdia140typelib_clr0200.dll</HintPath>
+      <HintPath>c:\Program Files\Microsoft Visual Studio\2022\Enterprise\Team Tools\Performance Tools\Plugins\msdia140typelib_clr0200.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL" />
@@ -114,15 +114,16 @@
       <TargetPath>vcruntime140_1.dll</TargetPath>
     </ContentWithTargetPath>
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
-    <ContentWithTargetPath Include="DbgHelp\dbghelp.dll">
+    <ContentWithTargetPath Include="..\packages\Microsoft.Debugging.Platform.DbgEng.20220211.1453.0\content\amd64\dbghelp.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>dbghelp.dll</TargetPath>
+      <Link>DebuggerFiles\dbghelp.dll</Link>
     </ContentWithTargetPath>
-    <ContentWithTargetPath Include="DbgHelp\symsrv.dll">
+    <ContentWithTargetPath Include="..\packages\Microsoft.Debugging.Platform.SymSrv.20220211.1453.0\content\amd64\symsrv.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>symsrv.dll</TargetPath>
+      <Link>DebuggerFiles\symsrv.dll</Link>
     </ContentWithTargetPath>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
