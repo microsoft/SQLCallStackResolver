@@ -113,7 +113,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.findNext.TabIndex = 2;
             this.findNext.Text = "Find";
             this.findNext.UseVisualStyleBackColor = true;
-            this.findNext.Click += new System.EventHandler(this.findNext_Click);
+            this.findNext.Click += new System.EventHandler(this.FindNext_Click);
             this.AcceptButton = this.dnldButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;

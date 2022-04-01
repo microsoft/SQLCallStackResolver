@@ -52,7 +52,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 return;
             }
 
-            bool isSingleLineInput = this._resolver.IsInputSingleLine(callStackInput.Text);
+            bool isSingleLineInput = this._resolver.IsInputSingleLine(callStackInput.Text, ConfigurationManager.AppSettings["PatternsToTreatAsMultiline"]);
             if (isSingleLineInput && !FramesOnSingleLine.Checked) {
                 if (DialogResult.Yes == MessageBox.Show(this,
                     "Maybe this is intentional, but your input seems to have all the frames on a single line, but the 'Callstack frames are in single line' checkbox is unchecked. " +

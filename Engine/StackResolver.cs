@@ -78,7 +78,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             return retval;
         }
 
-        public bool IsInputSingleLine(string text) {
+        public bool IsInputSingleLine(string text, string patternsToTreatAsMultiline) {
+            if (Regex.Match(text, patternsToTreatAsMultiline).Success) return false;
+            text = System.Net.WebUtility.HtmlDecode(text);  // decode XML markup if present
             if (!Regex.Match(text, "Histogram").Success && !text.Replace("\r", string.Empty).Trim().Contains('\n')) return true;
             if (!Regex.Match(text, @"\<frame").Success) {
                 if (Regex.Match(text, @"\<Slot.+\<\/Slot\>").Success) return true;
