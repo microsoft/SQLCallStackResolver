@@ -113,7 +113,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             }
         }
 
-        private void findNext_Click(object sender, EventArgs e) {
+        private void FindNext_Click(object sender, EventArgs e) {
             foreach (TreeNode node in treeviewSyms.Nodes) {
                 if (CheckIfAnyNodesMatch(node)) {
                     return;
@@ -128,7 +128,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         private bool CheckIfAnyNodesMatch(TreeNode node) {
             if (node.Tag is SQLBuildInfo bld) {
-                if (bld.ToString().ToLower(CultureInfo.CurrentCulture).Contains(searchText.Text.ToLower(CultureInfo.CurrentCulture))) {
+                if (bld.ToString().ToLower(CultureInfo.CurrentCulture).Contains(searchText.Text.Trim().ToLower(CultureInfo.CurrentCulture))) {
                     treeviewSyms.SelectedNode = node;
                     treeviewSyms.Select();
                     treeviewSyms.Refresh();
