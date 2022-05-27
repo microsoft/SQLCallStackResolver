@@ -101,18 +101,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>msdia140.dll</TargetPath>
     </ContentWithTargetPath>
-    <ContentWithTargetPath Include="DIA\msvcp140.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <TargetPath>msvcp140.dll</TargetPath>
-    </ContentWithTargetPath>
-    <ContentWithTargetPath Include="DIA\vcruntime140.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <TargetPath>vcruntime140.dll</TargetPath>
-    </ContentWithTargetPath>
-    <ContentWithTargetPath Include="DIA\vcruntime140_1.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <TargetPath>vcruntime140_1.dll</TargetPath>
-    </ContentWithTargetPath>
   </ItemGroup>
   <ItemGroup>
     <ContentWithTargetPath Include="..\packages\Microsoft.Debugging.Platform.DbgEng.20220211.1453.0\content\amd64\dbghelp.dll">
