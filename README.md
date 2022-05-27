@@ -12,6 +12,7 @@ The tool comes with a pre-populated example in the textboxes, just follow that e
 * Older format with just virtual addresses [[1]](#footnote1)
 * dll!Ordinal### format [[2]](#footnote2)
 * Output from SQLDumper (SQLDumpNNNN.TXT file) - at least the sections which have stack frames [[5]](#footnote5)
+* The new XML callstack format which is available in SQL Server 2022 CTP 2.0 and above. [[example]](#usage-example-3)
 
 In all cases you must provided a symbol search path [[3]](#footnote3),[[4]](#footnote4). If a symbol server is used in this path, there must be corresponding information in the input callstack to help identify which PDBs to get from the symbol server. See [[6]](#footnote6).
 
@@ -24,6 +25,11 @@ This is a trivial case, where the user enters the callstack in DLL + offset nota
 This is a typical use case, where the user imports events from a XEL file. Because the XEL file does not have the module base addresses, the user first inputs those. They then select one of the pre-populated list of SQL builds to download symbols and finally click the Resolve Callstacks button to obtain the symbolized output in the right-hand side textbox.
 
 ![](images/2_XEL_Address.gif)
+
+## Usage example #3
+With SQL Server 2022 CTP 2.0 and above, callstacks returned by the XE functions are represented in a XML format, with PDB symbol information provided inline for each frame. With this format for callstacks, you can alternatively specify the symbol path as a symbol server, as documented in the [WinDbg help](https://docs.microsoft.com/en-us/windows-hardware/drivers/debugger/symbol-path#using-a-symbol-server). An example of this is shown below.
+
+![](images/3_SQL2022_format.gif)
 
 ## Contributing
 
