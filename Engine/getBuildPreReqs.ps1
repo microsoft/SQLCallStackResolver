@@ -26,9 +26,6 @@ if (-not (Test-Path "./DIA")) {
 
 copy "$vsPath\Team Tools\Performance Tools\x64\msdia140.dll" "./DIA/msdia140.dll"
 copy "$vsPath\Team Tools\Performance Tools\x64\msdia140.dll.manifest" "./DIA/msdia140.dll.manifest"
-copy "$vsPath\Common7\IDE\Remote Debugger\x64\msvcp140.dll" "./DIA/msvcp140.dll"
-copy "$vsPath\Common7\IDE\Remote Debugger\x64\vcruntime140.dll" "./DIA/vcruntime140.dll"
-copy "$vsPath\Common7\IDE\Remote Debugger\x64\vcruntime140_1.dll" "./DIA/vcruntime140_1.dll"
 
 Write-Host
 Write-Host "DIA file versions:"
@@ -37,8 +34,8 @@ foreach ($file in $diaFiles) {
     Write-Host $file.FullName":" $file.VersionInfo.FileVersion
 }
 
-if ((Get-ChildItem ".\DIA\*.*").Length -ne 5) {
-    Write-Error "You must manually obtain msdia140.dll, msdia140.dll.manifest and associated necessary Visual C++ runtime dependency DLLs (msvcp140.dll, vcruntime140.dll and vcruntime140_1.dll). Those are redistributable components of Visual Studio 2019 subject to terms as published here: https://docs.microsoft.com/en-us/visualstudio/releases/2019/redistribution." -ErrorAction Stop
+if ((Get-ChildItem ".\DIA\*.*").Length -ne 2) {
+    Write-Error "You must manually obtain msdia140.dll and msdia140.dll.manifest, and copy them to the Engine\DIA sub-folder. Those are redistributable components of Visual Studio 2022 subject to terms as published here: https://docs.microsoft.com/en-us/visualstudio/releases/2022/redistribution." -ErrorAction Stop
 }
 
 Write-Host "Debugger file versions:"
