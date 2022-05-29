@@ -2,7 +2,7 @@
 # Installation
 Please refer to the [Releases](../../releases) section for a ready-to-run set of binaries. Release 2.0 is self-contained, XCOPY / UnZip and run - no external installation required other than .NET Framework 4.7.2 or above. We now include the [msdia140.dll](https://blogs.msdn.microsoft.com/calvin_hsia/2016/07/30/whats-in-a-pdb-file-use-the-debug-interface-access-sdk/) and [XELite](https://www.nuget.org/packages/Microsoft.SqlServer.XEvent.XELite/) as part of the ZIP file with the rest of the binaries. Note that SQLCallStackResolver 2.0 is released as purely for 64-bit the Intel/AMD family (x64) Windows OS. Windows 10 or Windows Server 2016 are the minimum required OS versions. SQLCallStackResolver uses registration-free COM activation of msdia140.dll, so no additional configuration is needed.
 
-Note: DIA, and associated necessary Visual C++ runtime dependency DLLs (msvcp140.dll, vcruntime140.dll and vcruntime140_1.dll are redistributable components of Visual Studio 2022 subject to terms as published [here](https://docs.microsoft.com/en-us/visualstudio/releases/2022/redistribution). Windows Debugging Tools DLLs (dbghelp.dll and symsrv.dll) are used as per the terms published [here](https://docs.microsoft.com/en-us/legal/windows-sdk/redist#debugging-tools-for-windows).
+Redistributable components used, and their associated terms of use are documented in the [Building](#building) section.
 
 # Usage
 The tool comes with a pre-populated example in the textboxes, just follow that example with your real-world stack(s). The textbox on the left accepts the following types of input:
@@ -42,9 +42,8 @@ When you submit a pull request, a CLA bot will automatically determine whether y
 * Once you load the SLN, you might need to fix the reference to msdia140typelib_clr0200.dll (found under `<<VisualStudioFolder>>\Team Tools\Performance Tools\Plugins\` or `<<VisualStudioFolder>>\Common7\IDE\Extensions\TestPlatform)`. You can also get this file by installing [Performance Tools for Visual Studio 2022](https://visualstudio.microsoft.com/downloads/)
 * Access to NuGet is needed to fetch and restore package dependencies.
 * If needed, you may also need to manually obtain the current versions of the following files:
-    * symsrv.dll and dbghelp.dll (from the x64 / AMD64 Windows Debugger package, part of Windows SDK and many other tools)
-    * msdia140.dll and msdia140.dll.manifest are redistributable components of Visual Studio 2022 subject to terms as published [here](https://docs.microsoft.com/en-us/visualstudio/releases/2022/redistribution).
-    * Windows Debugging Tools DLLs (dbghelp.dll and symsrv.dll) as per the terms published [here](https://docs.microsoft.com/en-us/legal/windows-sdk/redist#debugging-tools-for-windows).
+    * symsrv.dll and dbghelp.dll (from the x64 / AMD64 Windows Debugger package, part of Windows SDK and many other tools) are used under the terms published [here](https://docs.microsoft.com/en-us/legal/windows-sdk/redist#debugging-tools-for-windows).
+    * msdia140.dll and msdia140.dll.manifest are redistributable components of Visual Studio 2022 used under the terms as published [here](https://docs.microsoft.com/en-us/visualstudio/releases/2022/redistribution).
 * Tests are implemented using [xUnit](https://xunit.net/docs/getting-started/netfx/visual-studio#run-tests-visualstudio). Please try to ensure that tests are passing before submitting a PR. In order to run tests, you will need to run the Tests\TestCases\downloadsyms.ps1 file to gather pre-requisites. Watch for warnings from the script - there are typically 3 files you will need to gather manually (instructions provided in the PowerShell script).
 * When a PR is submitted, there is a GitHub Actions workflow which will build the project and run tests. PRs cannot merge till the workflow succeeds.
 
