@@ -48,7 +48,7 @@
       <HintPath>..\packages\Microsoft.SqlServer.XEvent.XELite.2021.12.12.2\lib\net462\Microsoft.SqlServer.XEvent.XELite.dll</HintPath>
     </Reference>
     <Reference Include="msdia140typelib_clr0200">
-      <HintPath>c:\Program Files\Microsoft Visual Studio\2022\Enterprise\Team Tools\Performance Tools\Plugins\msdia140typelib_clr0200.dll</HintPath>
+      <HintPath>..\packages\Microsoft.TestPlatform.17.2.0\tools\net451\Common7\IDE\Extensions\TestPlatform\msdia140typelib_clr0200.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL" />
@@ -93,13 +93,15 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ContentWithTargetPath Include="DIA\msdia140.dll.manifest">
+    <ContentWithTargetPath Include="..\packages\Microsoft.TestPlatform.17.2.0\tools\net451\Common7\IDE\Extensions\TestPlatform\x64\msdia140.dll.manifest">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>msdia140.dll.manifest</TargetPath>
+      <Link>DIA\msdia140.dll.manifest</Link>
     </ContentWithTargetPath>
-    <ContentWithTargetPath Include="DIA\msdia140.dll">
+    <ContentWithTargetPath Include="..\packages\Microsoft.TestPlatform.17.2.0\tools\net451\Common7\IDE\Extensions\TestPlatform\x64\msdia140.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>msdia140.dll</TargetPath>
+      <Link>DIA\msdia140.dll</Link>
     </ContentWithTargetPath>
   </ItemGroup>
   <ItemGroup>

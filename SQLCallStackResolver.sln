@@ -14,6 +14,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Files", "Files", "{551EED46
 		latestrelease.txt = latestrelease.txt
 		LICENSE = LICENSE
 		README.md = README.md
+		SUPPORT.md = SUPPORT.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SQLCalLStackResolver.Tests", "Tests\SQLCalLStackResolver.Tests.csproj", "{34EDE1D2-801A-407F-9F09-FF9572DB8771}"

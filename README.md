@@ -1,4 +1,7 @@
 [![](https://github.com/microsoft/SQLCallStackResolver/workflows/Build%20SQLCallStackResolver/badge.svg)](https://github.com/microsoft/SQLCallStackResolver/actions)
+# Overview
+SQLCallStackResolver is a sample tool provided for users who want to resolve the raw call stack information provided by Microsoft SQL Server, to a "symbolized" form with function names. This helps in self-service diagnostics of certain SQL Server issues. Please note that this sample tool is provided AS-IS - see [SUPPORT](SUPPORT.md) for details.
+
 # Installation
 Please refer to the [Releases](../../releases) section for a ready-to-run set of binaries. Release 2.0 is self-contained, XCOPY / UnZip and run - no external installation required other than .NET Framework 4.7.2 or above. We now include the [msdia140.dll](https://blogs.msdn.microsoft.com/calvin_hsia/2016/07/30/whats-in-a-pdb-file-use-the-debug-interface-access-sdk/) and [XELite](https://www.nuget.org/packages/Microsoft.SqlServer.XEvent.XELite/) as part of the ZIP file with the rest of the binaries. Note that SQLCallStackResolver 2.0 is released as purely for 64-bit the Intel/AMD family (x64) Windows OS. Windows 10 or Windows Server 2016 are the minimum required OS versions. SQLCallStackResolver uses registration-free COM activation of msdia140.dll, so no additional configuration is needed.
 
@@ -39,7 +42,6 @@ When you submit a pull request, a CLA bot will automatically determine whether y
 
 ## Building
 * You will need Visual Studio 2022+ installed to build this solution.
-* Once you load the SLN, you might need to fix the reference to msdia140typelib_clr0200.dll (found under `<<VisualStudioFolder>>\Team Tools\Performance Tools\Plugins\` or `<<VisualStudioFolder>>\Common7\IDE\Extensions\TestPlatform)`. You can also get this file by installing [Performance Tools for Visual Studio 2022](https://visualstudio.microsoft.com/downloads/)
 * Access to NuGet is needed to fetch and restore package dependencies.
 * If needed, you may also need to manually obtain the current versions of the following files:
     * symsrv.dll and dbghelp.dll (from the x64 / AMD64 Windows Debugger package, part of Windows SDK and many other tools) are used under the terms published [here](https://docs.microsoft.com/en-us/legal/windows-sdk/redist#debugging-tools-for-windows).
