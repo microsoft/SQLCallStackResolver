@@ -3,6 +3,9 @@
 
 param ($sqldkDownloadURL, $spinsXelZipDownloadURL, $waitCompletedXelDownloadUrl)
 $msdlurl = "https://msdl.microsoft.com/download/symbols/"
+
+$ProgressPreference = "SilentlyContinue"
+
 ### TestBlockResolution
 mkdir -Force ".\TestBlockResolution" -ErrorAction Ignore
 $localpath = ".\TestBlockResolution\kernelbase.pdb"
