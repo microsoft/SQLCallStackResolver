@@ -22,12 +22,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         public static int RvaToOffset(int virtualAddress, ImmutableArray<SectionHeader> sections) {
-            foreach (var section in sections) {
-                if (section.VirtualAddress <= virtualAddress && virtualAddress < section.VirtualAddress + section.VirtualSize)
-                    return section.PointerToRawData + (virtualAddress - section.VirtualAddress);
-            }
-
-            return -1;
+            var section = sections.Where(s => s.VirtualAddress <= virtualAddress && virtualAddress < s.VirtualAddress + s.VirtualSize);
+            return section.Any() ? section.First().PointerToRawData + virtualAddress - section.First().VirtualAddress : -1;
         }
     }
 }

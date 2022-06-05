@@ -92,9 +92,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 symcmds.AppendLine($"# {bld}");
                 symcmds.AppendLine($"$outputFolder = 'c:\\sqlsyms\\{bld.BuildNumber}\\{bld.MachineType}' # <<change this output folder if needed>>'");
                 symcmds.AppendLine($"mkdir -f $outputFolder");
-                foreach (var sym in bld.SymbolDetails) {
-                    if (!sym.DownloadVerified) continue;
-
+                foreach (var sym in bld.SymbolDetails.Where(s => s.DownloadVerified)) {
                     symcmds.AppendLine($"if (-not (Test-Path \"$outputFolder\\{sym.PDBName}.pdb\")) {{ Invoke-WebRequest -uri '{sym.DownloadURL}' -OutFile \"$outputFolder\\{sym.PDBName}.pdb\" }} # File version {sym.FileVersion}");
                 }
 

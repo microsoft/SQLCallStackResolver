@@ -12,14 +12,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
             try {
                 HttpWebResponse httpResp = (HttpWebResponse)httpReq.GetResponse();
-                if (httpResp != null) {
-                    if (httpResp.StatusCode == HttpStatusCode.OK) {
-                        using (var strm = new StreamReader(httpResp.GetResponseStream()))
-                            return strm.ReadToEnd().Trim();
-                    }
+                if (httpResp != null && httpResp.StatusCode == HttpStatusCode.OK) {
+                    using (var strm = new StreamReader(httpResp.GetResponseStream()))
+                        return strm.ReadToEnd().Trim();
                 }
-            } catch (WebException) {
-            }
+            } catch (WebException) { /* by design this is empty to handle the case where the URL is invalid */ }
 
             return null;
         }

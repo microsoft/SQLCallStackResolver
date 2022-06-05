@@ -22,10 +22,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// select name, base_address from sys.dm_os_loaded_modules where name not like '%.rll'
         public List<ModuleInfo> LoadedModules = new List<ModuleInfo>();
         /// A cache of already resolved addresses
-        Dictionary<string, string> cachedSymbols = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> cachedSymbols = new Dictionary<string, string>();
         /// R/W lock to protect the above cached symbols dictionary
-        ReaderWriterLockSlim rwLockCachedSymbols = new ReaderWriterLockSlim();
-        DLLOrdinalHelper dllMapHelper = new DLLOrdinalHelper();
+        private readonly ReaderWriterLockSlim rwLockCachedSymbols = new ReaderWriterLockSlim();
+        private readonly DLLOrdinalHelper dllMapHelper = new DLLOrdinalHelper();
         /// Status message - populated during associated long-running operations
         public string StatusMessage;
         /// Internal counter used to implement progress reporting
@@ -62,12 +62,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 var matchVA = rgxVAOnly.Match(currentFrame);
                 if (matchVA.Success) {
                     ulong virtAddress = Convert.ToUInt64(matchVA.Groups["vaddress"].Value, 16);
-                    if (TryObtainModuleOffset(virtAddress, out string moduleName, out uint offset)) {
-                        retval[frameNum] = string.Format(CultureInfo.CurrentCulture, "{0}+0x{1:X}", moduleName, offset);
-                    }
-                    else {
-                        retval[frameNum] = currentFrame.Trim();
-                    }
+                    retval[frameNum] = TryObtainModuleOffset(virtAddress, out string moduleName, out uint offset)
+                        ? string.Format(CultureInfo.CurrentCulture, "{0}+0x{1:X}", moduleName, offset)
+                        : currentFrame.Trim();
                 }
                 else {
                     retval[frameNum] = currentFrame.Trim();
@@ -110,8 +107,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                             DiaUtil.LocateandLoadPDBs(_diautils, tp.symPath, tp.searchPDBsRecursively, new List<string>() { matchedModuleName }, tp.cachePDB, modulesToIgnore);
                         }
 
-                        if (_diautils.ContainsKey(matchedModuleName) && _diautils[matchedModuleName].HasSourceInfo) {
-                            var myDIAsession = _diautils[matchedModuleName]._IDiaSession;
+                        if (_diautils.TryGetValue(matchedModuleName, out var existingEntry) && _diautils[matchedModuleName].HasSourceInfo) {
+                            var myDIAsession = existingEntry._IDiaSession;
                             myDIAsession.findChildrenEx(myDIAsession.globalScope, SymTagEnum.SymTagNull, matchAlreadySymbolized.Groups["symbolizedfunc"].Value, 0, out IDiaEnumSymbols matchedSyms);
 
                             var foundMatch = false;
@@ -120,9 +117,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                                     IDiaSymbol tmpSym = matchedSyms.Item(tmpOrdinal);
                                     string offsetString = matchAlreadySymbolized.Groups["offset"].Value;
                                     int numberBase = offsetString.ToUpperInvariant().StartsWith("0X", StringComparison.CurrentCulture) ? 16 : 10;
-                                    var currAddress = (uint)(tmpSym.addressOffset + Convert.ToUInt32(offsetString, numberBase));
+                                    var currAddress = tmpSym.addressOffset + Convert.ToUInt32(offsetString, numberBase);
 
-                                    string tmpsourceInfo = String.Empty;
                                     myDIAsession.findLinesByRVA(tmpSym.relativeVirtualAddress, (uint)tmpSym.length, out IDiaEnumLineNumbers enumAllLineNums);
                                     if (enumAllLineNums.count > 0) {
                                         for (uint tmpOrdinalInner = 0; tmpOrdinalInner < enumAllLineNums.count; tmpOrdinalInner++) {
@@ -203,13 +199,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             // the offsets in the XE output are in hex, so we convert to base-10 accordingly
             var rva = Convert.ToUInt32(offset, 16);
             var symKey = moduleName + rva.ToString(CultureInfo.CurrentCulture);
-            string result = null;
             this.rwLockCachedSymbols.EnterReadLock();
-            if (this.cachedSymbols.ContainsKey(symKey)) {
-                result = this.cachedSymbols[symKey];
-            }
+            bool resWasCached = this.cachedSymbols.TryGetValue(symKey, out string result);
             this.rwLockCachedSymbols.ExitReadLock();
-            if (string.IsNullOrEmpty(result)) {
+            if (!resWasCached) {
                 // process the function name (symbol); initially we look for 'block' symbols, which have a parent function; typically this is seen in kernelbase.dll 
                 // (not very important for XE callstacks but important if you have an assert or non-yielding stack in SQLDUMPnnnn.txt files...)
                 _diautils[moduleName]._IDiaSession.findSymbolByRVAEx(rva, SymTagEnum.SymTagBlock, out IDiaSymbol mysym, out int displacement);
@@ -261,11 +254,13 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 // make sure we cleanup COM allocations for the resolved sym
                 Marshal.FinalReleaseComObject(mysym);
                 result = (inlineFrameAndSourceInfo + symbolizedFrame + "\t" + sourceInfo).Trim();
-                this.rwLockCachedSymbols.EnterWriteLock();
-                if (!this.cachedSymbols.ContainsKey(symKey)) {
-                    this.cachedSymbols.Add(symKey, result);
+                if (!resWasCached) {    // we only need to add to cache if it was not already cached.
+                    this.rwLockCachedSymbols.EnterWriteLock();
+                    if (!this.cachedSymbols.ContainsKey(symKey)) {
+                        this.cachedSymbols.Add(symKey, result);
+                    }
+                    this.rwLockCachedSymbols.ExitWriteLock();
                 }
-                this.rwLockCachedSymbols.ExitWriteLock();
             }
 
             if (frameNum != int.MinValue) {
@@ -280,7 +275,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             return result;
         }
 
-        /// This helper function parses the output of the sys.dm_os_loaded_modules query and constructs an internal map of each modules start and end virtual address
+        /// <summary>
+        /// Parse the output of the sys.dm_os_loaded_modules query and constructs an internal map of each modules start and end virtual address
+        /// </summary>
         public bool ProcessBaseAddresses(string baseAddressesString) {
             bool retVal = true;
             if (string.IsNullOrEmpty(baseAddressesString)) {
@@ -381,10 +378,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 // do nothing because this is not a XML doc
             }
 
-            var listOfCallStacks = new List<StackWithCount>();
+            var listOfCallStacks = new List<StackDetails>();
             if (!isXMLdoc) {
                 this.StatusMessage = "Input being treated as a single callstack...";
-                listOfCallStacks.Add(new StackWithCount(inputCallstackText, framesOnSingleLine, 1));
+                listOfCallStacks.Add(new StackDetails(inputCallstackText, framesOnSingleLine));
             }
             else {
                 this.StatusMessage = "Input is well formed XML, proceeding...";
@@ -410,7 +407,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                             // proceed to extract the surrounding XML markup
                             callstackTextNode.ParentNode.RemoveChild(callstackTextNode);
                             var eventXMLMarkup = currstack.OuterXml.Replace("\r", string.Empty).Replace("\n", string.Empty);
-                            listOfCallStacks.Add(new StackWithCount(callstackText, framesOnSingleLine, 1, $"Event details: {eventXMLMarkup}:{callstackText}"));
+                            listOfCallStacks.Add(new StackDetails(callstackText, framesOnSingleLine, $"Event details: {eventXMLMarkup}:{callstackText}"));
                             stacknum++;
                             this.PercentComplete = (int)((double)stacknum / allstacknodes.Count * 100.0);
                         }
@@ -438,7 +435,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         var annotation = currstack.ParentNode.Attributes["annotation"]?.Value;
                         if (!string.IsNullOrWhiteSpace(annotation)) { annotation = annotation.Trim() + Environment.NewLine; }
                         var slotcount = int.Parse(currstack.Attributes["count"].Value, CultureInfo.CurrentCulture);
-                        listOfCallStacks.Add(new StackWithCount(currstack.SelectSingleNode("./value[1]").InnerText, framesOnSingleLine, slotcount, $"{annotation}Slot_{stacknum}\t[count:{slotcount}]:"));
+                        listOfCallStacks.Add(new StackDetails(currstack.SelectSingleNode("./value[1]").InnerText, framesOnSingleLine, $"{annotation}Slot_{stacknum}\t[count:{slotcount}]:"));
                         stacknum++;
                         this.PercentComplete = (int)((double)stacknum / allstacknodes.Count * 100.0);
                     }
@@ -455,7 +452,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 symPath = string.Join(";", paths) + ";" + symPath;
             } else {
                 if (listOfCallStacks.Count == 0) {
-                    listOfCallStacks.Add(new StackWithCount(inputCallstackText, framesOnSingleLine, 1));
+                    listOfCallStacks.Add(new StackDetails(inputCallstackText, framesOnSingleLine));
                 }
                 this.StatusMessage = "Looking for embedded XML-formatted frames and symbol information...";
                 // attempt to check if there are XML-formatted frames each with the related PDB attributes and if so replace those lines with the normalized versions
@@ -553,12 +550,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             GC.WaitForPendingFinalizers();
 
             this.StatusMessage = "Finished!";
-            if (string.IsNullOrEmpty(outputFilePath)) {
-                return finalCallstack.ToString();
-            }
-            else {
-                return $@"Output has been saved to {outputFilePath}";
-            }
+            return string.IsNullOrEmpty(outputFilePath) ? finalCallstack.ToString() : $@"Output has been saved to {outputFilePath}";
         }
 
         /// Function executed by worker threads to process callstacks. Threads work on portions of the listOfCallStacks based on their thread ordinal.
@@ -607,7 +599,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         static readonly string[] wellKnownModuleNames = new string[] { "ntdll", "kernel32", "kernelbase", "ntoskrnl", "sqldk", "sqlmin", "sqllang", "sqltses", "sqlaccess", "qds", "hkruntime", "hkengine", "hkcompile", "sqlos", "sqlservr", "SqlServerSpatial", "SqlServerSpatial110", "SqlServerSpatial120", "SqlServerSpatial130", "SqlServerSpatial140", "SqlServerSpatial150" };
 
+        /// <summary>
         /// This method generates a PowerShell script to automate download of matched PDBs from the public symbol server.
+        /// </summary>
         public static List<Symbol> GetSymbolDetailsForBinaries(List<string> dllPaths, bool recurse, List<Symbol> existingSymbols = null) {
             if (dllPaths == null || dllPaths.Count == 0) {
                 return new List<Symbol>();

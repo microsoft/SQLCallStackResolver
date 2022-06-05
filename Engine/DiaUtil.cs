@@ -11,12 +11,12 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
     /// Wrapper class around DIA
     internal class DiaUtil {
-        internal IDiaDataSource _IDiaDataSource;
-        internal IDiaSession _IDiaSession;
+        internal readonly IDiaDataSource _IDiaDataSource;
+        internal readonly IDiaSession _IDiaSession;
         private bool disposedValue = false;
-        public bool HasSourceInfo = false;
+        public readonly bool HasSourceInfo = false;
 
-        private static object _syncRoot = new object();
+        private static readonly object _syncRoot = new object();
 
         internal DiaUtil(string pdbName) {
             _IDiaDataSource = new DiaSource();
@@ -52,36 +52,28 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// This function builds up the PDB map, by searching for matched PDBs (based on name) and constructing the DIA session for each
-        /// It is VERY important to specify the PDB search paths correctly, because there is no 'signature' information available 
-        /// to match the PDB in any automatic way.
         internal static bool LocateandLoadPDBs(Dictionary<string, DiaUtil> _diautils, string rootPaths, bool recurse, List<string> moduleNames, bool cachePDB, List<string> modulesToIgnore) {
             // loop through each module, trying to find matched PDB files
-            var splitRootPaths = rootPaths.Split(';');
-            foreach (string currentModule in moduleNames) {
-                if (modulesToIgnore.Contains(currentModule)) continue;
-                if (!_diautils.ContainsKey(currentModule)) {
-                    // check if the PDB is already cached locally
+            foreach (string currentModule in moduleNames.Where(m => !modulesToIgnore.Contains(m))) {
+                if (!_diautils.ContainsKey(currentModule)) {     // we only need to search for the PDB if it does not already exist in our map
                     var cachedPDBFile = Path.Combine(Path.GetTempPath(), "SymCache", currentModule + ".pdb");
-                    lock (_syncRoot) {
+                    lock (_syncRoot) {  // the lock is needed to ensure that we do not make multiple copies of PDBs when cachePDB is true
                         if (!File.Exists(cachedPDBFile)) {
-                            foreach (var currPath in splitRootPaths) {
-                                if (Directory.Exists(currPath)) {
-                                    var foundFiles = Directory.EnumerateFiles(currPath, currentModule + ".pdb", recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
-                                    if (!foundFiles.Any()) {
-                                        // repeat the search but with a more relaxed filter. this (somewhat hacky) consideration is required
-                                        // for modules like vcruntime140.dll where the PDB name is actually vcruntime140.amd64.pdb
-                                        foundFiles = Directory.EnumerateFiles(currPath, currentModule + ".*.pdb", recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
-                                    }
+                            foreach (var currPath in rootPaths.Split(';').Where(p => Directory.Exists(p))) {
+                                var foundFiles = Directory.EnumerateFiles(currPath, currentModule + ".pdb", recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
+                                if (!foundFiles.Any()) {
+                                    // repeat the search but with a more relaxed filter. this (somewhat hacky) consideration is required
+                                    // for modules like vcruntime140.dll where the PDB name is actually vcruntime140.amd64.pdb
+                                    foundFiles = Directory.EnumerateFiles(currPath, currentModule + ".*.pdb", recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
+                                }
 
-                                    if (foundFiles.Any()) {
-                                        if (cachePDB) {
-                                            File.Copy(foundFiles.First(), cachedPDBFile);
-                                        }
-                                        else {
-                                            cachedPDBFile = foundFiles.First();
-                                        }
-                                        break;
+                                if (foundFiles.Any()) {
+                                    if (cachePDB) {
+                                        File.Copy(foundFiles.First(), cachedPDBFile);
+                                    } else {
+                                        cachedPDBFile = foundFiles.First();
                                     }
+                                    break;
                                 }
                             }
                         }

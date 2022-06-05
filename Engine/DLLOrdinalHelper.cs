@@ -39,16 +39,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 // define a regex to identify such ordinal based frames
                 var rgxOrdinalNotation = new Regex(@"(?<module>\w+)(\.dll)*!Ordinal(?<ordinal>[0-9]+)\s*\+\s*(0[xX])*");
                 var matchednotations = rgxOrdinalNotation.Matches(callstack);
-
                 var moduleNames = new List<string>();
-                if (matchednotations.Count > 0) {
-                    foreach (Match match in matchednotations) {
-                        var currmodule = match.Groups["module"].Value;
-                        if (!moduleNames.Contains(currmodule)) {
-                            moduleNames.Add(currmodule);
-                        }
-                    }
-                }
+                moduleNames.AddRange(from Match match in matchednotations let currmodule = match.Groups["module"].Value where !moduleNames.Contains(currmodule) select currmodule);
 
                 // then we see if there is a matched DLL in any of the paths we have
                 foreach (var currmodule in moduleNames) {

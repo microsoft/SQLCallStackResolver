@@ -38,7 +38,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             return outPath.ToString();
         }
 
+        /// <summary>
         /// Public method to return local PDB file paths for specified symbols.
+        /// </summary>
         public static List<string> GetFolderPathsForPDBs(StackResolver parent, string symPath, List<Symbol> syms) {
             var retval = new List<string>();
             Contract.Requires(null != syms);

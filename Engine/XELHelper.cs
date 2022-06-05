@@ -21,24 +21,22 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var callstackSlots = new ConcurrentDictionary<string, long>();
             var callstackRaw = new ConcurrentDictionary<string, string>();
             var xmlEquivalent = new StringBuilder();
-            foreach (var xelFileName in xelFiles) {
-                if (File.Exists(xelFileName)) {
-                    parent.StatusMessage = $@"Reading {xelFileName}...";
-                    var xeStream = new XEFileEventStreamer(xelFileName);
-                    await xeStream.ReadEventStream(
-                        () => {
-                            return Task.CompletedTask;
-                        },
-                        evt => {
-                            var eventKey = string.Join(Environment.NewLine, evt.Actions.Union(evt.Fields).Join(fieldsToGroupOn, l => l.Key, r => r, (l, r) => new { val = l.Value.ToString() }).Select(v => v.val)).Trim();
-                            if (!string.IsNullOrWhiteSpace(eventKey)) {
-                                if (groupEvents) callstackSlots.AddOrUpdate(eventKey, 1, (k, v) => v + 1);
-                                else callstackRaw.AddOrUpdate(string.Format(CultureInfo.CurrentCulture, "File: {0}, Timestamp: {1}, UUID: {2}:", xelFileName, evt.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss.fffffff", CultureInfo.CurrentCulture), evt.UUID), eventKey, (k, v) => v + $"{Environment.NewLine}{eventKey}");
-                            }
-                            return Task.CompletedTask;
-                        },
-                        CancellationToken.None);
-                }
+            foreach (var xelFileName in xelFiles.Where(f => File.Exists(f))) {
+                parent.StatusMessage = $@"Reading {xelFileName}...";
+                var xeStream = new XEFileEventStreamer(xelFileName);
+                await xeStream.ReadEventStream(
+                    () => {
+                        return Task.CompletedTask;
+                    },
+                    evt => {
+                        var eventKey = string.Join(Environment.NewLine, evt.Actions.Union(evt.Fields).Join(fieldsToGroupOn, l => l.Key, r => r, (l, r) => new { val = l.Value.ToString() }).Select(v => v.val)).Trim();
+                        if (!string.IsNullOrWhiteSpace(eventKey)) {
+                            if (groupEvents) callstackSlots.AddOrUpdate(eventKey, 1, (k, v) => v + 1);
+                            else callstackRaw.AddOrUpdate(string.Format(CultureInfo.CurrentCulture, "File: {0}, Timestamp: {1}, UUID: {2}:", xelFileName, evt.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss.fffffff", CultureInfo.CurrentCulture), evt.UUID), eventKey, (k, v) => v + $"{Environment.NewLine}{eventKey}");
+                        }
+                        return Task.CompletedTask;
+                    },
+                    CancellationToken.None);
             }
 
             parent.StatusMessage = "Finished reading file(s), finalizing output...";
@@ -90,17 +88,17 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var allFields = new HashSet<string>();
             foreach (var file in xelFiles) {
                 var numEvents = 0;
-                var cts = new CancellationTokenSource();
-                var xeStream = new XEFileEventStreamer(file);
-                try {
-                    await xeStream.ReadEventStream(
-                        evt => {
-                            if (Interlocked.Increment(ref numEvents) > eventsToSampleFromEachFile) cts.Cancel();
-                            lock (allActions) evt.Actions.Select(action => allActions.Add(action.Key)).Count();
-                            lock (allFields) evt.Fields.Select(field => allFields.Add(field.Key)).Count();
-                            return Task.CompletedTask;
-                        }, cts.Token);
-                } catch (OperationCanceledException) {
+                using (var cts = new CancellationTokenSource()) {
+                    var xeStream = new XEFileEventStreamer(file);
+                    try {
+                        await xeStream.ReadEventStream(
+                            evt => {
+                                if (Interlocked.Increment(ref numEvents) > eventsToSampleFromEachFile) cts.Cancel();
+                                lock (allActions) evt.Actions.Select(action => allActions.Add(action.Key)).Count();
+                                lock (allFields) evt.Fields.Select(field => allFields.Add(field.Key)).Count();
+                                return Task.CompletedTask;
+                            }, cts.Token);
+                    } catch (OperationCanceledException) { /* there's really nothing to do here so it is empty */ }
                 }
             }
 

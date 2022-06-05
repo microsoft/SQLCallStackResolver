@@ -83,7 +83,7 @@
     <Compile Include="SQLBuildInfo.cs" />
     <Compile Include="StackResolver.cs" />
     <Compile Include="Symbol.cs" />
-    <Compile Include="StackWithCount.cs" />
+    <Compile Include="StackDetails.cs" />
     <Compile Include="SymSrvHelpers.cs" />
     <Compile Include="ThreadParams.cs" />
     <Compile Include="XELHelper.cs" />
