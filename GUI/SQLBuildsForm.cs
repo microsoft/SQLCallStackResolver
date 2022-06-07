@@ -41,34 +41,30 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 return;
             }
 
-            if (treeviewSyms.SelectedNode.Tag is SQLBuildInfo bld) {
-                if (bld.SymbolDetails.Count > 0) {
-                    dnldButton.Enabled = false;
-                    lastDownloadedSymFolder = $@"{pathToPDBs}\{bld.BuildNumber}.{bld.MachineType}";
-                    Directory.CreateDirectory(lastDownloadedSymFolder);
-                    using (var client = new WebClient()) {
-                        client.DownloadProgressChanged += new DownloadProgressChangedEventHandler(Client_DownloadProgressChanged);
-                        client.DownloadFileCompleted += new AsyncCompletedEventHandler(Client_DownloadFileCompleted);
-                        foreach (var sym in bld.SymbolDetails) {
-                            var url = sym.DownloadURL;
-                            if (!string.IsNullOrEmpty(url)) {
-                                var uri = new Uri(url);
-                                string filename = Path.GetFileName(uri.LocalPath);
-                                if (File.Exists($@"{lastDownloadedSymFolder}\{filename}")) {
-                                    continue;
-                                }
-                                downloadStatus.Text = filename;
-                                activeDownload = true;
-                                client.DownloadFileAsync(new Uri(url), $@"{lastDownloadedSymFolder}\{filename}");
-                                while (activeDownload) {
-                                    Thread.Sleep(300);
-                                    Application.DoEvents();
-                                }
-                            }
+            if (treeviewSyms.SelectedNode.Tag is SQLBuildInfo bld && bld.SymbolDetails.Count > 0) {
+                dnldButton.Enabled = false;
+                lastDownloadedSymFolder = $@"{pathToPDBs}\{bld.BuildNumber}.{bld.MachineType}";
+                Directory.CreateDirectory(lastDownloadedSymFolder);
+                using (var client = new WebClient()) {
+                    client.DownloadProgressChanged += new DownloadProgressChangedEventHandler(Client_DownloadProgressChanged);
+                    client.DownloadFileCompleted += new AsyncCompletedEventHandler(Client_DownloadFileCompleted);
+                    var urls = bld.SymbolDetails.Select(s => s.DownloadURL);
+                    foreach (var (url, filename) in from url in urls where !string.IsNullOrEmpty(url) let uri = new Uri(url) let filename = Path.GetFileName(uri.LocalPath) select (url, filename)) {
+                        if (File.Exists($@"{lastDownloadedSymFolder}\{filename}")) {
+                            continue;
                         }
-                        downloadStatus.Text = "Done.";
-                        dnldButton.Enabled = true;
+
+                        downloadStatus.Text = filename;
+                        activeDownload = true;
+                        client.DownloadFileAsync(new Uri(url), $@"{lastDownloadedSymFolder}\{filename}");
+                        while (activeDownload) {
+                            Thread.Sleep(300);
+                            Application.DoEvents();
+                        }
                     }
+
+                    downloadStatus.Text = "Done.";
+                    dnldButton.Enabled = true;
                 }
             }
         }
@@ -92,23 +88,20 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 return;
             }
 
-            if (treeviewSyms.SelectedNode.Tag is SQLBuildInfo bld) {
-                if (bld.SymbolDetails.Count > 0) {
-                    List<string> failedUrls = new List<string>();
-                    foreach (var sym in bld.SymbolDetails) {
-                        var url = sym.DownloadURL;
-                        downloadStatus.Text = url;
-                        if (!Symbol.IsURLValid(new Uri(url))) {
-                            failedUrls.Add(url);
-                        }
+            if (treeviewSyms.SelectedNode.Tag is SQLBuildInfo bld && bld.SymbolDetails.Count > 0) {
+                List<string> failedUrls = new List<string>();
+                var urls = bld.SymbolDetails.Select(s => s.DownloadURL);
+                foreach (var url in urls) {
+                    downloadStatus.Text = url;
+                    if (!Symbol.IsURLValid(new Uri(url))) {
+                        failedUrls.Add(url);
                     }
+                }
 
-                    if (failedUrls.Count > 0) {
-                        MessageBox.Show(string.Join(",", failedUrls));
-                    }
-                    else {
-                        downloadStatus.Text = "All PDBs for this build are available!";
-                    }
+                if (failedUrls.Count > 0) {
+                    MessageBox.Show(string.Join(",", failedUrls));
+                } else {
+                    downloadStatus.Text = "All PDBs for this build are available!";
                 }
             }
         }
@@ -127,14 +120,12 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         private bool CheckIfAnyNodesMatch(TreeNode node) {
-            if (node.Tag is SQLBuildInfo bld) {
-                if (bld.ToString().ToLower(CultureInfo.CurrentCulture).Contains(searchText.Text.Trim().ToLower(CultureInfo.CurrentCulture))) {
-                    treeviewSyms.SelectedNode = node;
-                    treeviewSyms.Select();
-                    treeviewSyms.Refresh();
-                    Application.DoEvents();
-                    return true;
-                }
+            if (node.Tag is SQLBuildInfo bld && bld.ToString().ToLower(CultureInfo.CurrentCulture).Contains(searchText.Text.Trim().ToLower(CultureInfo.CurrentCulture))) {
+                treeviewSyms.SelectedNode = node;
+                treeviewSyms.Select();
+                treeviewSyms.Refresh();
+                Application.DoEvents();
+                return true;
             }
 
             foreach (TreeNode child in node.Nodes) {

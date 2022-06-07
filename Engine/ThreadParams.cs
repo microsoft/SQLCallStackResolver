@@ -5,7 +5,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
     internal class ThreadParams {
         internal int threadOrdinal;
-        internal List<StackWithCount> listOfCallStacks;
+        internal List<StackDetails> listOfCallStacks;
         internal string symPath;
         internal bool searchPDBsRecursively;
         internal List<string> dllPaths;

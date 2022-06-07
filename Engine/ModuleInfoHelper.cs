@@ -12,12 +12,13 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     using System.Xml;
 
     public static class ModuleInfoHelper {
-        private static Regex rgxPDBName = new Regex(@"^(?<pdb>.+)(\.pdb)$", RegexOptions.IgnoreCase);
-        private static Regex rgxFileName = new Regex(@"^(?<module>.+)\.(dll|exe)$", RegexOptions.IgnoreCase);
+        private static readonly Regex rgxPDBName = new Regex(@"^(?<pdb>.+)(\.pdb)$", RegexOptions.IgnoreCase);
+        private static readonly Regex rgxFileName = new Regex(@"^(?<module>.+)\.(dll|exe)$", RegexOptions.IgnoreCase);
 
-        /// Given a set of rows each containing several comma-separated fields, return a set of resolved Symbol
-        /// objects each of which have PDB GUID and age details.
-        public static Dictionary<string, Symbol> ParseModuleInfo(List<StackWithCount> listOfCallStacks) {
+        /// <summary>
+        /// Parse the input and return a set of resolved Symbol objects
+        /// </summary>
+        public static Dictionary<string, Symbol> ParseModuleInfo(List<StackDetails> listOfCallStacks) {
             var retval = new Dictionary<string, Symbol>();
             Parallel.ForEach(listOfCallStacks.Select(c => c.CallstackFrames), lines => {
                 Contract.Requires(lines.Length > 0);
@@ -30,8 +31,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     var fields = line.Split(',');
                     // only attempt to process further if this line does look like it has delimited fields
                     if (fields.Length >= 3) {
-                        foreach (var rawfield in fields) {
-                            var field = rawfield.Trim().TrimEnd('"').TrimStart('"');
+                        foreach (var field in fields.Select(f => f.Trim().TrimEnd('"').TrimStart('"'))) {
                             Guid tmpGuid = Guid.Empty;
                             // for each field, attempt using regexes to detect file name and GUIDs
                             if (Guid.TryParse(field, out tmpGuid)) {
@@ -78,7 +78,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             return retval;
         }
 
-        public static (Dictionary<string, Symbol>, List<StackWithCount>) ParseModuleInfoXML(List<StackWithCount> listOfCallStacks) {
+        public static (Dictionary<string, Symbol>, List<StackDetails>) ParseModuleInfoXML(List<StackDetails> listOfCallStacks) {
             var syms = new Dictionary<string, Symbol>();
 
             Parallel.ForEach(listOfCallStacks, currItem => {
@@ -96,57 +96,51 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     var lines = currItem.Callstack.Split('\n');
                     bool readStatus = false;
                     foreach (var line in lines) {
-                        if (!string.IsNullOrWhiteSpace(line)) {
-                            // only attempt further formal XML parsing if a simple text check works
-                            if (line.StartsWith("<frame")) {
-                                try {
-                                    using (var sreader = new StringReader(line)) {
-                                        using (var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null })) {
-                                            readStatus = reader.Read();
-                                            if (readStatus) {
-                                                // seems to be XML; process attributes only if all 3 are there
-                                                var moduleNameAttributeVal = reader.GetAttribute("module");
-                                                if (string.IsNullOrEmpty(moduleNameAttributeVal)){
-                                                    moduleNameAttributeVal = reader.GetAttribute("name");
-                                                }
-                                                var moduleName = Path.GetFileNameWithoutExtension(moduleNameAttributeVal);
-                                                var addressAttributeVal = reader.GetAttribute("address");
-                                                ulong addressIfPresent = string.IsNullOrEmpty(addressAttributeVal) ? ulong.MinValue : Convert.ToUInt64(addressAttributeVal, 16);
-                                                var rvaAttributeVal = reader.GetAttribute("rva");
-                                                ulong rvaIfPresent = string.IsNullOrEmpty(rvaAttributeVal) ? ulong.MinValue : Convert.ToUInt64(rvaAttributeVal, 16);
-                                                ulong calcBaseAddress = ulong.MinValue;
-                                                if (rvaIfPresent != ulong.MinValue && addressIfPresent != ulong.MinValue) {
-                                                    calcBaseAddress = addressIfPresent - rvaIfPresent;
-                                                }
-                                                lock (syms) {
-                                                    if (!syms.ContainsKey(moduleName)) {
-                                                        syms.Add(moduleName, new Symbol() { PDBName = reader.GetAttribute("pdb").ToLower(), PDBAge = int.Parse(reader.GetAttribute("age")), PDBGuid = Guid.Parse(reader.GetAttribute("guid")).ToString("N"), CalculatedModuleBaseAddress = calcBaseAddress });
-                                                    } else {
-                                                        if (ulong.MinValue == syms[moduleName].CalculatedModuleBaseAddress) {
-                                                            syms[moduleName].CalculatedModuleBaseAddress = calcBaseAddress;
-                                                        }
-                                                    }
-                                                }
-                                                string rvaAsIsOrDerived = null;
-                                                if (ulong.MinValue != rvaIfPresent) {
-                                                    rvaAsIsOrDerived = rvaAttributeVal;
-                                                } else if (ulong.MinValue != addressIfPresent && ulong.MinValue != syms[moduleName].CalculatedModuleBaseAddress) {
-                                                    rvaAsIsOrDerived = "0x" + (addressIfPresent - syms[moduleName].CalculatedModuleBaseAddress).ToString("X");
-                                                }
-
-                                                if (string.IsNullOrEmpty(rvaAsIsOrDerived)) { throw new NullReferenceException(); }
-
-                                                var frameNumHex = string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:x2}", int.Parse(reader.GetAttribute("id")));
-                                                // transform the XML into a simple module+offset notation
-                                                outCallstack.AppendFormat($"{frameNumHex} {moduleName}+{rvaAsIsOrDerived}{Environment.NewLine}");
-                                                continue;
+                        if (!string.IsNullOrWhiteSpace(line) && line.StartsWith("<frame")) { // only attempt further formal XML parsing if a simple text check works
+                            try {
+                                using (var sreader = new StringReader(line)) {
+                                    using (var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null })) {
+                                        readStatus = reader.Read();
+                                        if (readStatus) {
+                                            // seems to be XML; process attributes only if all 3 are there
+                                            var moduleNameAttributeVal = reader.GetAttribute("module");
+                                            if (string.IsNullOrEmpty(moduleNameAttributeVal)) {
+                                                moduleNameAttributeVal = reader.GetAttribute("name");
                                             }
+                                            var moduleName = Path.GetFileNameWithoutExtension(moduleNameAttributeVal);
+                                            var addressAttributeVal = reader.GetAttribute("address");
+                                            ulong addressIfPresent = string.IsNullOrEmpty(addressAttributeVal) ? ulong.MinValue : Convert.ToUInt64(addressAttributeVal, 16);
+                                            var rvaAttributeVal = reader.GetAttribute("rva");
+                                            ulong rvaIfPresent = string.IsNullOrEmpty(rvaAttributeVal) ? ulong.MinValue : Convert.ToUInt64(rvaAttributeVal, 16);
+                                            ulong calcBaseAddress = ulong.MinValue;
+                                            if (rvaIfPresent != ulong.MinValue && addressIfPresent != ulong.MinValue) {
+                                                calcBaseAddress = addressIfPresent - rvaIfPresent;
+                                            }
+                                            lock (syms) {
+                                                if (syms.TryGetValue(moduleName, out var existingEntry)) {
+                                                    if (ulong.MinValue == existingEntry.CalculatedModuleBaseAddress) existingEntry.CalculatedModuleBaseAddress = calcBaseAddress;
+                                                } else {
+                                                    syms.Add(moduleName, new Symbol() { PDBName = reader.GetAttribute("pdb").ToLower(), PDBAge = int.Parse(reader.GetAttribute("age")), PDBGuid = Guid.Parse(reader.GetAttribute("guid")).ToString("N"), CalculatedModuleBaseAddress = calcBaseAddress });
+                                                }
+                                            }
+                                            string rvaAsIsOrDerived = null;
+                                            if (ulong.MinValue != rvaIfPresent) {
+                                                rvaAsIsOrDerived = rvaAttributeVal;
+                                            } else if (ulong.MinValue != addressIfPresent && ulong.MinValue != syms[moduleName].CalculatedModuleBaseAddress) {
+                                                rvaAsIsOrDerived = "0x" + (addressIfPresent - syms[moduleName].CalculatedModuleBaseAddress).ToString("X");
+                                            }
+
+                                            if (string.IsNullOrEmpty(rvaAsIsOrDerived)) { throw new NullReferenceException(); }
+
+                                            var frameNumHex = string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:x2}", int.Parse(reader.GetAttribute("id")));
+                                            // transform the XML into a simple module+offset notation
+                                            outCallstack.AppendFormat($"{frameNumHex} {moduleName}+{rvaAsIsOrDerived}{Environment.NewLine}");
+                                            continue;
                                         }
                                     }
-                                } catch (Exception ex) {
-                                    if (ex is ArgumentNullException || ex is NullReferenceException || ex is XmlException) {
-                                    } else { throw; }
                                 }
+                            } catch (Exception ex) {
+                                if (!(ex is ArgumentNullException || ex is NullReferenceException || ex is XmlException)) { throw; }
                             }
                         }
 

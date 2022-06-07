@@ -8,12 +8,16 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     using System.IO.MemoryMappedFiles;
     using System.Reflection.PortableExecutable;
 
+    /// <summary>
     /// Helper class which stores DLL export name and address (offset)
+    /// </summary>
     public class ExportedSymbol {
         public string OrdinalName { get; set; }
         public ulong Address { get; set; }
 
-        /// Helper function to load a DLL and then lookup exported functions. For this we use CLRMD and specifically the PEHeader class
+        /// <summary>
+        /// Helper function to load a DLL and then lookup exported functions.
+        /// </summary>
         public static Dictionary<int, ExportedSymbol> GetExports(string DLLPath) {
             // this is the placeholder for the final mapping of ordinal # to address map
             Dictionary<int, ExportedSymbol> exports = null;
@@ -27,7 +31,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                             var count = exportDirectory.NumberOfFunctions;
                             exports = new Dictionary<int, ExportedSymbol>(count);
                             var functionsOffset = PEHelper.RvaToOffset(exportDirectory.AddressOfFunctions, dllImage.PEHeaders.SectionHeaders);
-                            var ordinalBase = (int)exportDirectory.Base;
+                            var ordinalBase = exportDirectory.Base;
                             for (uint funcOrdinal = 0; funcOrdinal < count; funcOrdinal++) {
                                 // read function address
                                 var address = mmfAccessor.ReadUInt32(functionsOffset + funcOrdinal * 4);

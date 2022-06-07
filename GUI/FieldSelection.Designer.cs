@@ -17,7 +17,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.label2 = new System.Windows.Forms.Label();
             this.AddItemButton = new System.Windows.Forms.Button();
             this.DelItemButton = new System.Windows.Forms.Button();
-            DataItem = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            DataItem = new System.Windows.Forms.ColumnHeader();
             this.SuspendLayout();
             DataItem.Width = 400;
             this.OKButton.DialogResult = System.Windows.Forms.DialogResult.OK;

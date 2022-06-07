@@ -3,22 +3,19 @@
 using System.Text;
 
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
-    /// helper class for cases where we have XML output
-    public class StackWithCount {
-        private string _annotation;
+    /// <summary>
+    /// Helper class for cases where we have XML frames with embedded module information.
+    /// </summary>
+    public class StackDetails {
+        private readonly string _annotation;
         private string _callStack;
-        private bool _framesOnSingleLine;
+        private readonly bool _framesOnSingleLine;
         private string _resolvedStack;
 
-        public StackWithCount(string callStack, bool framesOnSingleLine, int count, string annotation = null) {
+        public StackDetails(string callStack, bool framesOnSingleLine, string annotation = null) {
             this._annotation = annotation;
             this._framesOnSingleLine = framesOnSingleLine;
-            if (framesOnSingleLine) {
-                this._callStack = System.Text.RegularExpressions.Regex.Replace(callStack, @"\s{2,}", " ");
-            }
-            else {
-                this._callStack = callStack;
-            }
+            this._callStack = framesOnSingleLine ? System.Text.RegularExpressions.Regex.Replace(callStack, @"\s{2,}", " ") : callStack;
         }
 
         public string Callstack {

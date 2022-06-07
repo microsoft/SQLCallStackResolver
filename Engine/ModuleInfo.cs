@@ -3,7 +3,9 @@
 using System.Globalization;
 
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
+    /// <summary>
     /// Helper class to store module name, start and end address
+    /// </summary>
     public class ModuleInfo {
         public string ModuleName;
         public ulong BaseAddress;

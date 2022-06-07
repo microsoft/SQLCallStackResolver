@@ -28,15 +28,13 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         public static bool IsURLValid(Uri url) {
             try {
-                var request = WebRequest.Create(url) as HttpWebRequest;
-                request.Method = "HEAD";
-                var response = request.GetResponse() as HttpWebResponse;
-                response.Close();
-            } catch (WebException) {
-                return false;
-            }
-
-            return true;
+                if (WebRequest.Create(url) is HttpWebRequest request) {
+                    request.Method = "HEAD";
+                    if (request.GetResponse() is HttpWebResponse response) response.Close();
+                    return true;
+                }
+            } catch (WebException) { /* this will fall through to the return false so it is okay to leave blank */ }
+            return false;
         }
     }
 }

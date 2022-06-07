@@ -28,14 +28,14 @@ THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMP
         private CancellationToken backgroundCT;
 
         private string _baseAddressesString = null;
-        internal static string SqlBuildInfoFileName = @"sqlbuildinfo.json";
-        internal static string LastUpdatedTimestampFileName = @"lastupdated.txt";
-        internal static string LastUpdatedTimestampFormat = "yyyy-MM-dd HH:mm";
-        internal static string LastUpdatedTimestampCulture = "en-US";
+        internal static readonly string SqlBuildInfoFileName = @"sqlbuildinfo.json";
+        internal static readonly string LastUpdatedTimestampFileName = @"lastupdated.txt";
+        internal static readonly string LastUpdatedTimestampFormat = "yyyy-MM-dd HH:mm";
+        internal static readonly string LastUpdatedTimestampCulture = "en-US";
 
-        internal static string LatestReleaseTimestampFileName = @"latestrelease.txt";
-        internal static string LatestReleaseTimestampFormat = "yyyy-MM-dd HH:mm";
-        internal static string LatestReleaseTimestampCulture = "en-US";
+        internal static readonly string LatestReleaseTimestampFileName = @"latestrelease.txt";
+        internal static readonly string LatestReleaseTimestampFormat = "yyyy-MM-dd HH:mm";
+        internal static readonly string LatestReleaseTimestampCulture = "en-US";
 
         private void ResolveCallstacks_Click(object sender, EventArgs e) {
             List<string> dllPaths = null;
@@ -56,67 +56,57 @@ THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMP
             }
 
             bool isSingleLineInput = this._resolver.IsInputSingleLine(callStackInput.Text, ConfigurationManager.AppSettings["PatternsToTreatAsMultiline"]);
-            if (isSingleLineInput && !FramesOnSingleLine.Checked) {
-                if (DialogResult.Yes == MessageBox.Show(this,
+            if (isSingleLineInput && !FramesOnSingleLine.Checked && DialogResult.Yes == MessageBox.Show(this,
                     "Maybe this is intentional, but your input seems to have all the frames on a single line, but the 'Callstack frames are in single line' checkbox is unchecked. " +
                     "This may cause problems resolving symbols. Would you like to enable this?",
                     "Enable the 'frames on single line' option?",
                     MessageBoxButtons.YesNo)) {
-                    FramesOnSingleLine.Checked = true;
-                    FramesOnSingleLine.Refresh();
-                    this.Refresh();
-                    Application.DoEvents();
-                }
+                FramesOnSingleLine.Checked = true;
+                FramesOnSingleLine.Refresh();
+                this.Refresh();
+                Application.DoEvents();
             }
 
-            if (!isSingleLineInput && FramesOnSingleLine.Checked) {
-                if (DialogResult.Yes == MessageBox.Show(this,
+            if (!isSingleLineInput && FramesOnSingleLine.Checked && DialogResult.Yes == MessageBox.Show(this,
                     "Your input seems to have multiple lines, but the 'Callstack frames are in single line' checkbox is checked. " +
                     "This may cause problems resolving symbols. Would you like to uncheck this setting?",
                     "Disable the 'frames on single line' option?",
                     MessageBoxButtons.YesNo)) {
-                    FramesOnSingleLine.Checked = false;
-                    FramesOnSingleLine.Refresh();
-                    this.Refresh();
-                    Application.DoEvents();
-                }
+                FramesOnSingleLine.Checked = false;
+                FramesOnSingleLine.Refresh();
+                this.Refresh();
+                Application.DoEvents();
             }
 
-            if (!pdbPaths.Text.Contains(@"\\") && cachePDB.Checked) {
-                if (DialogResult.Yes == MessageBox.Show(this,
+            if (!pdbPaths.Text.Contains(@"\\") && cachePDB.Checked && DialogResult.Yes == MessageBox.Show(this,
                     "Cache PDBs is only recommended when getting symbols from UNC paths. " +
                     "Would you like to disable this?",
                     "Disable symbol file cache?",
                     MessageBoxButtons.YesNo)) {
-                    cachePDB.Checked = false;
-                    cachePDB.Refresh();
-                    this.Refresh();
-                    Application.DoEvents();
-                }
+                cachePDB.Checked = false;
+                cachePDB.Refresh();
+                this.Refresh();
+                Application.DoEvents();
             }
 
-            if (pdbPaths.Text.Contains(@"\\") && !cachePDB.Checked) {
-                if (DialogResult.Yes == MessageBox.Show(this,
+            if (pdbPaths.Text.Contains(@"\\") && !cachePDB.Checked && DialogResult.Yes == MessageBox.Show(this,
                     "When getting symbols from UNC paths, SQLCallStackResolver can temporary cache a copy when resolving symbols. " +
                     "This may speed things up especially when the UNC path is over a WAN and when you have a number of callstacks to resolve. " +
                     "Would you like to enable this?",
                     "Enable symbol file cache?",
                     MessageBoxButtons.YesNo)) {
-                    cachePDB.Checked = true;
-                    cachePDB.Refresh();
-                    this.Refresh();
-                    Application.DoEvents();
-                }
+                cachePDB.Checked = true;
+                cachePDB.Refresh();
+                this.Refresh();
+                Application.DoEvents();
             }
 
-            if (string.IsNullOrEmpty(outputFilePath.Text) && callStackInput.Text.Length > 0.1 * int.MaxValue) {
-                if (DialogResult.Yes == MessageBox.Show(this,
+            if (string.IsNullOrEmpty(outputFilePath.Text) && callStackInput.Text.Length > 0.1 * int.MaxValue && DialogResult.Yes == MessageBox.Show(this,
                     "The input seems quite large; output might be truncated unless the option to output to a file is selected and a suitable file path specified. " +
                     "It is recommended that you first do that. Do you want to exit (select Yes in that case) or continue at your own risk (select No in that case)?",
                     "Input is large, risk of truncation or errors",
                     MessageBoxButtons.YesNo)) {
-                    return;
-                }
+                return;
             }
 
             this.backgroundTask = Task.Run(() => {
@@ -232,13 +222,13 @@ THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMP
             }
         }
 
-        private void MonitorBackgroundTask(Task backgroundTask) {
+        private void MonitorBackgroundTask(Task theTask) {
             using (BackgroundCTS = new CancellationTokenSource()) {
                 backgroundCT = BackgroundCTS.Token;
 
                 this.EnableCancelButton();
 
-                while (!backgroundTask.Wait(30)) {
+                while (!theTask.Wait(30)) {
                     if (backgroundCT.IsCancellationRequested) {
                         this._resolver.CancelRunningTasks();
                     }
@@ -260,7 +250,7 @@ THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMP
         }
 
         private async void CallStackInput_DragDrop(object sender, DragEventArgs e) {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop, false) == true) {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop, false)) {
                 e.Effect = DragDropEffects.All;
 
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
@@ -298,10 +288,7 @@ THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMP
             }
         }
         private void CallStackInput_DragOver(object sender, DragEventArgs e) {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
-                e.Effect = DragDropEffects.Copy;
-            else
-                e.Effect = DragDropEffects.None;
+            e.Effect = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
         }
 
         private void PDBPathPicker_Click(object sender, EventArgs e) {
@@ -347,8 +334,7 @@ THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMP
                 pathToPDBs = ConfigurationManager.AppSettings["PDBDownloadFolder"]
             }) {
                 sqlbuildsForm.StartPosition = FormStartPosition.CenterParent;
-                DialogResult res = sqlbuildsForm.ShowDialog(this);
-
+                sqlbuildsForm.ShowDialog(this);
                 this.pdbPaths.AppendText((pdbPaths.TextLength == 0 ? string.Empty : ";") + sqlbuildsForm.lastDownloadedSymFolder);
             }
         }
@@ -394,8 +380,7 @@ THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMP
             var sqlBuildInfoURLs = ConfigurationManager.AppSettings["SQLBuildInfoURLs"].Split(';');
 
             // get the timestamp contained within the first valid file within SQLBuildInfoURLs
-            foreach (var url in sqlBuildInfoUpdateURLs) {
-                string lastUpd = Utils.GetFileContentsFromUrl(url);
+            foreach (var lastUpd in sqlBuildInfoUpdateURLs.Select(b => Utils.GetFileContentsFromUrl(b))) {
                 if (!string.IsNullOrWhiteSpace(lastUpd)) {
                     lastUpdDateTimeServer = DateTime.ParseExact(lastUpd,
                     LastUpdatedTimestampFormat, new CultureInfo(LastUpdatedTimestampCulture));
@@ -404,8 +389,8 @@ THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMP
                 // get content of local lastupdated.txt (if it exists)
                 if (File.Exists(LastUpdatedTimestampFileName)) {
                     using (var strm = new StreamReader(LastUpdatedTimestampFileName)) {
-                        lastUpd = strm.ReadToEnd().Trim();
-                        lastUpdDateTimeLocal = DateTime.ParseExact(lastUpd,
+                        var lastUpdLocal = strm.ReadToEnd().Trim();
+                        lastUpdDateTimeLocal = DateTime.ParseExact(lastUpdLocal,
                             LastUpdatedTimestampFormat, new CultureInfo(LastUpdatedTimestampCulture));
                     }
                 } else {

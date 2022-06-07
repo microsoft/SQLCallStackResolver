@@ -12,12 +12,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 this.InputAddresses.Text = initialtext;
             }
 
-            if (showFilepicker) {
-                loadFromFile.Visible = true;
-            }
-            else {
-                loadFromFile.Visible = false;
-            }
+            loadFromFile.Visible = showFilepicker;
         }
 
         public string baseaddressesstring {
@@ -33,7 +28,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         private void InputAddresses_DragDrop(object sender, DragEventArgs e) {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop, false) == true) {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop, false)) {
                 e.Effect = DragDropEffects.All;
 
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
@@ -49,10 +44,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         private void InputAddresses_DragOver(object sender, DragEventArgs e) {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
-                e.Effect = DragDropEffects.Copy;
-            else
-                e.Effect = DragDropEffects.None;
+            e.Effect = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
         }
 
         private void loadFromFile_Click(object sender, System.EventArgs e) {
