@@ -69,13 +69,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// based on ordinal start address and original offset
         private string ReplaceOrdinalWithRealOffset(Match mtch) {
             var moduleName = mtch.Groups["module"].Value;
-            if (!_DLLOrdinalMap.ContainsKey(moduleName)) {
-                return mtch.Value;
-            }
-
-            uint offsetSpecified = Convert.ToUInt32(mtch.Groups["offset"].Value, 16);
-            return string.Format(CultureInfo.CurrentCulture, "{0}.dll+0x{1:X}{2}", moduleName,
-                _DLLOrdinalMap[moduleName][int.Parse(mtch.Groups["ordinal"].Value, CultureInfo.CurrentCulture)].Address + offsetSpecified, Environment.NewLine);
+            return _DLLOrdinalMap.TryGetValue(moduleName, out var mapEntry)
+                ? string.Format(CultureInfo.CurrentCulture, "{0}.dll+0x{1:X}{2}", moduleName,
+                    mapEntry[int.Parse(mtch.Groups["ordinal"].Value, CultureInfo.CurrentCulture)].Address + Convert.ToUInt32(mtch.Groups["offset"].Value, 16), Environment.NewLine)
+                : mtch.Value;
         }
     }
 }
