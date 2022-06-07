@@ -11,6 +11,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Files", "Files", "{551EED46
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
 		.github\workflows\build.yml = .github\workflows\build.yml
+		.github\workflows\codeql-analyze.yml = .github\workflows\codeql-analyze.yml
 		latestrelease.txt = latestrelease.txt
 		LICENSE = LICENSE
 		README.md = README.md
