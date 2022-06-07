@@ -5,7 +5,7 @@ SQLCallStackResolver is a sample tool provided for users who want to resolve the
 # Installation
 Please refer to the [Releases](../../releases) section for a ready-to-run set of binaries. Release 2.0 is self-contained, XCOPY / UnZip and run - no external installation required other than .NET Framework 4.7.2 or above. We now include the [msdia140.dll](https://blogs.msdn.microsoft.com/calvin_hsia/2016/07/30/whats-in-a-pdb-file-use-the-debug-interface-access-sdk/) and [XELite](https://www.nuget.org/packages/Microsoft.SqlServer.XEvent.XELite/) as part of the ZIP file with the rest of the binaries. Note that SQLCallStackResolver 2.0 is released as purely for 64-bit the Intel/AMD family (x64) Windows OS. Windows 10 or Windows Server 2016 are the minimum required OS versions. SQLCallStackResolver uses registration-free COM activation of msdia140.dll, so no additional configuration is needed.
 
-Redistributable components used, and their associated terms of use are documented in the [Building](#building) section.
+Redistributable components used, and their associated terms of use are documented in the [Building](#building) section. Third-party component usage is documented within [ThirdParty.txt](Engine/ThirdParty.txt).
 
 # Usage
 The tool comes with a pre-populated example in the textboxes, just follow that example with your real-world stack(s). The textbox on the left accepts the following types of input:
