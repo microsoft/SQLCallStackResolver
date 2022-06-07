@@ -54,40 +54,39 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// This function builds up the PDB map, by searching for matched PDBs (based on name) and constructing the DIA session for each
         internal static bool LocateandLoadPDBs(Dictionary<string, DiaUtil> _diautils, string rootPaths, bool recurse, List<string> moduleNames, bool cachePDB, List<string> modulesToIgnore) {
             // loop through each module, trying to find matched PDB files
-            foreach (string currentModule in moduleNames.Where(m => !modulesToIgnore.Contains(m))) {
-                if (!_diautils.ContainsKey(currentModule)) {     // we only need to search for the PDB if it does not already exist in our map
-                    var cachedPDBFile = Path.Combine(Path.GetTempPath(), "SymCache", currentModule + ".pdb");
-                    lock (_syncRoot) {  // the lock is needed to ensure that we do not make multiple copies of PDBs when cachePDB is true
-                        if (!File.Exists(cachedPDBFile)) {
-                            foreach (var currPath in rootPaths.Split(';').Where(p => Directory.Exists(p))) {
-                                var foundFiles = Directory.EnumerateFiles(currPath, currentModule + ".pdb", recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
-                                if (!foundFiles.Any()) {
-                                    // repeat the search but with a more relaxed filter. this (somewhat hacky) consideration is required
-                                    // for modules like vcruntime140.dll where the PDB name is actually vcruntime140.amd64.pdb
-                                    foundFiles = Directory.EnumerateFiles(currPath, currentModule + ".*.pdb", recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
-                                }
+            foreach (string currentModule in moduleNames.Where(m => !modulesToIgnore.Contains(m) && !_diautils.ContainsKey(m))) {
+                // we only need to search for the PDB if it does not already exist in our map
+                var cachedPDBFile = Path.Combine(Path.GetTempPath(), "SymCache", currentModule + ".pdb");
+                lock (_syncRoot) {  // the lock is needed to ensure that we do not make multiple copies of PDBs when cachePDB is true
+                    if (!File.Exists(cachedPDBFile)) {
+                        foreach (var currPath in rootPaths.Split(';').Where(p => Directory.Exists(p))) {
+                            var foundFiles = Directory.EnumerateFiles(currPath, currentModule + ".pdb", recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
+                            if (!foundFiles.Any()) {
+                                // repeat the search but with a more relaxed filter. this (somewhat hacky) consideration is required
+                                // for modules like vcruntime140.dll where the PDB name is actually vcruntime140.amd64.pdb
+                                foundFiles = Directory.EnumerateFiles(currPath, currentModule + ".*.pdb", recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
+                            }
 
-                                if (foundFiles.Any()) {
-                                    if (cachePDB) {
-                                        File.Copy(foundFiles.First(), cachedPDBFile);
-                                    } else {
-                                        cachedPDBFile = foundFiles.First();
-                                    }
-                                    break;
+                            if (foundFiles.Any()) {
+                                if (cachePDB) {
+                                    File.Copy(foundFiles.First(), cachedPDBFile);
+                                } else {
+                                    cachedPDBFile = foundFiles.First();
                                 }
+                                break;
                             }
                         }
                     }
+                }
 
-                    if (File.Exists(cachedPDBFile)) {
-                        try {
-                            _diautils.Add(currentModule, new DiaUtil(cachedPDBFile));
-                        } catch (COMException) {
-                            return false;
-                        }
-                    } else {
-                        if (!modulesToIgnore.Contains(currentModule)) modulesToIgnore.Add(currentModule);
+                if (File.Exists(cachedPDBFile)) {
+                    try {
+                        _diautils.Add(currentModule, new DiaUtil(cachedPDBFile));
+                    } catch (COMException) {
+                        return false;
                     }
+                } else {
+                    if (!modulesToIgnore.Contains(currentModule)) modulesToIgnore.Add(currentModule);
                 }
             }
             return true;

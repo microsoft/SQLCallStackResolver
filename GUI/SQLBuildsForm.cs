@@ -107,14 +107,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         private void FindNext_Click(object sender, EventArgs e) {
-            foreach (TreeNode node in treeviewSyms.Nodes) {
-                if (CheckIfAnyNodesMatch(node)) {
-                    return;
-                }
-            }
-
-            downloadStatus.Text = "No matches found.";
-            treeviewSyms.SelectedNode = null;
+            var foundMatch = treeviewSyms.Nodes.Cast<TreeNode>().Where(n => CheckIfAnyNodesMatch(n)).Any();
+            downloadStatus.Text = foundMatch ? "Found match!" : "No matches found.";
+            if (!foundMatch) treeviewSyms.SelectedNode = null;
             treeviewSyms.Refresh();
             Application.DoEvents();
         }
@@ -128,13 +123,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 return true;
             }
 
-            foreach (TreeNode child in node.Nodes) {
-                if (CheckIfAnyNodesMatch(child)) {
-                    return true;
-                }
-            }
-
-            return false;
+            return node.Nodes.Cast<TreeNode>().Where(child => CheckIfAnyNodesMatch(child)).Any();
         }
     }
 }
