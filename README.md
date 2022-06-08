@@ -1,4 +1,5 @@
-[![](https://github.com/microsoft/SQLCallStackResolver/workflows/Build%20SQLCallStackResolver/badge.svg)](https://github.com/microsoft/SQLCallStackResolver/actions)
+[![Build SQLCallStackResolver](https://github.com/microsoft/SQLCallStackResolver/actions/workflows/build.yml/badge.svg)](https://github.com/microsoft/SQLCallStackResolver/actions/workflows/build.yml)
+[![CodeQL](https://github.com/microsoft/SQLCallStackResolver/actions/workflows/codeql-analyze.yml/badge.svg)](https://github.com/microsoft/SQLCallStackResolver/actions/workflows/codeql-analyze.yml)
 # Overview
 SQLCallStackResolver is a sample tool provided for users who want to resolve the raw call stack information provided by Microsoft SQL Server, to a "symbolized" form with function names. This helps in self-service diagnostics of certain SQL Server issues. Please note that this sample tool is provided AS-IS - see [SUPPORT](SUPPORT.md) for details.
 
