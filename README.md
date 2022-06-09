@@ -47,7 +47,7 @@ When you submit a pull request, a CLA bot will automatically determine whether y
 * If needed, you may also need to manually obtain the current versions of the following files:
     * symsrv.dll and dbghelp.dll (from the x64 / AMD64 Windows Debugger package, part of Windows SDK and many other tools) are used under the terms published [here](https://docs.microsoft.com/en-us/legal/windows-sdk/redist#debugging-tools-for-windows).
     * msdia140.dll and msdia140.dll.manifest are redistributable components of Visual Studio 2022 used under the terms as published [here](https://docs.microsoft.com/en-us/visualstudio/releases/2022/redistribution).
-* Tests are implemented using [xUnit](https://xunit.net/docs/getting-started/netfx/visual-studio#run-tests-visualstudio). Please try to ensure that tests are passing before submitting a PR. In order to run tests, you will need to run the Tests\TestCases\downloadsyms.ps1 file to gather pre-requisites. Watch for warnings from the script - there are typically 3 files you will need to gather manually (instructions provided in the PowerShell script).
+* Tests are implemented using [MSTest v2](https://docs.microsoft.com/en-us/visualstudio/test/mstest-update-to-mstestv2?view=vs-2022#why-upgrade-to-mstestv2). Please try to ensure that tests are passing before submitting a PR. In order to run tests, you will need to run the Tests\TestCases\downloadsyms.ps1 file to gather pre-requisites. Watch for warnings from the script - there are typically 3 files you will need to gather manually (instructions provided in the PowerShell script).
 * When a PR is submitted, there is a GitHub Actions workflow which will build the project and run tests. PRs cannot merge till the workflow succeeds.
 
 # Notes

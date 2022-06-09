@@ -3,9 +3,9 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
-      testcategories:
-        description: 'The xUnit test categories to run'
-        default: '-trait "Category=Unit" -trait "Category=Perf"'
+      testsfilter:
+        description: 'Filter expression to use for running tests'
+        default: 'TestCategory=Unit|TestCategory=Perf'
         required: false
 
 jobs:
@@ -13,17 +13,17 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v2.3.5      
+      uses: actions/checkout@v3.0.2
     - name: Add msbuild to PATH
-      uses: microsoft/setup-msbuild@v1.0.3
+      uses: microsoft/setup-msbuild@v1.1
     - name: Setup NuGet
-      uses: NuGet/setup-nuget@v1.0.5
+      uses: NuGet/setup-nuget@v1.0.6
     - name: Restore NuGet Packages
       run: nuget restore SQLCallStackResolver.sln
     - name: Build SQLCallStackResolver
       run: msbuild SQLCallStackResolver.sln /p:Configuration=Release
     - name: Upload Artifact
-      uses: actions/upload-artifact@v2.2.4
+      uses: actions/upload-artifact@v3.1.0
       with:
         name: SQLCallStackResolver
         path: |
@@ -35,8 +35,6 @@ jobs:
       working-directory: Tests\TestCases
       shell: powershell
     - name: Run tests
-      env:
-        DEFAULT_TESTS: '-trait "Category=Unit"'
-      run: ..\..\..\packages\xunit.runner.console.2.4.1\tools\net472\xunit.console.exe .\SQLCalLStackResolver.xUnit.Tests.dll -verbose ${{ github.event.inputs.testcategories || env.DEFAULT_TESTS }}
+      run: ..\..\..\packages\Microsoft.TestPlatform.17.2.0\tools\net451\Common7\IDE\Extensions\TestPlatform\vstest.console.exe .\SQLCalLStackResolver.Tests.dll /Parallel /logger:"console;verbosity=normal" /TestCaseFilter:"${{ github.event.inputs.testcategories || 'TestCategory=Unit' }}"
       working-directory: Target\Release\Tests
       shell: powershell
