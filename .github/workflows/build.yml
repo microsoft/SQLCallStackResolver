@@ -35,6 +35,6 @@ jobs:
       working-directory: Tests\TestCases
       shell: powershell
     - name: Run tests
-      run: ..\..\..\packages\Microsoft.TestPlatform.17.2.0\tools\net451\Common7\IDE\Extensions\TestPlatform\vstest.console.exe .\SQLCalLStackResolver.Tests.dll /Parallel /logger:"console;verbosity=normal" /TestCaseFilter:"${{ github.event.inputs.testcategories || 'TestCategory=Unit' }}"
+      run: ..\..\..\packages\Microsoft.TestPlatform.17.2.0\tools\net451\Common7\IDE\Extensions\TestPlatform\vstest.console.exe .\SQLCalLStackResolver.Tests.dll /Parallel /logger:"console;verbosity=normal" /TestCaseFilter:"${{ github.event.inputs.testsfilter || 'TestCategory=Unit' }}"
       working-directory: Target\Release\Tests
       shell: powershell
