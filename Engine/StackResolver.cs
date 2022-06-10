@@ -311,6 +311,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 retVal = false;
             }
 
+            // check for duplicate base addresses - this should normally never be possible unless there is wrong data input
+            if (LoadedModules.Select(m => m.BaseAddress).GroupBy(m => m).Where(g => g.Count() > 1).Any()) return false;
+
             // sort them by base address
             LoadedModules = (from mod in LoadedModules orderby mod.BaseAddress select mod).ToList();
             // loop through the list, computing their end address

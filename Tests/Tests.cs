@@ -94,6 +94,17 @@ c = 0x0000000000000000                           d = 0x0000000000000000
             }
         }
 
+        [TestMethod][TestCategory("Unit")]
+        public void RegularSymbolVirtualAddressDupeModules() {
+            using (var csr = new StackResolver()) {
+                var moduleAddresses = @"c:\mssql\binn\sqldk.dll 00000001`00400000
+c:\windows\temp\sqldk.dll 00000001`00400000";
+                Assert.IsFalse(csr.ProcessBaseAddresses(moduleAddresses));
+                var ret = csr.ResolveCallstacks("0x000000010042249f\r\nsqldk+0x40609", @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, true, false, false, null);
+                Assert.AreEqual("0x000000010042249f\r\nsqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644", ret.Trim());
+            }
+        }
+
         /// Perf / scale test. We randomly generate 750K XEvents each with 25 frame callstacks, and then resolve them.
         [TestMethod][TestCategory("Perf")]
         public void LargeXEventsInput() {
