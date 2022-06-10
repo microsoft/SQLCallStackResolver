@@ -1,29 +1,27 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
-    using Newtonsoft.Json;
     using System;
     using System.Net;
+    using System.Runtime.Serialization;
 
+    [DataContract]
     public class Symbol {
+        [DataMember(Order = 0)]
         public string PDBName;
-
-        [JsonIgnore]
+        [IgnoreDataMember]
         public string InternalPDBName;
-
-        [JsonIgnore]
+        [IgnoreDataMember]
         public string PDBGuid;
-
-        [JsonIgnore]
+        [IgnoreDataMember]
         public int PDBAge;
-
-        [JsonIgnore]
+        [IgnoreDataMember]
         public ulong CalculatedModuleBaseAddress;
-
+        [DataMember(Order = 1)]
         public string DownloadURL;
-
+        [DataMember(Order = 2)]
         public bool DownloadVerified;
-
+        [DataMember(Order = 3)]
         public string FileVersion;
 
         public static bool IsURLValid(Uri url) {
