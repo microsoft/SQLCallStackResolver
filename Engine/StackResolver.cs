@@ -285,7 +285,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 return true;
             }
             LoadedModules.Clear();
-            var rgxmoduleaddress = new Regex(@"^\s*(?<filepath>.+)(\t+| +)(?<baseaddress>(0x)*[0-9a-fA-F`]+)\s*$", RegexOptions.Multiline);
+            var rgxmoduleaddress = new Regex(@"^\s*(?<filepath>.+)(\t+| +)(?<baseaddress>(0x)?[0-9a-fA-F`]+)\s*$", RegexOptions.Multiline);
             var mcmodules = rgxmoduleaddress.Matches(baseAddressesString);
             if (mcmodules.Count == 0) {
                 // it is likely that we have malformed input, cannot ignore this so return false.
@@ -301,7 +301,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     });
                 }
             } catch (FormatException) {
-                // typically errors with non-numeric info passed to  Convert.ToUInt64
+                // typically errors with non-numeric info passed to Convert.ToUInt64
+                retVal = false;
+            } catch (OverflowException) {
+                // absurdly large numeric info passed to Convert.ToUInt64
                 retVal = false;
             } catch (ArgumentException) {
                 // typically these are malformed paths passed to Path.GetFileNameWithoutExtension
