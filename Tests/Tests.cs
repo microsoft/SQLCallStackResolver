@@ -123,18 +123,14 @@ c = 0x0000000000000000                           d = 0x0000000000000000
 
         /// Check the processing of module base address information.
         [TestMethod][TestCategory("Unit")]
-        public void ModuleLoadAddressInputEmptyString() {
+        public void ModuleLoadAddressInputNonRecognizedInput() {
             using (var csr = new StackResolver()) {
                 Assert.IsTrue(csr.ProcessBaseAddresses(string.Empty));
-            }
-        }
-
-        /// Check the processing of module base address information.
-        [TestMethod][TestCategory("Unit")]
-        public void ModuleLoadAddressInputJunkString() {
-            using (var csr = new StackResolver()) {
-                var moduleAddressesBad = @"hello wor1213ld";
-                Assert.IsFalse(csr.ProcessBaseAddresses(moduleAddressesBad));
+                Assert.IsFalse(csr.ProcessBaseAddresses(@"hello wor1213ld"));
+                Assert.IsFalse(csr.ProcessBaseAddresses(@"<<System32\KERNELBASE.dll>>	0x00007FFEC0700000"));
+                Assert.IsFalse(csr.ProcessBaseAddresses(@"C:\System32\KERNELBASE.dll	0x00007FFEC07000007FFEC0700000"));
+                Assert.IsFalse(csr.ProcessBaseAddresses(@"C:\System32\KERNELBASE.dll	0x00007FFEC0700000 0x7FFEC0700000"));
+                Assert.IsFalse(csr.ProcessBaseAddresses(@"C:\Windows\System32\KERNELBASE.dll	0x0xaaa"));
             }
         }
 
