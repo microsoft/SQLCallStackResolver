@@ -42,16 +42,18 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     foreach (var line in allLines.Where(l => !string.IsNullOrEmpty(l))) {
                         using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(line))) {
                             var currBuildInfo = jsonSerializer.ReadObject(memStream) as SQLBuildInfo;
-                            currBuildInfo.BuildNumber = currBuildInfo?.BuildNumber.Trim();
-                            currBuildInfo.KBInfo = currBuildInfo.KBInfo.Trim();
-                            currBuildInfo.Label = currBuildInfo.Label.Trim();
-                            currBuildInfo.ProductLevel = currBuildInfo.ProductLevel.Trim();
-                            currBuildInfo.ProductMajorVersion = currBuildInfo.ProductMajorVersion.Trim();
+                            if (currBuildInfo != null) {
+                                currBuildInfo.BuildNumber = currBuildInfo.BuildNumber.Trim();
+                                currBuildInfo.KBInfo = currBuildInfo.KBInfo.Trim();
+                                currBuildInfo.Label = currBuildInfo.Label.Trim();
+                                currBuildInfo.ProductLevel = currBuildInfo.ProductLevel.Trim();
+                                currBuildInfo.ProductMajorVersion = currBuildInfo.ProductMajorVersion.Trim();
 
-                            if (!allBuilds.ContainsKey(currBuildInfo.ToString())) {
-                                allBuilds.Add(currBuildInfo.ToString(), currBuildInfo);
-                            } else {
-                                allBuilds[currBuildInfo.ToString()] = currBuildInfo;
+                                if (!allBuilds.ContainsKey(currBuildInfo.ToString())) {
+                                    allBuilds.Add(currBuildInfo.ToString(), currBuildInfo);
+                                } else {
+                                    allBuilds[currBuildInfo.ToString()] = currBuildInfo;
+                                }
                             }
                         }
                     }
