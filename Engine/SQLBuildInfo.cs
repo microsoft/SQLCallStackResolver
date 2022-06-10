@@ -36,21 +36,23 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var allBuilds = new SortedDictionary<string, SQLBuildInfo>();
 
             using (var fs = new FileStream(jsonFile, FileMode.Open, FileAccess.Read, FileShare.None)) {
-                var allLines = new StreamReader(fs).ReadToEnd().Split('\n');
-                var jsonSerializer = new DataContractJsonSerializer(typeof(SQLBuildInfo));
-                foreach (var line in allLines.Where(l => !string.IsNullOrEmpty(l))) {
-                    using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(line))) {
-                        var currBuildInfo = jsonSerializer.ReadObject(memStream) as SQLBuildInfo;
-                        currBuildInfo.BuildNumber = currBuildInfo.BuildNumber.Trim();
-                        currBuildInfo.KBInfo = currBuildInfo.KBInfo.Trim();
-                        currBuildInfo.Label = currBuildInfo.Label.Trim();
-                        currBuildInfo.ProductLevel = currBuildInfo.ProductLevel.Trim();
-                        currBuildInfo.ProductMajorVersion = currBuildInfo.ProductMajorVersion.Trim();
+                using (var sr = new StreamReader(fs)) {
+                    var allLines = sr.ReadToEnd().Split('\n');
+                    var jsonSerializer = new DataContractJsonSerializer(typeof(SQLBuildInfo));
+                    foreach (var line in allLines.Where(l => !string.IsNullOrEmpty(l))) {
+                        using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(line))) {
+                            var currBuildInfo = jsonSerializer.ReadObject(memStream) as SQLBuildInfo;
+                            currBuildInfo.BuildNumber = currBuildInfo?.BuildNumber.Trim();
+                            currBuildInfo.KBInfo = currBuildInfo.KBInfo.Trim();
+                            currBuildInfo.Label = currBuildInfo.Label.Trim();
+                            currBuildInfo.ProductLevel = currBuildInfo.ProductLevel.Trim();
+                            currBuildInfo.ProductMajorVersion = currBuildInfo.ProductMajorVersion.Trim();
 
-                        if (!allBuilds.ContainsKey(currBuildInfo.ToString())) {
-                            allBuilds.Add(currBuildInfo.ToString(), currBuildInfo);
-                        } else {
-                            allBuilds[currBuildInfo.ToString()] = currBuildInfo;
+                            if (!allBuilds.ContainsKey(currBuildInfo.ToString())) {
+                                allBuilds.Add(currBuildInfo.ToString(), currBuildInfo);
+                            } else {
+                                allBuilds[currBuildInfo.ToString()] = currBuildInfo;
+                            }
                         }
                     }
                 }
