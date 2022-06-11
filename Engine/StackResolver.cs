@@ -49,13 +49,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         /// Convert virtual-address only type frames to their module+offset format
         private string[] PreProcessVAs(string[] callStackLines, Regex rgxVAOnly) {
-            if (!this.LoadedModules.Any()) {
-                // only makes sense doing the rest of the work in this function if have loaded module information
-                return callStackLines;
-            }
+            if (!this.LoadedModules.Any()) return callStackLines;// only makes sense doing the rest of the work in this function if have loaded module information
 
             string[] retval = new string[callStackLines.Length];
-
             int frameNum = 0;
             foreach (var currentFrame in callStackLines) {
                 // let's see if this is an VA-only address
@@ -66,9 +62,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         ? string.Format(CultureInfo.CurrentCulture, "{0}+0x{1:X}", moduleName, offset)
                         : currentFrame.Trim();
                 }
-                else {
-                    retval[frameNum] = currentFrame.Trim();
-                }
+                else retval[frameNum] = currentFrame.Trim();
 
                 frameNum++;
             }
@@ -103,10 +97,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     var matchAlreadySymbolized = rgxAlreadySymbolizedFrame.Match(currentFrame);
                     if (matchAlreadySymbolized.Success) {
                         var matchedModuleName = matchAlreadySymbolized.Groups["module"].Value;
-                        if (!_diautils.ContainsKey(matchedModuleName)) {
-                            DiaUtil.LocateandLoadPDBs(_diautils, tp.symPath, tp.searchPDBsRecursively, new List<string>() { matchedModuleName }, tp.cachePDB, modulesToIgnore);
-                        }
-
+                        if (!_diautils.ContainsKey(matchedModuleName)) DiaUtil.LocateandLoadPDBs(_diautils, tp.symPath, tp.searchPDBsRecursively, new List<string>() { matchedModuleName }, tp.cachePDB, modulesToIgnore);
                         if (_diautils.TryGetValue(matchedModuleName, out var existingEntry) && _diautils[matchedModuleName].HasSourceInfo) {
                             var myDIAsession = existingEntry._IDiaSession;
                             myDIAsession.findChildrenEx(myDIAsession.globalScope, SymTagEnum.SymTagNull, matchAlreadySymbolized.Groups["symbolizedfunc"].Value, 0, out IDiaEnumSymbols matchedSyms);
@@ -144,29 +135,17 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 var match = rgxModuleName.Match(currentFrame);
                 if (match.Success) {
                     var matchedModuleName = match.Groups["module"].Value;
-                    if (!_diautils.ContainsKey(matchedModuleName)) {
-                        // maybe we have a "not well-known" module, attempt to (best effort) find PDB for it.
-                        DiaUtil.LocateandLoadPDBs(_diautils, tp.symPath, tp.searchPDBsRecursively, new List<string>() { matchedModuleName }, tp.cachePDB, modulesToIgnore);
-                    }
-
+                    // maybe we have a "not well-known" module, attempt to (best effort) find PDB for it.
+                    if (!_diautils.ContainsKey(matchedModuleName)) DiaUtil.LocateandLoadPDBs(_diautils, tp.symPath, tp.searchPDBsRecursively, new List<string>() { matchedModuleName }, tp.cachePDB, modulesToIgnore);
                     frameNum = string.IsNullOrWhiteSpace(match.Groups["framenum"].Value) ? int.MinValue : frameNum == int.MinValue ? Convert.ToInt32(match.Groups["framenum"].Value, 16) : frameNum;
                     if (_diautils.ContainsKey(matchedModuleName)) {
                         string processedFrame = ProcessFrameModuleOffset(_diautils, ref frameNum, matchedModuleName, match.Groups["offset"].Value, includeSourceInfo, includeOffsets, showInlineFrames);
-                        if (!string.IsNullOrEmpty(processedFrame)) {
-                            // typically this is because we could not find the offset in any known function range
-                            finalCallstack.AppendLine(processedFrame);
-                        }
-                        else {
-                            finalCallstack.AppendLine(currentFrame);
-                        }
+                        if (!string.IsNullOrEmpty(processedFrame)) finalCallstack.AppendLine(processedFrame);   // typically this is because we could not find the offset in any known function range
+                        else finalCallstack.AppendLine(currentFrame);
                     }
-                    else {
-                        finalCallstack.AppendLine(currentFrame.Trim());
-                    }
+                    else finalCallstack.AppendLine(currentFrame.Trim());
                 }
-                else {
-                    finalCallstack.AppendLine(currentFrame.Trim());
-                }
+                else finalCallstack.AppendLine(currentFrame.Trim());
             }
 
             return finalCallstack.ToString();
@@ -352,9 +331,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             if (Directory.Exists(symCacheFolder)) {
                 new DirectoryInfo(symCacheFolder).GetFiles("*", SearchOption.AllDirectories).ToList().ForEach(file => file.Delete());
             }
-            else {
-                Directory.CreateDirectory(symCacheFolder);
-            }
+            else Directory.CreateDirectory(symCacheFolder);
 
             if (Regex.IsMatch(inputCallstackText, @"<HistogramTarget(\s+|\>)") && inputCallstackText.Contains(@"</HistogramTarget>")) {
                 var numHistogramTargets = Regex.Matches(inputCallstackText, @"\<\/HistogramTarget\>").Count;
@@ -418,9 +395,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                             this.PercentComplete = (int)((double)stacknum / allstacknodes.Count * 100.0);
                         }
                     }
-                    else {
-                        this.StatusMessage = "WARNING: XML input was detected but it does not appear to be a known schema!";
-                    }
+                    else this.StatusMessage = "WARNING: XML input was detected but it does not appear to be a known schema!";
                 }
                 else {
                     this.StatusMessage = "Preprocessing XEvent histogram slots...";
@@ -490,9 +465,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             }
 
             this.StatusMessage = "Waiting for threads to finish...";
-            foreach (var tmpThread in threads) {
-                tmpThread.Join();
-            }
+            threads.ForEach(tmpThread => tmpThread.Join());
 
             if (this.cancelRequested) {
                 return "Operation cancelled.";
@@ -510,15 +483,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                             return "Operation cancelled.";
                         }
 
-                        if (!string.IsNullOrEmpty(currstack.Resolvedstack)) {
-                            outStream.WriteLine(currstack.Resolvedstack);
-                        }
-                        else {
-                            if (!string.IsNullOrEmpty(currstack.Callstack.Trim())) {
-                                outStream.WriteLine("WARNING: No output to show. This may indicate an internal error!");
-                                break;
-                            }
-                        }
+                        if (!string.IsNullOrEmpty(currstack.Resolvedstack)) outStream.WriteLine(currstack.Resolvedstack);
+                        else if (!string.IsNullOrEmpty(currstack.Callstack.Trim())) {
+                            outStream.WriteLine("WARNING: No output to show. This may indicate an internal error!");
+                            break;
+                        }                        
 
                         this.globalCounter++;
                         this.PercentComplete = (int)((double)this.globalCounter / listOfCallStacks.Count * 100.0);
@@ -533,13 +502,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         return "Operation cancelled.";
                     }
 
-                    if (!string.IsNullOrEmpty(currstack.Resolvedstack)) {
-                        finalCallstack.Append(currstack.Resolvedstack);
-                    } else {
-                        if (!string.IsNullOrEmpty(currstack.Callstack)) {
-                            finalCallstack = new StringBuilder("WARNING: No output to show. This may indicate an internal error!");
-                            break;
-                        }
+                    if (!string.IsNullOrEmpty(currstack.Resolvedstack)) finalCallstack.Append(currstack.Resolvedstack);
+                    else if (!string.IsNullOrEmpty(currstack.Callstack)) {
+                        finalCallstack = new StringBuilder("WARNING: No output to show. This may indicate an internal error!");
+                        break;
                     }
 
                     if (finalCallstack.Length > int.MaxValue * 0.1) {
@@ -571,13 +537,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var modulesToIgnore = new List<string>();
 
             for (int tmpStackIndex = 0; tmpStackIndex < tp.listOfCallStacks.Count; tmpStackIndex++) {
-                if (this.cancelRequested) {
-                    break;
-                }
-
-                if (tmpStackIndex % tp.numThreads != tp.threadOrdinal) {
-                    continue;
-                }
+                if (this.cancelRequested) break;
+                if (tmpStackIndex % tp.numThreads != tp.threadOrdinal) continue;
 
                 var currstack = tp.listOfCallStacks[tmpStackIndex];
                 var ordinalResolvedFrames = this.dllMapHelper.LoadDllsIfApplicable(currstack.CallstackFrames, tp.searchDLLRecursively, tp.dllPaths);
@@ -609,9 +570,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// This method generates a PowerShell script to automate download of matched PDBs from the public symbol server.
         /// </summary>
         public static List<Symbol> GetSymbolDetailsForBinaries(List<string> dllPaths, bool recurse, List<Symbol> existingSymbols = null) {
-            if (dllPaths == null || dllPaths.Count == 0) {
-                return new List<Symbol>();
-            }
+            if (dllPaths == null || dllPaths.Count == 0) return new List<Symbol>();
 
             var symbolsFound = new List<Symbol>();
             foreach (var currentModule in wellKnownModuleNames) {
@@ -622,38 +581,23 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         continue;
                     }
                 }
-                string finalFilePath = null;
-
-                foreach (var currPath in dllPaths) {
-                    if (!Directory.Exists(currPath)) {
-                        continue;
-                    }
-
-                    var foundFiles = from f in Directory.EnumerateFiles(currPath, currentModule + ".*", recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
-                                     where f.EndsWith(".dll", StringComparison.InvariantCultureIgnoreCase) || f.EndsWith(".exe", StringComparison.InvariantCultureIgnoreCase)
-                                     select f;
-
-                    if (foundFiles.Any()) {
-                        finalFilePath = foundFiles.First();
-                        break;
-                    }
-                }
-
-                if (!string.IsNullOrEmpty(finalFilePath)) {
-                    using (var dllFileStream = new FileStream(finalFilePath, FileMode.Open, FileAccess.Read, FileShare.Read)) {
+                var search = dllPaths.Where(p => Directory.Exists(p)).SelectMany(currPath => Directory.EnumerateFiles(currPath, currentModule + ".*", recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly))
+                    .Where(f => f.EndsWith(".dll", StringComparison.InvariantCultureIgnoreCase) || f.EndsWith(".exe", StringComparison.InvariantCultureIgnoreCase));
+                if (search.Any()) {
+                    using (var dllFileStream = new FileStream(search.First(), FileMode.Open, FileAccess.Read, FileShare.Read)) {
                         using (var reader = new PEReader(dllFileStream)) {
                             var lastPdbInfo = PEHelper.ReadPdbs(reader).Last();
                             var internalPDBName = lastPdbInfo.Path;
                             var pdbGuid = lastPdbInfo.Guid;
                             var pdbAge = lastPdbInfo.Age;
                             var usablePDBName = Path.GetFileNameWithoutExtension(internalPDBName);
-                            var fileVer = FileVersionInfo.GetVersionInfo(finalFilePath).FileVersion;
-                            var newSymbol = new Symbol() {PDBName = usablePDBName, InternalPDBName = internalPDBName,
+                            var fileVer = FileVersionInfo.GetVersionInfo(search.First()).FileVersion;
+                            var newSymbol = new Symbol() {
+                                PDBName = usablePDBName, InternalPDBName = internalPDBName,
                                 DownloadURL = string.Format(CultureInfo.CurrentCulture, @"https://msdl.microsoft.com/download/symbols/{0}.pdb/{1}/{0}.pdb",
-                                    usablePDBName, pdbGuid.ToString("N", CultureInfo.CurrentCulture) + pdbAge.ToString(CultureInfo.CurrentCulture)), FileVersion = fileVer};
-
+                                    usablePDBName, pdbGuid.ToString("N", CultureInfo.CurrentCulture) + pdbAge.ToString(CultureInfo.CurrentCulture)), FileVersion = fileVer
+                            };
                             newSymbol.DownloadVerified = Symbol.IsURLValid(new Uri(newSymbol.DownloadURL));
-
                             symbolsFound.Add(newSymbol);
                         }
                     }
@@ -667,10 +611,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         protected virtual void Dispose(bool disposing) {
             if (!disposedValue) {
-                if (disposing) {
-                    rwLockCachedSymbols.Dispose();
-                }
-
+                if (disposing) rwLockCachedSymbols.Dispose();
                 disposedValue = true;
             }
         }

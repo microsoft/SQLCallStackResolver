@@ -5,20 +5,12 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
     /// PE header's Image Export Directory
     [StructLayout(LayoutKind.Sequential)]
-#pragma warning disable CA1815 // Override equals and operator equals on value types
+    #pragma warning disable CA1815 // Override equals and operator equals on value types
     public struct ImageExportDirectory
-#pragma warning restore CA1815 // Override equals and operator equals on value types
+        #pragma warning restore CA1815 // Override equals and operator equals on value types
     {
-        public uint Characteristics;
-        public uint TimeDateStamp;
-        public ushort MajorVersion;
-        public ushort MinorVersion;
-        public int Name;
-        public int Base;
-        public int NumberOfFunctions;
-        public int NumberOfNames;
-        public int AddressOfFunctions;
-        public int AddressOfNames;
-        public int AddressOfOrdinals;
+        public uint Characteristics, TimeDateStamp;
+        public ushort MajorVersion, MinorVersion;
+        public int Name, Base, NumberOfFunctions, NumberOfNames, AddressOfFunctions, AddressOfNames, AddressOfOrdinals;
     }
 }

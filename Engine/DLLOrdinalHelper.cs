@@ -19,9 +19,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         /// This function loads DLLs from a specified path, so that we can then build the DLL export's ordinal / address map
         internal string[] LoadDllsIfApplicable(string[] callstackFrames, bool recurse, List<string> dllPaths) {
-            if (dllPaths == null) {
-                return callstackFrames;
-            }
+            if (dllPaths == null) return callstackFrames;
 
             var processedFrames = new string[callstackFrames.Length];
             for (var idx = 0; idx < callstackFrames.Length; idx++) {
@@ -49,7 +47,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         lock (_DLLOrdinalMap) {
                             if (!_DLLOrdinalMap.ContainsKey(currmodule) && foundFiles.Any()) {
                                 _DLLOrdinalMap.Add(currmodule, ExportedSymbol.GetExports(foundFiles.First()));
-
                                 break;
                             }
                         }
@@ -61,7 +58,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 var fullpattern = new Regex(@"(?<module>\w+)(\.dll)*!Ordinal(?<ordinal>[0-9]+)\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*");
                 processedFrames[idx] = fullpattern.Replace(callstack, ReplaceOrdinalWithRealOffset);
             }
-
             return processedFrames;
         }
 

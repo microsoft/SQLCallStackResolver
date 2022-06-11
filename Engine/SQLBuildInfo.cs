@@ -10,22 +10,14 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     using System.Runtime.Serialization.Json;
     using System.Text;
 
-    [DataContract]
-    public class SQLBuildInfo {
-        [DataMember(Order=0)]
-        public string ProductMajorVersion = "<<ProductMajorVersion>>";
-        [DataMember(Order = 1)]
-        public string ProductLevel = "<<ProductLevel>>";
-        [DataMember(Order = 2)]
-        public string Label = "<<BuildName>>";
-        [DataMember(Order = 3)]
-        public string BuildNumber = "<<BuildNumber>>";
-        [DataMember(Order = 4)]
-        public string KBInfo = "<<KBArticle>>";
-        [DataMember(Order = 5)]
-        public List<Symbol> SymbolDetails;
-        [DataMember(Order = 6)]
-        public string MachineType = "<<x64|x86>>";
+    [DataContract] public class SQLBuildInfo {
+        [DataMember(Order=0)] public string ProductMajorVersion = "<<ProductMajorVersion>>";
+        [DataMember(Order = 1)] public string ProductLevel = "<<ProductLevel>>";
+        [DataMember(Order = 2)] public string Label = "<<BuildName>>";
+        [DataMember(Order = 3)] public string BuildNumber = "<<BuildNumber>>";
+        [DataMember(Order = 4)] public string KBInfo = "<<KBArticle>>";
+        [DataMember(Order = 5)] public List<Symbol> SymbolDetails;
+        [DataMember(Order = 6)] public string MachineType = "<<x64|x86>>";
 
         public override string ToString() {
             return string.Format(CultureInfo.CurrentCulture,
@@ -49,11 +41,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                                 currBuildInfo.ProductLevel = currBuildInfo.ProductLevel.Trim();
                                 currBuildInfo.ProductMajorVersion = currBuildInfo.ProductMajorVersion.Trim();
 
-                                if (!allBuilds.ContainsKey(currBuildInfo.ToString())) {
-                                    allBuilds.Add(currBuildInfo.ToString(), currBuildInfo);
-                                } else {
-                                    allBuilds[currBuildInfo.ToString()] = currBuildInfo;
-                                }
+                                if (!allBuilds.ContainsKey(currBuildInfo.ToString())) allBuilds.Add(currBuildInfo.ToString(), currBuildInfo);
+                                else allBuilds[currBuildInfo.ToString()] = currBuildInfo;
                             }
                         }
                     }

@@ -4,21 +4,18 @@
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
-    using System.Windows.Forms;
-    using System.Text;
-    using System.IO;
-    using System.Net;
-    using System.Globalization;
     using System.Configuration;
-    using System.Threading.Tasks;
+    using System.Globalization;
+    using System.IO;
+    using System.Linq;
+    using System.Text;
     using System.Threading;
+    using System.Threading.Tasks;
+    using System.Windows.Forms;
 
     public partial class MainForm : Form {
         public MainForm() {
-            MessageBox.Show(@"Copyright (c) 2022 Microsoft Corporation. All rights reserved.
-
-THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.", "SQLCallStackResolver - Legal Notice", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show("Copyright (c) 2022 Microsoft Corporation. All rights reserved.\r\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.", "SQLCallStackResolver - Legal Notice", MessageBoxButtons.OK, MessageBoxIcon.Information);
             InitializeComponent();
         }
 
@@ -39,28 +36,18 @@ THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMP
 
         private void ResolveCallstacks_Click(object sender, EventArgs e) {
             List<string> dllPaths = null;
-            if (!string.IsNullOrEmpty(binaryPaths.Text)) {
-                dllPaths = binaryPaths.Text.Split(';').ToList();
-            }
-
+            if (!string.IsNullOrEmpty(binaryPaths.Text)) dllPaths = binaryPaths.Text.Split(';').ToList();
             var res = this._resolver.ProcessBaseAddresses(this._baseAddressesString);
             if (!res) {
-                MessageBox.Show(
-                            this,
-                            "Cannot interpret the module base address information. Make sure you just have the output of the following query (no column headers, no other columns) copied from SSMS using the Grid Results\r\n\r\nselect name, base_address from sys.dm_os_loaded_modules where name not like '%.rll'",
-                            "Unable to load base address information",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Error);
-
+                MessageBox.Show(this, "Cannot interpret the module base address information. Make sure you just have the output of the following query (no column headers, no other columns) copied from SSMS using the Grid Results\r\n\r\nselect name, base_address from sys.dm_os_loaded_modules where name not like '%.rll'",
+                            "Unable to load base address information", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
             bool isSingleLineInput = this._resolver.IsInputSingleLine(callStackInput.Text, ConfigurationManager.AppSettings["PatternsToTreatAsMultiline"]);
             if (isSingleLineInput && !FramesOnSingleLine.Checked && DialogResult.Yes == MessageBox.Show(this,
                     "Maybe this is intentional, but your input seems to have all the frames on a single line, but the 'Callstack frames are in single line' checkbox is unchecked. " +
-                    "This may cause problems resolving symbols. Would you like to enable this?",
-                    "Enable the 'frames on single line' option?",
-                    MessageBoxButtons.YesNo)) {
+                    "This may cause problems resolving symbols. Would you like to enable this?", "Enable the 'frames on single line' option?", MessageBoxButtons.YesNo)) {
                 FramesOnSingleLine.Checked = true;
                 FramesOnSingleLine.Refresh();
                 this.Refresh();
@@ -69,9 +56,7 @@ THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMP
 
             if (!isSingleLineInput && FramesOnSingleLine.Checked && DialogResult.Yes == MessageBox.Show(this,
                     "Your input seems to have multiple lines, but the 'Callstack frames are in single line' checkbox is checked. " +
-                    "This may cause problems resolving symbols. Would you like to uncheck this setting?",
-                    "Disable the 'frames on single line' option?",
-                    MessageBoxButtons.YesNo)) {
+                    "This may cause problems resolving symbols. Would you like to uncheck this setting?", "Disable the 'frames on single line' option?", MessageBoxButtons.YesNo)) {
                 FramesOnSingleLine.Checked = false;
                 FramesOnSingleLine.Refresh();
                 this.Refresh();
@@ -79,10 +64,8 @@ THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMP
             }
 
             if (!pdbPaths.Text.Contains(@"\\") && cachePDB.Checked && DialogResult.Yes == MessageBox.Show(this,
-                    "Cache PDBs is only recommended when getting symbols from UNC paths. " +
-                    "Would you like to disable this?",
-                    "Disable symbol file cache?",
-                    MessageBoxButtons.YesNo)) {
+                    "Cache PDBs is only recommended when getting symbols from UNC paths. Would you like to disable this?",
+                    "Disable symbol file cache?", MessageBoxButtons.YesNo)) {
                 cachePDB.Checked = false;
                 cachePDB.Refresh();
                 this.Refresh();
@@ -128,13 +111,10 @@ THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMP
             this.MonitorBackgroundTask(backgroundTask);
 
             finalOutput.Text = backgroundTask.Result;
-
             if (backgroundTask.Result.Contains("WARNING:")) {
                 MessageBox.Show(this,
                     "One or more potential issues exist in the output. This is sometimes due to mismatched symbols, so please double-check symbol paths and re-run if needed.",
-                    "Potential issues with the output",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "Potential issues with the output", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
@@ -151,13 +131,7 @@ THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMP
         private void EnterBaseAddresses_Click(object sender, EventArgs e) {
             using (var baseAddressForm = new MultilineInput(this._baseAddressesString, true)) {
                 baseAddressForm.StartPosition = FormStartPosition.CenterParent;
-                DialogResult res = baseAddressForm.ShowDialog(this);
-
-                if (res == DialogResult.OK) {
-                    this._baseAddressesString = baseAddressForm.baseaddressesstring;
-                } else {
-                    return;
-                }
+                if (DialogResult.OK == baseAddressForm.ShowDialog(this)) this._baseAddressesString = baseAddressForm.baseaddressesstring;
             }
         }
         private void CallStackInput_KeyDown(object sender, KeyEventArgs e) {
@@ -169,30 +143,6 @@ THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMP
         private void FinalOutput_KeyDown(object sender, KeyEventArgs e) {
             if (e.Control && e.KeyCode == Keys.A) {
                 finalOutput.SelectAll();
-            }
-        }
-
-        private void GetPDBDnldScript_Click(object sender, EventArgs e) {
-            this.ShowStatus("Getting PDB download script... please wait. This may take a while!");
-
-            var symDetails = StackResolver.GetSymbolDetailsForBinaries(binaryPaths.Text.Split(';').ToList(),
-                DLLrecurse.Checked);
-
-            if (0 == symDetails.Count) {
-                return;
-            }
-
-            var fakeBuild = new SQLBuildInfo() {
-                SymbolDetails = symDetails
-            };
-
-            var downloadCmds = SQLBuildInfo.GetDownloadScriptPowerShell(fakeBuild, false);
-
-            this.ShowStatus(string.Empty);
-
-            using (var outputCmds = new MultilineInput(downloadCmds.ToString(CultureInfo.CurrentCulture), false)) {
-                outputCmds.StartPosition = FormStartPosition.CenterParent;
-                outputCmds.ShowDialog(this);
             }
         }
 
@@ -209,8 +159,7 @@ THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMP
             genericOpenFileDlg.Filter = "XEL files (*.xel)|*.xel|All files (*.*)|*.*";
             genericOpenFileDlg.Title = "Select XEL file";
 
-            var res = genericOpenFileDlg.ShowDialog(this);
-            if (res != DialogResult.Cancel) {
+            if (DialogResult.Cancel != genericOpenFileDlg.ShowDialog(this)) {
                 List<string> relevantXEFields = await GetUserSelectedXEFieldsAsync();
                 this.ShowStatus("Loading from XEL files; please wait. This may take a while!");
                 this.backgroundTask = Task.Run(async () => {
@@ -225,9 +174,7 @@ THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMP
         private void MonitorBackgroundTask(Task theTask) {
             using (BackgroundCTS = new CancellationTokenSource()) {
                 backgroundCT = BackgroundCTS.Token;
-
                 this.EnableCancelButton();
-
                 while (!theTask.Wait(30)) {
                     if (backgroundCT.IsCancellationRequested) {
                         this._resolver.CancelRunningTasks();
@@ -244,7 +191,6 @@ THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMP
                 this.progressBar.Value = _resolver.PercentComplete;
                 this.statusStrip1.Refresh();
                 Application.DoEvents();
-
                 this.DisableCancelButton();
             }
         }
@@ -264,12 +210,9 @@ THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMP
                         List<string> relevantXEFields = await GetUserSelectedXEFieldsAsync();
                         allFilesContent.AppendLine((await this._resolver.ExtractFromXEL(files, GroupXEvents.Checked, relevantXEFields)).Item2);
                         this.ShowStatus(string.Empty);
-                    } else {
-                        // handle the files as text input
-                        foreach (var currFile in files) {
+                    } else foreach (var currFile in files) { // handle the files as text input
                             allFilesContent.AppendLine(File.ReadAllText(currFile));
                         }
-                    }
 
                     callStackInput.Text = allFilesContent.ToString();
                 }
@@ -298,12 +241,7 @@ THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMP
             genericOpenFileDlg.FileName = "select folder only";
             genericOpenFileDlg.Filter = "All files (*.*)|*.*";
             genericOpenFileDlg.Title = "Select FOLDER path to your PDBs";
-
-            var res = genericOpenFileDlg.ShowDialog(this);
-
-            if (res != DialogResult.Cancel) {
-                pdbPaths.AppendText((pdbPaths.TextLength == 0 ? string.Empty : ";") + Path.GetDirectoryName(genericOpenFileDlg.FileName));
-            }
+            if (DialogResult.Cancel != genericOpenFileDlg.ShowDialog(this)) pdbPaths.AppendText((pdbPaths.TextLength == 0 ? string.Empty : ";") + Path.GetDirectoryName(genericOpenFileDlg.FileName));
         }
 
         private void BinaryPathPicker_Click(object sender, EventArgs e) {
@@ -313,21 +251,14 @@ THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMP
             genericOpenFileDlg.FileName = "select folder only";
             genericOpenFileDlg.Filter = "All files (*.*)|*.*";
             genericOpenFileDlg.Title = "Select FOLDER path to the SQL binaries";
-
-            var res = genericOpenFileDlg.ShowDialog(this);
-
-            if (res != DialogResult.Cancel) {
-                binaryPaths.AppendText((binaryPaths.TextLength == 0 ? string.Empty : ";") + Path.GetDirectoryName(genericOpenFileDlg.FileName));
-            }
+            if (DialogResult.Cancel != genericOpenFileDlg.ShowDialog(this)) binaryPaths.AppendText((binaryPaths.TextLength == 0 ? string.Empty : ";") + Path.GetDirectoryName(genericOpenFileDlg.FileName));
         }
 
         private void SelectSQLPDB_Click(object sender, EventArgs e) {
             if (!File.Exists(MainForm.SqlBuildInfoFileName)) {
                 MessageBox.Show(this,
                     $"Could not find the SQL build info JSON file: {MainForm.SqlBuildInfoFileName}. You might need to manually obtain it from one of these locations: {ConfigurationManager.AppSettings["SQLBuildInfoURLs"]}",
-                    "SQL build info missing",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                    "SQL build info missing", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
             using (var sqlbuildsForm = new SQLBuildsForm {
@@ -360,17 +291,13 @@ THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMP
                         latestReleaseDateTimeLocal = DateTime.ParseExact(latestReleaseDateStringLocal,
                             LatestReleaseTimestampFormat, new CultureInfo(LatestReleaseTimestampCulture));
                     }
-                } else {
-                    latestReleaseDateTimeLocal = DateTime.MinValue;
-                }
+                } else latestReleaseDateTimeLocal = DateTime.MinValue;
 
                 if (latestReleaseDateTimeServer > latestReleaseDateTimeLocal) {
                     // if the server timestamp > local timestamp, prompt to download
                     MessageBox.Show(this,
                         $"You are currently on release: {latestReleaseDateStringLocal} of SQLCallStackResolver. There is a newer release ({latestReleaseDateStringServer}) available." + Environment.NewLine + "You should exit, then download the latest release from https://aka.ms/SQLStack/releases. Then, extract the files from the release ZIP, overwriting and updating your older copy.",
-                        "New release available.",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information);
+                        "New release available.", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
 
@@ -393,50 +320,35 @@ THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMP
                         lastUpdDateTimeLocal = DateTime.ParseExact(lastUpdLocal,
                             LastUpdatedTimestampFormat, new CultureInfo(LastUpdatedTimestampCulture));
                     }
-                } else {
-                    lastUpdDateTimeLocal = DateTime.MinValue;
-                }
+                } else lastUpdDateTimeLocal = DateTime.MinValue;
 
                 if (lastUpdDateTimeServer > lastUpdDateTimeLocal) {
                     // if the server timestamp > local timestamp, prompt to download
                     var res = MessageBox.Show(this,
                         "The SQLBuildInfo.json file was updated recently on GitHub. Do you wish to update your copy with the newer version?",
-                        "SQL Build info updated",
-                        MessageBoxButtons.YesNo);
+                        "SQL Build info updated", MessageBoxButtons.YesNo);
 
                     if (DialogResult.Yes == res) {
                         string jsonContent = null;
                         foreach (var jsonURL in sqlBuildInfoURLs) {
                             jsonContent = Utils.GetFileContentsFromUrl(jsonURL);
-                            if (!string.IsNullOrWhiteSpace(jsonContent)) {
-                                // update local copy of build info file
+                            if (!string.IsNullOrWhiteSpace(jsonContent)) { // update local copy of build info file
                                 using (var writer = new StreamWriter(SqlBuildInfoFileName)) {
                                     writer.Write(jsonContent);
                                     writer.Flush();
                                     writer.Close();
-                                }
-
-                                // update local last updated timestamp
-                                using (var wr = new StreamWriter(LastUpdatedTimestampFileName, false)) {
+                                }                                
+                                using (var wr = new StreamWriter(LastUpdatedTimestampFileName, false)) { // update local last updated timestamp
                                     wr.Write(lastUpdDateTimeServer.ToString(
                                         LastUpdatedTimestampFormat,
                                         new CultureInfo(LastUpdatedTimestampCulture)));
                                 }
-
                                 break;
                             }
                         }
-
-                        if (string.IsNullOrEmpty(jsonContent)) {
-                            MessageBox.Show(this,
-                                "Could not download the SQL Build Info file.",
-                                "Error",
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Error);
-                        }
+                        if (string.IsNullOrEmpty(jsonContent)) MessageBox.Show(this, "Could not download the SQL Build Info file.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
-
                 break;
             }
         }
@@ -445,12 +357,7 @@ THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMP
             genericSaveFileDlg.FileName = "resolvedstacks.txt";
             genericSaveFileDlg.Filter = "Text files (*.txt)|*.txt";
             genericSaveFileDlg.Title = "Save output as";
-
-            var res = genericSaveFileDlg.ShowDialog(this);
-
-            if (res != DialogResult.Cancel) {
-                outputFilePath.Text = genericSaveFileDlg.FileName;
-            }
+            if (DialogResult.Cancel != genericSaveFileDlg.ShowDialog(this)) outputFilePath.Text = genericSaveFileDlg.FileName;
         }
 
         private void CancelButton_Click(object sender, EventArgs e) {

@@ -15,7 +15,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         internal readonly IDiaSession _IDiaSession;
         private bool disposedValue = false;
         public readonly bool HasSourceInfo = false;
-
         private static readonly object _syncRoot = new object();
 
         internal DiaUtil(string pdbName) {
@@ -26,12 +25,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             foreach (IDiaSymbol sym in matchedSyms) {
                 this._IDiaSession.findLinesByRVA(sym.relativeVirtualAddress, (uint)sym.length, out IDiaEnumLineNumbers enumLineNums);
                 Marshal.FinalReleaseComObject(sym);
-                if (enumLineNums.count > 0) {
-                    // this PDB has at least 1 function with source info, so end the search
+                if (enumLineNums.count > 0) { // this PDB has at least 1 function with source info, so end the search
                     HasSourceInfo = true;
                     break;
                 }
-
                 Marshal.FinalReleaseComObject(enumLineNums);
             }
             Marshal.FinalReleaseComObject(matchedSyms);
@@ -68,11 +65,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                             }
 
                             if (foundFiles.Any()) {
-                                if (cachePDB) {
-                                    File.Copy(foundFiles.First(), cachedPDBFile);
-                                } else {
-                                    cachedPDBFile = foundFiles.First();
-                                }
+                                if (cachePDB) File.Copy(foundFiles.First(), cachedPDBFile);
+                                else cachedPDBFile = foundFiles.First();
                                 break;
                             }
                         }
@@ -85,9 +79,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     } catch (COMException) {
                         return false;
                     }
-                } else {
-                    if (!modulesToIgnore.Contains(currentModule)) modulesToIgnore.Add(currentModule);
-                }
+                } else if (!modulesToIgnore.Contains(currentModule)) modulesToIgnore.Add(currentModule);
             }
             return true;
         }
@@ -102,18 +94,12 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 // refer https://msdn.microsoft.com/en-us/library/kszfk0fs.aspx
                 // UNDNAME_NAME_ONLY == 0x1000: Gets only the name for primary declaration; returns just [scope::]name. Expands template params. 
                 mysym.get_undecoratedNameEx(0x1000, out funcname2);
-
                 // catch-all / fallback
-                if (string.IsNullOrEmpty(funcname2)) {
-                    funcname2 = mysym.name;
-                }
+                if (string.IsNullOrEmpty(funcname2)) funcname2 = mysym.name;
             }
 
             string offsetStr = string.Empty;
-            if (includeOffset) {
-                offsetStr = string.Format(CultureInfo.CurrentCulture, "+{0}", displacement);
-            }
-
+            if (includeOffset) offsetStr = string.Format(CultureInfo.CurrentCulture, "+{0}", displacement);
             var inlineePrefix = isInLinee ? "(Inline Function) " : string.Empty;
             return $"{inlineePrefix}{moduleName}!{funcname2}{offsetStr}";
         }
@@ -125,24 +111,16 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             // only if we found line number information should we append to output 
             if (enumLineNums.count > 0) {
                 for (uint tmpOrdinal = 0; tmpOrdinal < enumLineNums.count; tmpOrdinal++) {
-                    if (tmpOrdinal > 0) {
-                        sbOutput.Append(" -- WARNING: multiple matches -- ");
-                    }
-
+                    if (tmpOrdinal > 0) sbOutput.Append(" -- WARNING: multiple matches -- ");
                     sbOutput.Append(string.Format(CultureInfo.CurrentCulture,
-                        "({0}:{1})",
-                        enumLineNums.Item(tmpOrdinal).sourceFile.fileName,
+                        "({0}:{1})", enumLineNums.Item(tmpOrdinal).sourceFile.fileName,
                         enumLineNums.Item(tmpOrdinal).lineNumber));
 
                     Marshal.FinalReleaseComObject(enumLineNums.Item(tmpOrdinal).sourceFile);
                     Marshal.FinalReleaseComObject(enumLineNums.Item(tmpOrdinal));
                 }
             }
-            else {
-                if (pdbHasSourceInfo) {
-                    sbOutput.Append("-- WARNING: unable to find source info --");
-                }
-            }
+            else if (pdbHasSourceInfo) sbOutput.Append("-- WARNING: unable to find source info --");
             Marshal.FinalReleaseComObject(enumLineNums);
             return sbOutput.ToString();
         }

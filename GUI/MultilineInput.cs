@@ -8,23 +8,16 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     public partial class MultilineInput : Form {
         public MultilineInput(string initialtext, bool showFilepicker) {
             InitializeComponent();
-            if (!string.IsNullOrEmpty(initialtext)) {
-                this.InputAddresses.Text = initialtext;
-            }
-
+            if (!string.IsNullOrEmpty(initialtext)) this.InputAddresses.Text = initialtext;
             loadFromFile.Visible = showFilepicker;
         }
 
         public string baseaddressesstring {
-            get {
-                return this.InputAddresses.Text;
-            }
+            get { return this.InputAddresses.Text; }
         }
 
         private void InputAddresses_KeyDown(object sender, KeyEventArgs e) {
-            if (e.Control && e.KeyCode == Keys.A) {
-                InputAddresses.SelectAll();
-            }
+            if (e.Control && e.KeyCode == Keys.A) InputAddresses.SelectAll();
         }
 
         private void InputAddresses_DragDrop(object sender, DragEventArgs e) {
@@ -34,10 +27,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
                 if (files != null && files.Length != 0) {
                     var allFilesContent = new StringBuilder();
-                    foreach (var currFile in files) {
-                        allFilesContent.AppendLine(File.ReadAllText(currFile));
-                    }
-
+                    foreach (var currFile in files) { allFilesContent.AppendLine(File.ReadAllText(currFile)); }
                     InputAddresses.Text = allFilesContent.ToString();
                 }
             }
@@ -54,12 +44,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             fileDlg.FileName = string.Empty;
             fileDlg.Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*";
             fileDlg.Title = "Select file";
-
-            var res = fileDlg.ShowDialog(this);
-
-            if (res != DialogResult.Cancel) {
-                InputAddresses.Text = File.ReadAllText(fileDlg.FileName);
-            }
+            if (DialogResult.Cancel != fileDlg.ShowDialog(this)) InputAddresses.Text = File.ReadAllText(fileDlg.FileName);
         }
     }
 }

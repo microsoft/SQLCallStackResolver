@@ -32,9 +32,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             IntPtr buffer = Marshal.AllocHGlobal(rawsize);
             Marshal.StructureToPtr(guid, buffer, false);
             bool success = SafeNativeMethods.SymFindFileInPath((IntPtr)processId, null, pdbFilename, buffer, pdbAge, 0, 8, outPath, IntPtr.Zero, IntPtr.Zero);
-            if (!success) {
-                return String.Empty;
-            }
+            if (!success)  return String.Empty;
             return outPath.ToString();
         }
 
@@ -45,9 +43,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var retval = new List<string>();
             Contract.Requires(null != syms);
             Contract.Requires(null != parent);
-            if (!InitSymSrv(symPath)) {
-                return retval;
-            }
+            if (!InitSymSrv(symPath)) return retval;
             int progress = 0;
             foreach (var sym in syms) {
                 parent.StatusMessage = string.Format(CultureInfo.CurrentCulture, $"Finding local PDB path for {sym.PDBName}");
@@ -56,9 +52,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     retval.Add(Path.GetDirectoryName(path));
                     parent.StatusMessage = string.Format(CultureInfo.CurrentCulture, $"Successfully found local PDB at {path}");
                 }
-                else {
-                    parent.StatusMessage = string.Format(CultureInfo.CurrentCulture, $"Could not find local PDB for {sym.PDBName}");
-                }
+                else parent.StatusMessage = string.Format(CultureInfo.CurrentCulture, $"Could not find local PDB for {sym.PDBName}");
 
                 progress++;
                 parent.PercentComplete = (int)((double)progress / syms.Count * 100.0);

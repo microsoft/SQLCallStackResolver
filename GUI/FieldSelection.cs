@@ -43,11 +43,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         private void DelItemButton_Click(object sender, EventArgs e) {
-            if (listViewActionsFields.SelectedItems.Count > 0) {
-                foreach (ListViewItem item in listViewActionsFields.SelectedItems) {
+            if (listViewActionsFields.SelectedItems.Count > 0) foreach (ListViewItem item in listViewActionsFields.SelectedItems) {
                     listViewActionsFields.Items.Remove(item);
                 }
-            }
         }
     }
 }

@@ -4,9 +4,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     partial class MultilineInput {
         private System.ComponentModel.IContainer components = null;
         protected override void Dispose(bool disposing) {
-            if (disposing && (components != null)) {
-                components.Dispose();
-            }
+            if (disposing && (components != null)) components.Dispose();
             base.Dispose(disposing);
         }
         #region Windows Form Designer generated code
@@ -18,6 +16,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.loadFromFile = new System.Windows.Forms.Button();
             this.fileDlg = new System.Windows.Forms.OpenFileDialog();
             this.SuspendLayout();
+            this.OkButton.AccessibleDescription = "OK";
+            this.OkButton.AccessibleName = "OkButton";
             this.OkButton.DialogResult = System.Windows.Forms.DialogResult.OK;
             this.OkButton.Location = new System.Drawing.Point(180, 320);
             this.OkButton.Margin = new System.Windows.Forms.Padding(2);
@@ -26,6 +26,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.OkButton.TabIndex = 0;
             this.OkButton.Text = "OK";
             this.OkButton.UseVisualStyleBackColor = true;
+            this.FormCancelButton.AccessibleDescription = "Cancel";
+            this.FormCancelButton.AccessibleName = "FormCancelButton";
             this.FormCancelButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.FormCancelButton.Location = new System.Drawing.Point(239, 320);
             this.FormCancelButton.Margin = new System.Windows.Forms.Padding(2);
@@ -34,6 +36,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.FormCancelButton.TabIndex = 1;
             this.FormCancelButton.Text = "Cancel";
             this.FormCancelButton.UseVisualStyleBackColor = true;
+            this.InputAddresses.AccessibleDescription = "Enter the module names and base addresses here";
+            this.InputAddresses.AccessibleName = "InputAddresses";
             this.InputAddresses.AllowDrop = true;
             this.InputAddresses.Location = new System.Drawing.Point(0, 0);
             this.InputAddresses.Margin = new System.Windows.Forms.Padding(2);
@@ -48,6 +52,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.InputAddresses.DragDrop += new System.Windows.Forms.DragEventHandler(this.InputAddresses_DragDrop);
             this.InputAddresses.DragOver += new System.Windows.Forms.DragEventHandler(this.InputAddresses_DragOver);
             this.InputAddresses.KeyDown += new System.Windows.Forms.KeyEventHandler(this.InputAddresses_KeyDown);
+            this.loadFromFile.AccessibleDescription = "Load module names and base addresses from here";
+            this.loadFromFile.AccessibleName = "loadFromFile";
             this.loadFromFile.Location = new System.Drawing.Point(12, 320);
             this.loadFromFile.Name = "loadFromFile";
             this.loadFromFile.Size = new System.Drawing.Size(93, 23);
@@ -73,6 +79,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.Text = "MultilineInput";
             this.ResumeLayout(false);
             this.PerformLayout();
+
         }
         #endregion
         private System.Windows.Forms.Button OkButton;
