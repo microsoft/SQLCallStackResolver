@@ -19,12 +19,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         public string Callstack {
-            get {
-                return this._callStack;
-            }
-            set {
-                this._callStack = value;
-            }
+            get { return this._callStack; }
+            set { this._callStack = value; }
         }
 
         public string[] CallstackFrames {

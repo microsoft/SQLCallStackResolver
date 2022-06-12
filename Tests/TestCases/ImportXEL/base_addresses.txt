@@ -1,11 +1,7 @@
 C:\Program Files\Microsoft SQL Server\MSSQL13.SQL2016\MSSQL\Binn\sqlservr.exe	0x00007FF6E0900000
 C:\Windows\SYSTEM32\ntdll.dll	0x00007FFEC3980000
-C:\Windows\System32\KERNEL32.DLL	0x00007FFEC2C30000
-C:\Windows\System32\KERNELBASE.dll	0x00007FFEC0700000
 C:\Windows\System32\ADVAPI32.dll	0x00007FFEC2530000
-C:\Windows\System32\msvcrt.dll	0x00007FFEC0F10000
 C:\Program Files\Microsoft SQL Server\MSSQL13.SQL2016\MSSQL\Binn\SQLOS.dll	0x00007FFEB62E0000
-C:\Windows\SYSTEM32\pdh.dll	0x00007FFEBCAC0000
 C:\Program Files\Microsoft SQL Server\MSSQL13.SQL2016\MSSQL\Binn\sqlmin.dll	0x00007FFEAC0E0000
 C:\Program Files\Microsoft SQL Server\MSSQL13.SQL2016\MSSQL\Binn\sqlTsEs.dll	0x00007FFEA8DD0000
 C:\Program Files\Microsoft SQL Server\MSSQL13.SQL2016\MSSQL\Binn\sqldk.dll	0x00007FFEABC10000
@@ -14,18 +10,11 @@ C:\Windows\System32\OLEAUT32.dll	0x00007FFEC25E0000
 C:\Windows\System32\msvcp_win.dll	0x00007FFEBFE80000
 C:\Program Files\Microsoft SQL Server\MSSQL13.SQL2016\MSSQL\Binn\opends60.dll	0x00007FFEB2270000
 C:\Program Files\Microsoft SQL Server\MSSQL13.SQL2016\MSSQL\Binn\qds.dll	0x00007FFEA2A80000
-C:\Windows\SYSTEM32\MSVCP120.dll	0x00007FFEB66E0000
-C:\Windows\System32\psapi.dll	0x00007FFEC24C0000
-C:\Windows\System32\kernel.appcore.dll	0x00007FFEBFE10000
 C:\Program Files\Microsoft SQL Server\130\Shared\instapi130.dll	0x00007FFEA1B10000
 C:\Windows\SYSTEM32\CRYPTSP.dll	0x00007FFEBF860000
 C:\Windows\system32\rsaenh.dll	0x00007FFEBF2C0000
-C:\Program Files\Microsoft SQL Server\MSSQL13.SQL2016\MSSQL\Binn\Resources\1033\sqlevn70.rll	0x000002B8A7AE0000
-C:\Windows\system32\RESUTILS.DLL	0x00007FFEB6670000
-C:\Windows\SYSTEM32\VERSION.dll	0x00007FFEB8D40000
 C:\Program Files\Microsoft SQL Server\MSSQL13.SQL2016\MSSQL\Binn\hkruntime.dll	0x00007FFE9B380000
 C:\Program Files\Microsoft SQL Server\MSSQL13.SQL2016\MSSQL\Binn\hkcompile.dll	0x00007FFE9B230000
 C:\Program Files\Microsoft SQL Server\MSSQL13.SQL2016\MSSQL\Binn\hkengine.dll	0x00007FFE9ACC0000
 C:\Program Files\Microsoft SQL Server\MSSQL13.SQL2016\MSSQL\Binn\dbghelp.dll	0x0000000063E90000
-C:\Windows\System32\SHLWAPI.dll	0x00007FFEC3910000
 C:\Windows\system32\msv1_0.DLL	0x00007FFEBF650000

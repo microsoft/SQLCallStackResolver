@@ -60,11 +60,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 lpResourceName = ISOLATIONAWARE_MANIFEST_RESOURCE_ID
             };
             m_hActCtx = CreateActCtx(ref info);
-            if (m_hActCtx == new IntPtr(-1))
-                return false;
+            if (m_hActCtx == new IntPtr(-1)) return false;
             m_cookie = IntPtr.Zero;
-            if (!ActivateActCtx(m_hActCtx, out m_cookie))
-                return false;
+            if (!ActivateActCtx(m_hActCtx, out m_cookie)) return false;
             return true;
         }
 

@@ -4,9 +4,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     partial class FieldSelection {
         private System.ComponentModel.IContainer components = null;
         protected override void Dispose(bool disposing) {
-            if (disposing && (components != null)) {
-                components.Dispose();
-            }
+            if (disposing && (components != null)) components.Dispose();
             base.Dispose(disposing);
         }
         #region Windows Form Designer generated code
@@ -17,18 +15,22 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.label2 = new System.Windows.Forms.Label();
             this.AddItemButton = new System.Windows.Forms.Button();
             this.DelItemButton = new System.Windows.Forms.Button();
-            DataItem = new System.Windows.Forms.ColumnHeader();
+            DataItem = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.SuspendLayout();
             DataItem.Width = 400;
+            this.OKButton.AccessibleDescription = "OK";
+            this.OKButton.AccessibleName = "OKButton";
             this.OKButton.DialogResult = System.Windows.Forms.DialogResult.OK;
             this.OKButton.Location = new System.Drawing.Point(125, 338);
-            this.OKButton.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.OKButton.Margin = new System.Windows.Forms.Padding(2);
             this.OKButton.Name = "OKButton";
             this.OKButton.Size = new System.Drawing.Size(45, 30);
             this.OKButton.TabIndex = 1;
             this.OKButton.Text = "OK";
             this.OKButton.UseVisualStyleBackColor = true;
             this.OKButton.Click += new System.EventHandler(this.OKButton_Click);
+            this.listViewActionsFields.AccessibleDescription = "XEvent actions and fields";
+            this.listViewActionsFields.AccessibleName = "listViewActionsFields";
             this.listViewActionsFields.AutoArrange = false;
             this.listViewActionsFields.CheckBoxes = true;
             this.listViewActionsFields.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
@@ -38,7 +40,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.listViewActionsFields.HideSelection = false;
             this.listViewActionsFields.LabelEdit = true;
             this.listViewActionsFields.Location = new System.Drawing.Point(9, 46);
-            this.listViewActionsFields.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.listViewActionsFields.Margin = new System.Windows.Forms.Padding(2);
             this.listViewActionsFields.Name = "listViewActionsFields";
             this.listViewActionsFields.Size = new System.Drawing.Size(278, 288);
             this.listViewActionsFields.TabIndex = 0;
@@ -51,6 +53,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.label2.TabIndex = 3;
             this.label2.Text = "Select the XEvent actions / fields to import (by default, callstack action / fiel" +
     "d names are automatically selected):";
+            this.AddItemButton.AccessibleDescription = "Add XEvent event / field";
+            this.AddItemButton.AccessibleName = "AddItemButton";
             this.AddItemButton.Location = new System.Drawing.Point(209, 338);
             this.AddItemButton.Name = "AddItemButton";
             this.AddItemButton.Size = new System.Drawing.Size(38, 23);
@@ -58,6 +62,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.AddItemButton.Text = "Add";
             this.AddItemButton.UseVisualStyleBackColor = true;
             this.AddItemButton.Click += new System.EventHandler(this.AddItemButton_Click);
+            this.DelItemButton.AccessibleDescription = "Delete XEvent event / field";
+            this.DelItemButton.AccessibleName = "DelItemButton";
             this.DelItemButton.Location = new System.Drawing.Point(249, 338);
             this.DelItemButton.Name = "DelItemButton";
             this.DelItemButton.Size = new System.Drawing.Size(38, 23);
@@ -76,7 +82,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.Controls.Add(this.listViewActionsFields);
             this.Controls.Add(this.OKButton);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.Margin = new System.Windows.Forms.Padding(2);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "FieldSelection";
@@ -85,6 +91,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.Text = "Select items";
             this.Load += new System.EventHandler(this.ListSelection_Load);
             this.ResumeLayout(false);
+
         }
         #endregion
         private System.Windows.Forms.Button OKButton;

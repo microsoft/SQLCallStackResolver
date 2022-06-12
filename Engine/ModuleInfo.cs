@@ -8,8 +8,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     /// </summary>
     public class ModuleInfo {
         public string ModuleName;
-        public ulong BaseAddress;
-        public ulong EndAddress;
+        public ulong BaseAddress, EndAddress;
 
         public override string ToString() {
             return string.Format(CultureInfo.CurrentCulture, "{0} from {1:X} to {2:X}", ModuleName, BaseAddress, EndAddress);

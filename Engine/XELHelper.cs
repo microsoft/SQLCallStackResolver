@@ -66,9 +66,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         xmlEquivalent.AppendFormat(CultureInfo.CurrentCulture, "<event key=\"{0}\"><action name='callstack'><value><![CDATA[{1}]]></value></action></event>", item.Key, item.Value);
                         xmlEquivalent.AppendLine();
                     }
-                    else {
-                        hasOverflow = true;
-                    }
+                    else hasOverflow = true;
                     parent.globalCounter++;
                     parent.PercentComplete = (int)((double)parent.globalCounter / callstackRaw.Count * 100.0);
                 }

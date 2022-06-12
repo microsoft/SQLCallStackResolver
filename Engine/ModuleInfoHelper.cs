@@ -24,8 +24,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 Contract.Requires(lines.Length > 0);
                 foreach (var line in lines) {
                     Guid pdbGuid = Guid.Empty;
-                    string moduleName = null;
-                    string pdbName = null;
+                    string moduleName = null, pdbName = null;
 
                     // foreach line, split into comma-delimited fields
                     var fields = line.Split(',');
@@ -34,41 +33,25 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         foreach (var field in fields.Select(f => f.Trim().TrimEnd('"').TrimStart('"'))) {
                             Guid tmpGuid = Guid.Empty;
                             // for each field, attempt using regexes to detect file name and GUIDs
-                            if (Guid.TryParse(field, out tmpGuid)) {
-                                pdbGuid = tmpGuid;
-                            }
-
+                            if (Guid.TryParse(field, out tmpGuid)) pdbGuid = tmpGuid;
                             if (string.IsNullOrEmpty(moduleName)) {
                                 var matchFilename = rgxFileName.Match(field);
-                                if (matchFilename.Success) {
-                                    moduleName = matchFilename.Groups["module"].Value;
-                                }
+                                if (matchFilename.Success) moduleName = matchFilename.Groups["module"].Value;
                             }
 
                             if (string.IsNullOrEmpty(pdbName)) {
                                 var matchPDBName = rgxPDBName.Match(field);
-                                if (matchPDBName.Success) {
-                                    pdbName = matchPDBName.Groups["pdb"].Value;
-                                }
+                                if (matchPDBName.Success) pdbName = matchPDBName.Groups["pdb"].Value;
                             }
                         }
 
-                        // assumption is that last field is pdbAge - TODO parameterize
-                        _ = int.TryParse(fields[fields.Length - 1], out int pdbAge);
-
-                        if (string.IsNullOrEmpty(pdbName)) {
-                            // fall back to module name as PDB name
-                            pdbName = moduleName;
-                        }
+                        _ = int.TryParse(fields[fields.Length - 1], out int pdbAge);    // assumption is that last field is pdbAge
+                        pdbName = string.IsNullOrEmpty(pdbName) ? moduleName : pdbName; // fall back to module name as PDB name
 
                         // check if we have all 3 details
-                        if (!string.IsNullOrEmpty(pdbName)
-                            && pdbAge != int.MinValue
-                            && pdbGuid != Guid.Empty) {
+                        if (!string.IsNullOrEmpty(pdbName) && pdbAge != int.MinValue && pdbGuid != Guid.Empty) {
                             lock (retval) {
-                                if (!retval.ContainsKey(moduleName)) {
-                                    retval.Add(moduleName, new Symbol() { PDBName = pdbName + ".pdb", PDBAge = pdbAge, PDBGuid = pdbGuid.ToString("N") });
-                                }
+                                if (!retval.ContainsKey(moduleName)) retval.Add(moduleName, new Symbol() { PDBName = pdbName + ".pdb", PDBAge = pdbAge, PDBGuid = pdbGuid.ToString("N") });
                             }
                         }
                     }
@@ -104,31 +87,24 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                                         if (readStatus) {
                                             // seems to be XML; process attributes only if all 3 are there
                                             var moduleNameAttributeVal = reader.GetAttribute("module");
-                                            if (string.IsNullOrEmpty(moduleNameAttributeVal)) {
-                                                moduleNameAttributeVal = reader.GetAttribute("name");
-                                            }
+                                            if (string.IsNullOrEmpty(moduleNameAttributeVal)) moduleNameAttributeVal = reader.GetAttribute("name");
                                             var moduleName = Path.GetFileNameWithoutExtension(moduleNameAttributeVal);
                                             var addressAttributeVal = reader.GetAttribute("address");
                                             ulong addressIfPresent = string.IsNullOrEmpty(addressAttributeVal) ? ulong.MinValue : Convert.ToUInt64(addressAttributeVal, 16);
                                             var rvaAttributeVal = reader.GetAttribute("rva");
                                             ulong rvaIfPresent = string.IsNullOrEmpty(rvaAttributeVal) ? ulong.MinValue : Convert.ToUInt64(rvaAttributeVal, 16);
                                             ulong calcBaseAddress = ulong.MinValue;
-                                            if (rvaIfPresent != ulong.MinValue && addressIfPresent != ulong.MinValue) {
-                                                calcBaseAddress = addressIfPresent - rvaIfPresent;
-                                            }
+                                            if (rvaIfPresent != ulong.MinValue && addressIfPresent != ulong.MinValue) calcBaseAddress = addressIfPresent - rvaIfPresent;
+
                                             lock (syms) {
                                                 if (syms.TryGetValue(moduleName, out var existingEntry)) {
                                                     if (ulong.MinValue == existingEntry.CalculatedModuleBaseAddress) existingEntry.CalculatedModuleBaseAddress = calcBaseAddress;
-                                                } else {
-                                                    syms.Add(moduleName, new Symbol() { PDBName = reader.GetAttribute("pdb").ToLower(), PDBAge = int.Parse(reader.GetAttribute("age")), PDBGuid = Guid.Parse(reader.GetAttribute("guid")).ToString("N"), CalculatedModuleBaseAddress = calcBaseAddress });
-                                                }
+                                                } else syms.Add(moduleName, new Symbol() { PDBName = reader.GetAttribute("pdb").ToLower(), PDBAge = int.Parse(reader.GetAttribute("age")), PDBGuid = Guid.Parse(reader.GetAttribute("guid")).ToString("N"), CalculatedModuleBaseAddress = calcBaseAddress });
                                             }
                                             string rvaAsIsOrDerived = null;
-                                            if (ulong.MinValue != rvaIfPresent) {
-                                                rvaAsIsOrDerived = rvaAttributeVal;
-                                            } else if (ulong.MinValue != addressIfPresent && ulong.MinValue != syms[moduleName].CalculatedModuleBaseAddress) {
+                                            if (ulong.MinValue != rvaIfPresent) rvaAsIsOrDerived = rvaAttributeVal;
+                                            else if (ulong.MinValue != addressIfPresent && ulong.MinValue != syms[moduleName].CalculatedModuleBaseAddress) 
                                                 rvaAsIsOrDerived = "0x" + (addressIfPresent - syms[moduleName].CalculatedModuleBaseAddress).ToString("X");
-                                            }
 
                                             if (string.IsNullOrEmpty(rvaAsIsOrDerived)) { throw new NullReferenceException(); }
 

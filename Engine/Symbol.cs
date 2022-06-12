@@ -5,24 +5,15 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     using System.Net;
     using System.Runtime.Serialization;
 
-    [DataContract]
-    public class Symbol {
-        [DataMember(Order = 0)]
-        public string PDBName;
-        [IgnoreDataMember]
-        public string InternalPDBName;
-        [IgnoreDataMember]
-        public string PDBGuid;
-        [IgnoreDataMember]
-        public int PDBAge;
-        [IgnoreDataMember]
-        public ulong CalculatedModuleBaseAddress;
-        [DataMember(Order = 1)]
-        public string DownloadURL;
-        [DataMember(Order = 2)]
-        public bool DownloadVerified;
-        [DataMember(Order = 3)]
-        public string FileVersion;
+    [DataContract] public class Symbol {
+        [DataMember(Order = 0)] public string PDBName;
+        [IgnoreDataMember] public string InternalPDBName;
+        [IgnoreDataMember] public string PDBGuid;
+        [IgnoreDataMember] public int PDBAge;
+        [IgnoreDataMember] public ulong CalculatedModuleBaseAddress;
+        [DataMember(Order = 1)] public string DownloadURL;
+        [DataMember(Order = 2)] public bool DownloadVerified;
+        [DataMember(Order = 3)] public string FileVersion;
 
         public static bool IsURLValid(Uri url) {
             try {

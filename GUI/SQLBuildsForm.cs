@@ -50,10 +50,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     client.DownloadFileCompleted += new AsyncCompletedEventHandler(Client_DownloadFileCompleted);
                     var urls = bld.SymbolDetails.Select(s => s.DownloadURL);
                     foreach (var (url, filename) in from url in urls where !string.IsNullOrEmpty(url) let uri = new Uri(url) let filename = Path.GetFileName(uri.LocalPath) select (url, filename)) {
-                        if (File.Exists($@"{lastDownloadedSymFolder}\{filename}")) {
-                            continue;
-                        }
-
+                        if (File.Exists($@"{lastDownloadedSymFolder}\{filename}")) continue;
                         downloadStatus.Text = filename;
                         activeDownload = true;
                         client.DownloadFileAsync(new Uri(url), $@"{lastDownloadedSymFolder}\{filename}");
@@ -84,25 +81,17 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         private void CheckPDBAvail_Click(object sender, EventArgs e) {
-            if (treeviewSyms.SelectedNode is null) {
-                return;
-            }
-
+            if (treeviewSyms.SelectedNode is null) return;
             if (treeviewSyms.SelectedNode.Tag is SQLBuildInfo bld && bld.SymbolDetails.Count > 0) {
                 List<string> failedUrls = new List<string>();
                 var urls = bld.SymbolDetails.Select(s => s.DownloadURL);
                 foreach (var url in urls) {
                     downloadStatus.Text = url;
-                    if (!Symbol.IsURLValid(new Uri(url))) {
-                        failedUrls.Add(url);
-                    }
+                    if (!Symbol.IsURLValid(new Uri(url))) failedUrls.Add(url);
                 }
 
-                if (failedUrls.Count > 0) {
-                    MessageBox.Show(string.Join(",", failedUrls));
-                } else {
-                    downloadStatus.Text = "All PDBs for this build are available!";
-                }
+                if (failedUrls.Count > 0) MessageBox.Show(string.Join(",", failedUrls));
+                else downloadStatus.Text = "All PDBs for this build are available!";
             }
         }
 
@@ -122,7 +111,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 Application.DoEvents();
                 return true;
             }
-
             return node.Nodes.Cast<TreeNode>().Where(child => CheckIfAnyNodesMatch(child)).Any();
         }
     }
