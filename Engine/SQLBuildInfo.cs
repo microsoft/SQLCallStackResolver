@@ -9,6 +9,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     using System.Runtime.Serialization;
     using System.Runtime.Serialization.Json;
     using System.Text;
+    using System.Text.RegularExpressions;
 
     [DataContract] public class SQLBuildInfo {
         [DataMember(Order=0)] public string ProductMajorVersion = "<<ProductMajorVersion>>";
@@ -29,12 +30,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
             using (var fs = new FileStream(jsonFile, FileMode.Open, FileAccess.Read, FileShare.None)) {
                 using (var sr = new StreamReader(fs)) {
-                    var allLines = sr.ReadToEnd().Split('\n');
-                    var jsonSerializer = new DataContractJsonSerializer(typeof(SQLBuildInfo));
+                    var allLines = Regex.Split(sr.ReadToEnd(), @"{\s*""ProductMajorVersion""").Where(m => !string.IsNullOrWhiteSpace(m)).Select(m => @"{""ProductMajorVersion""" + m.Replace('\r', ' ').Replace('\n', ' '));
                     foreach (var line in allLines.Where(l => !string.IsNullOrEmpty(l))) {
                         using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(line))) {
-                            var currBuildInfo = jsonSerializer.ReadObject(memStream) as SQLBuildInfo;
-                            if (currBuildInfo != null) {
+                            var jsonSerializer = new DataContractJsonSerializer(typeof(SQLBuildInfo));
+                            if (jsonSerializer.ReadObject(memStream) is SQLBuildInfo currBuildInfo) {
                                 currBuildInfo.BuildNumber = currBuildInfo.BuildNumber.Trim();
                                 currBuildInfo.KBInfo = currBuildInfo.KBInfo.Trim();
                                 currBuildInfo.Label = currBuildInfo.Label.Trim();
@@ -64,6 +64,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     fs.Flush();
                     fs.Close();
                 }
+                File.WriteAllText(jsonFile, File.ReadAllText(jsonFile, Encoding.UTF8).Replace(@"\/", "/"));
             }
         }
 
