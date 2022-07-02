@@ -632,5 +632,27 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             Assert.AreEqual(2, builds.Count);
             Assert.AreEqual(builds["SQL Server 2019 RTM RTM - 15.0.2000.5 - x64 (Nov 2019)"].SymbolDetails[0].PDBName, "SqlDK");
         }
+
+        /// Test cancellation of various operations
+        [TestMethod][TestCategory("Unit")]
+        public async Task CancelRunningXELTasks() {
+            using (var csr = new StackResolver()) {
+                var xelTask = Task.Run(() => csr.ExtractFromXEL(new[] { @"..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, true, new List<string>(new String[] { "callstack" })));
+                while (true) {
+                    if (xelTask.Wait(300)) break;
+                    csr.CancelRunningTasks();
+                }
+                Assert.AreEqual(0, xelTask.Result.Item1);
+                Assert.AreEqual("Operation cancelled.", xelTask.Result.Item2);
+
+                var xelFieldsTask = Task.Run(() => csr.GetDistinctXELFieldsAsync(new[] { @"..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, int.MaxValue));
+                while (true) {
+                    if (xelFieldsTask.Wait(300)) break;
+                    csr.CancelRunningTasks();
+                }
+                Assert.AreEqual(0, xelFieldsTask.Result.Item1.Count);
+                Assert.AreEqual(0, xelFieldsTask.Result.Item2.Count);
+            }
+        }
     }
 }

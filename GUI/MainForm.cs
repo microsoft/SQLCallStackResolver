@@ -149,6 +149,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
             if (DialogResult.Cancel != genericOpenFileDlg.ShowDialog(this)) {
                 List<string> relevantXEFields = await GetUserSelectedXEFieldsAsync(genericOpenFileDlg.FileNames);
+                if (!relevantXEFields.Any()) {
+                    this.ShowStatus("No fields were selected for import from the XEL files. Nothing to do!");
+                    return;
+                }
                 this.ShowStatus("Loading from XEL files; please wait. This may take a while!");
                 this.backgroundTask = Task.Run(async () => {
                     return (await this._resolver.ExtractFromXEL(genericOpenFileDlg.FileNames, GroupXEvents.Checked, relevantXEFields)).Item2;
@@ -194,6 +198,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         // all files being dragged are XEL files, work on them.
                         this.ShowStatus("XEL file was dragged; please wait while we extract events from the file");
                         List<string> relevantXEFields = await GetUserSelectedXEFieldsAsync(files);
+                        if (!relevantXEFields.Any()) {
+                            this.ShowStatus("No fields were selected for import from the XEL files. Nothing to do!");
+                            return;
+                        }
                         allFilesContent.AppendLine((await this._resolver.ExtractFromXEL(files, GroupXEvents.Checked, relevantXEFields)).Item2);
                         this.ShowStatus(string.Empty);
                     } else foreach (var currFile in files) { // handle the files as text input
@@ -209,6 +217,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             using var fieldsListDialog = new FieldSelection();
             fieldsListDialog.Text = "Select relevant XEvent fields";
             var xeEventItems = await this._resolver.GetDistinctXELFieldsAsync(fileNames, 1000);
+            if (xeEventItems.Item1.Count + xeEventItems.Item2.Count == 0) return new List<string>();
             fieldsListDialog.AllActions = xeEventItems.Item1;
             fieldsListDialog.AllFields = xeEventItems.Item2;
             fieldsListDialog.StartPosition = FormStartPosition.CenterParent;

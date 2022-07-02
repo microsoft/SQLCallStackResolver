@@ -16,20 +16,28 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// Internal counter used to implement progress reporting
         internal int globalCounter = 0;
         internal bool cancelRequested = false;
+        private CancellationTokenSource cts;
         /// Percent completed - populated during associated long-running operations
         public int PercentComplete;
 
+        private void PrepCTS() {
+            this.cts = new CancellationTokenSource();
+        }
+
         public void CancelRunningTasks() {
             this.cancelRequested = true;
+            this.cts.Cancel();
         }
 
         public Task<Tuple<List<string>, List<string>>> GetDistinctXELFieldsAsync(string[] xelFiles, int eventsToSample) {
-            return XELHelper.GetDistinctXELActionsFieldsAsync(xelFiles, eventsToSample);
-            }
+            this.PrepCTS(); // get a new CTS to use for later cancellation.
+            return XELHelper.GetDistinctXELActionsFieldsAsync(xelFiles, eventsToSample, this.cts);
+        }
 
         /// Public method which to help import XEL files
         public async Task<Tuple<int, string>> ExtractFromXEL(string[] xelFiles, bool groupEvents, List<string> relevantFields) {
-            return await XELHelper.ExtractFromXELAsync(this, xelFiles, groupEvents, relevantFields);
+            this.PrepCTS(); // get a new CTS to use for later cancellation.
+            return await XELHelper.ExtractFromXELAsync(this, xelFiles, groupEvents, relevantFields, this.cts);
         }
 
         /// Convert virtual-address only type frames to their module+offset format

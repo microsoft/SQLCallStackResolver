@@ -3,16 +3,16 @@
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     internal class XELHelper {
         /// Read a XEL file, consume all callstacks, optionally bucketize them, and in all cases, return the information as equivalent XML
-        internal async static Task<Tuple<int, string>> ExtractFromXELAsync(StackResolver parent, string[] xelFiles, bool groupEvents, List<string> fieldsToGroupOn) {
+        internal async static Task<Tuple<int, string>> ExtractFromXELAsync(StackResolver parent, string[] xelFiles, bool groupEvents, List<string> fieldsToGroupOn, CancellationTokenSource cts) {
             Contract.Requires(xelFiles != null);
-            parent.cancelRequested = false;
             var callstackSlots = new ConcurrentDictionary<string, long>();
             var callstackRaw = new ConcurrentDictionary<string, string>();
             var xmlEquivalent = new StringBuilder();
             foreach (var xelFileName in xelFiles.Where(f => File.Exists(f))) {
                 parent.StatusMessage = $@"Reading {xelFileName}...";
                 var xeStream = new XEFileEventStreamer(xelFileName);
-                await xeStream.ReadEventStream(
+                try {
+                    await xeStream.ReadEventStream(
                     () => {
                         return Task.CompletedTask;
                     },
@@ -24,7 +24,13 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         }
                         return Task.CompletedTask;
                     },
-                    CancellationToken.None);
+                    cts.Token);
+                } catch (AggregateException e) {
+                    if (e.InnerException is OperationCanceledException) return new Tuple<int, string>(0, "Operation cancelled.");
+                    else throw;
+                } catch (OperationCanceledException) {
+                    return new Tuple<int, string>(0, "Operation cancelled.");
+                }
             }
 
             parent.StatusMessage = "Finished reading file(s), finalizing output...";
@@ -68,10 +74,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             return new Tuple<int, string>(finalEventCount, xmlEquivalent.ToString());
         }
 
-        internal async static Task<Tuple<List<string>, List<string>>> GetDistinctXELActionsFieldsAsync(string[] xelFiles, int eventsToSampleFromEachFile) {
+        internal async static Task<Tuple<List<string>, List<string>>> GetDistinctXELActionsFieldsAsync(string[] xelFiles, int eventsToSampleFromEachFile, CancellationTokenSource cts) {
             Contract.Requires(xelFiles != null && eventsToSampleFromEachFile > 0);
             var allActions = new HashSet<string>();
             var allFields = new HashSet<string>();
+            bool internalCancel = false;
             foreach (var file in xelFiles) {
                 var numEvents = 0;
                 using var cts = new CancellationTokenSource();
@@ -79,12 +86,18 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 try {
                     await xeStream.ReadEventStream(
                         evt => {
-                            if (Interlocked.Increment(ref numEvents) > eventsToSampleFromEachFile) cts.Cancel();
+                            if (Interlocked.Increment(ref numEvents) > eventsToSampleFromEachFile) {
+                                internalCancel = true;
+                                cts.Cancel();
+                            }
                             lock (allActions) evt.Actions.Select(action => allActions.Add(action.Key)).Count();
                             lock (allFields) evt.Fields.Select(field => allFields.Add(field.Key)).Count();
                             return Task.CompletedTask;
                         }, cts.Token);
-                } catch (OperationCanceledException) { /* there's really nothing to do here so it is empty */ }
+                } catch (AggregateException e) {
+                    if (e.InnerException is OperationCanceledException) if (!internalCancel) new Tuple<List<string>, List<string>>(new List<string>(), new List<string>());
+                    else throw;
+                } catch (OperationCanceledException) { if (!internalCancel) return new Tuple<List<string>, List<string>>(new List<string>(), new List<string>()); }
             }
 
             return new Tuple<List<string>, List<string>>(allActions.OrderBy(k => k).ToList(), allFields.OrderBy(k => k).ToList());
