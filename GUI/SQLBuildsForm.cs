@@ -45,24 +45,23 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 dnldButton.Enabled = false;
                 lastDownloadedSymFolder = $@"{pathToPDBs}\{bld.BuildNumber}.{bld.MachineType}";
                 Directory.CreateDirectory(lastDownloadedSymFolder);
-                using (var client = new WebClient()) {
-                    client.DownloadProgressChanged += new DownloadProgressChangedEventHandler(Client_DownloadProgressChanged);
-                    client.DownloadFileCompleted += new AsyncCompletedEventHandler(Client_DownloadFileCompleted);
-                    var urls = bld.SymbolDetails.Select(s => s.DownloadURL);
-                    foreach (var (url, filename) in from url in urls where !string.IsNullOrEmpty(url) let uri = new Uri(url) let filename = Path.GetFileName(uri.LocalPath) select (url, filename)) {
-                        if (File.Exists($@"{lastDownloadedSymFolder}\{filename}")) continue;
-                        downloadStatus.Text = filename;
-                        activeDownload = true;
-                        client.DownloadFileAsync(new Uri(url), $@"{lastDownloadedSymFolder}\{filename}");
-                        while (activeDownload) {
-                            Thread.Sleep(300);
-                            Application.DoEvents();
-                        }
+                using var client = new WebClient();
+                client.DownloadProgressChanged += new DownloadProgressChangedEventHandler(Client_DownloadProgressChanged);
+                client.DownloadFileCompleted += new AsyncCompletedEventHandler(Client_DownloadFileCompleted);
+                var urls = bld.SymbolDetails.Select(s => s.DownloadURL);
+                foreach (var (url, filename) in from url in urls where !string.IsNullOrEmpty(url) let uri = new Uri(url) let filename = Path.GetFileName(uri.LocalPath) select (url, filename)) {
+                    if (File.Exists($@"{lastDownloadedSymFolder}\{filename}")) continue;
+                    downloadStatus.Text = filename;
+                    activeDownload = true;
+                    client.DownloadFileAsync(new Uri(url), $@"{lastDownloadedSymFolder}\{filename}");
+                    while (activeDownload) {
+                        Thread.Sleep(300);
+                        Application.DoEvents();
                     }
-
-                    downloadStatus.Text = "Done.";
-                    dnldButton.Enabled = true;
                 }
+
+                downloadStatus.Text = "Done.";
+                dnldButton.Enabled = true;
             }
         }
 
