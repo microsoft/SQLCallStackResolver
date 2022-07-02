@@ -129,10 +129,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         private void EnterBaseAddresses_Click(object sender, EventArgs e) {
-            using (var baseAddressForm = new MultilineInput(this._baseAddressesString, true)) {
-                baseAddressForm.StartPosition = FormStartPosition.CenterParent;
-                if (DialogResult.OK == baseAddressForm.ShowDialog(this)) this._baseAddressesString = baseAddressForm.baseaddressesstring;
-            }
+            using var baseAddressForm = new MultilineInput(this._baseAddressesString, true);
+            baseAddressForm.StartPosition = FormStartPosition.CenterParent;
+            if (DialogResult.OK == baseAddressForm.ShowDialog(this)) this._baseAddressesString = baseAddressForm.baseaddressesstring;
         }
         private void CallStackInput_KeyDown(object sender, KeyEventArgs e) {
             if (e.Control && e.KeyCode == Keys.A) {
@@ -220,15 +219,14 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         private async Task<List<string>> GetUserSelectedXEFieldsAsync() {
-            using (var fieldsListDialog = new FieldSelection()) {
-                fieldsListDialog.Text = "Select relevant XEvent fields";
-                var xeEventItems = await this._resolver.GetDistinctXELFieldsAsync(genericOpenFileDlg.FileNames, 1000);
-                fieldsListDialog.AllActions = xeEventItems.Item1;
-                fieldsListDialog.AllFields = xeEventItems.Item2;
-                fieldsListDialog.StartPosition = FormStartPosition.CenterParent;
-                fieldsListDialog.ShowDialog(this);
-                return fieldsListDialog.SelectedEventItems;
-            }
+            using var fieldsListDialog = new FieldSelection();
+            fieldsListDialog.Text = "Select relevant XEvent fields";
+            var xeEventItems = await this._resolver.GetDistinctXELFieldsAsync(genericOpenFileDlg.FileNames, 1000);
+            fieldsListDialog.AllActions = xeEventItems.Item1;
+            fieldsListDialog.AllFields = xeEventItems.Item2;
+            fieldsListDialog.StartPosition = FormStartPosition.CenterParent;
+            fieldsListDialog.ShowDialog(this);
+            return fieldsListDialog.SelectedEventItems;
         }
         private void CallStackInput_DragOver(object sender, DragEventArgs e) {
             e.Effect = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
@@ -261,13 +259,12 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     "SQL build info missing", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            using (var sqlbuildsForm = new SQLBuildsForm {
+            using var sqlbuildsForm = new SQLBuildsForm {
                 pathToPDBs = ConfigurationManager.AppSettings["PDBDownloadFolder"]
-            }) {
-                sqlbuildsForm.StartPosition = FormStartPosition.CenterParent;
-                sqlbuildsForm.ShowDialog(this);
-                this.pdbPaths.AppendText((pdbPaths.TextLength == 0 ? string.Empty : ";") + sqlbuildsForm.lastDownloadedSymFolder);
-            }
+            };
+            sqlbuildsForm.StartPosition = FormStartPosition.CenterParent;
+            sqlbuildsForm.ShowDialog(this);
+            this.pdbPaths.AppendText((pdbPaths.TextLength == 0 ? string.Empty : ";") + sqlbuildsForm.lastDownloadedSymFolder);
         }
 
         private void MainForm_Load(object sender, EventArgs e) {
@@ -285,12 +282,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 string latestReleaseDateStringLocal = "Unknown";
                 // get content of local latestrelease.txt (if it exists)
                 if (File.Exists(LatestReleaseTimestampFileName)) {
-                    using (var strm = new StreamReader(LatestReleaseTimestampFileName)) {
-                        latestReleaseDateStringLocal = strm.ReadToEnd().Trim();
-                        this.Text += $" (release: {latestReleaseDateStringLocal})"; // update form title bar
-                        latestReleaseDateTimeLocal = DateTime.ParseExact(latestReleaseDateStringLocal,
-                            LatestReleaseTimestampFormat, new CultureInfo(LatestReleaseTimestampCulture));
-                    }
+                    using var strm = new StreamReader(LatestReleaseTimestampFileName);
+                    latestReleaseDateStringLocal = strm.ReadToEnd().Trim();
+                    this.Text += $" (release: {latestReleaseDateStringLocal})"; // update form title bar
+                    latestReleaseDateTimeLocal = DateTime.ParseExact(latestReleaseDateStringLocal,
+                        LatestReleaseTimestampFormat, new CultureInfo(LatestReleaseTimestampCulture));
                 } else latestReleaseDateTimeLocal = DateTime.MinValue;
 
                 if (latestReleaseDateTimeServer > latestReleaseDateTimeLocal) {
@@ -315,11 +311,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                 // get content of local lastupdated.txt (if it exists)
                 if (File.Exists(LastUpdatedTimestampFileName)) {
-                    using (var strm = new StreamReader(LastUpdatedTimestampFileName)) {
-                        var lastUpdLocal = strm.ReadToEnd().Trim();
-                        lastUpdDateTimeLocal = DateTime.ParseExact(lastUpdLocal,
-                            LastUpdatedTimestampFormat, new CultureInfo(LastUpdatedTimestampCulture));
-                    }
+                    using var strm = new StreamReader(LastUpdatedTimestampFileName);
+                    var lastUpdLocal = strm.ReadToEnd().Trim();
+                    lastUpdDateTimeLocal = DateTime.ParseExact(lastUpdLocal,
+                        LastUpdatedTimestampFormat, new CultureInfo(LastUpdatedTimestampCulture));
                 } else lastUpdDateTimeLocal = DateTime.MinValue;
 
                 if (lastUpdDateTimeServer > lastUpdDateTimeLocal) {
@@ -333,16 +328,14 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         foreach (var jsonURL in sqlBuildInfoURLs) {
                             jsonContent = Utils.GetFileContentsFromUrl(jsonURL);
                             if (!string.IsNullOrWhiteSpace(jsonContent)) { // update local copy of build info file
-                                using (var writer = new StreamWriter(SqlBuildInfoFileName)) {
-                                    writer.Write(jsonContent);
-                                    writer.Flush();
-                                    writer.Close();
-                                }                                
-                                using (var wr = new StreamWriter(LastUpdatedTimestampFileName, false)) { // update local last updated timestamp
-                                    wr.Write(lastUpdDateTimeServer.ToString(
-                                        LastUpdatedTimestampFormat,
-                                        new CultureInfo(LastUpdatedTimestampCulture)));
-                                }
+                                using var writer = new StreamWriter(SqlBuildInfoFileName);
+                                writer.Write(jsonContent);
+                                writer.Flush();
+                                writer.Close();
+                                using var wr = new StreamWriter(LastUpdatedTimestampFileName, false);  // update local last updated timestamp
+                                wr.Write(lastUpdDateTimeServer.ToString(
+                                    LastUpdatedTimestampFormat,
+                                    new CultureInfo(LastUpdatedTimestampCulture)));
                                 break;
                             }
                         }

@@ -86,18 +86,17 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var allFields = new HashSet<string>();
             foreach (var file in xelFiles) {
                 var numEvents = 0;
-                using (var cts = new CancellationTokenSource()) {
-                    var xeStream = new XEFileEventStreamer(file);
-                    try {
-                        await xeStream.ReadEventStream(
-                            evt => {
-                                if (Interlocked.Increment(ref numEvents) > eventsToSampleFromEachFile) cts.Cancel();
-                                lock (allActions) evt.Actions.Select(action => allActions.Add(action.Key)).Count();
-                                lock (allFields) evt.Fields.Select(field => allFields.Add(field.Key)).Count();
-                                return Task.CompletedTask;
-                            }, cts.Token);
-                    } catch (OperationCanceledException) { /* there's really nothing to do here so it is empty */ }
-                }
+                using var cts = new CancellationTokenSource();
+                var xeStream = new XEFileEventStreamer(file);
+                try {
+                    await xeStream.ReadEventStream(
+                        evt => {
+                            if (Interlocked.Increment(ref numEvents) > eventsToSampleFromEachFile) cts.Cancel();
+                            lock (allActions) evt.Actions.Select(action => allActions.Add(action.Key)).Count();
+                            lock (allFields) evt.Fields.Select(field => allFields.Add(field.Key)).Count();
+                            return Task.CompletedTask;
+                        }, cts.Token);
+                } catch (OperationCanceledException) { /* there's really nothing to do here so it is empty */ }
             }
 
             return new Tuple<List<string>, List<string>>(allActions.OrderBy(k => k).ToList(), allFields.OrderBy(k => k).ToList());

@@ -350,15 +350,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             try {
                 this.PercentComplete = 0;
                 this.StatusMessage = "Inspecting input to determine processing plan...";
-                using (var sreader = new StringReader(inputCallstackText)) {
-                    using (var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null })) {
-                        xmldoc.Load(reader);
-                    }
-                }
-
+                using var sreader = new StringReader(inputCallstackText);
+                using var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null });
+                xmldoc.Load(reader);
                 isXMLdoc = true;
-            } catch (XmlException) {
-                // do nothing because this is not a XML doc
+            } catch (XmlException) { // do nothing because this is not a XML doc
             }
 
             var listOfCallStacks = new List<StackDetails>();
@@ -477,21 +473,20 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             // populate the output
             if (!string.IsNullOrEmpty(outputFilePath)) {
                 this.StatusMessage = $@"Writing output to file {outputFilePath}";
-                using (var outStream = new StreamWriter(outputFilePath, false)) {
-                    foreach (var currstack in listOfCallStacks) {
-                        if (this.cancelRequested) {
-                            return "Operation cancelled.";
-                        }
-
-                        if (!string.IsNullOrEmpty(currstack.Resolvedstack)) outStream.WriteLine(currstack.Resolvedstack);
-                        else if (!string.IsNullOrEmpty(currstack.Callstack.Trim())) {
-                            outStream.WriteLine("WARNING: No output to show. This may indicate an internal error!");
-                            break;
-                        }                        
-
-                        this.globalCounter++;
-                        this.PercentComplete = (int)((double)this.globalCounter / listOfCallStacks.Count * 100.0);
+                using var outStream = new StreamWriter(outputFilePath, false);
+                foreach (var currstack in listOfCallStacks) {
+                    if (this.cancelRequested) {
+                        return "Operation cancelled.";
                     }
+
+                    if (!string.IsNullOrEmpty(currstack.Resolvedstack)) outStream.WriteLine(currstack.Resolvedstack);
+                    else if (!string.IsNullOrEmpty(currstack.Callstack.Trim())) {
+                        outStream.WriteLine("WARNING: No output to show. This may indicate an internal error!");
+                        break;
+                    }
+
+                    this.globalCounter++;
+                    this.PercentComplete = (int)((double)this.globalCounter / listOfCallStacks.Count * 100.0);
                 }
             }
             else {
@@ -584,23 +579,21 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 var search = dllPaths.Where(p => Directory.Exists(p)).SelectMany(currPath => Directory.EnumerateFiles(currPath, currentModule + ".*", recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly))
                     .Where(f => f.EndsWith(".dll", StringComparison.InvariantCultureIgnoreCase) || f.EndsWith(".exe", StringComparison.InvariantCultureIgnoreCase));
                 if (search.Any()) {
-                    using (var dllFileStream = new FileStream(search.First(), FileMode.Open, FileAccess.Read, FileShare.Read)) {
-                        using (var reader = new PEReader(dllFileStream)) {
-                            var lastPdbInfo = PEHelper.ReadPdbs(reader).Last();
-                            var internalPDBName = lastPdbInfo.Path;
-                            var pdbGuid = lastPdbInfo.Guid;
-                            var pdbAge = lastPdbInfo.Age;
-                            var usablePDBName = Path.GetFileNameWithoutExtension(internalPDBName);
-                            var fileVer = FileVersionInfo.GetVersionInfo(search.First()).FileVersion;
-                            var newSymbol = new Symbol() {
-                                PDBName = usablePDBName, InternalPDBName = internalPDBName,
-                                DownloadURL = string.Format(CultureInfo.CurrentCulture, @"https://msdl.microsoft.com/download/symbols/{0}.pdb/{1}/{0}.pdb",
-                                    usablePDBName, pdbGuid.ToString("N", CultureInfo.CurrentCulture) + pdbAge.ToString(CultureInfo.CurrentCulture)), FileVersion = fileVer
-                            };
-                            newSymbol.DownloadVerified = Symbol.IsURLValid(new Uri(newSymbol.DownloadURL));
-                            symbolsFound.Add(newSymbol);
-                        }
-                    }
+                    using var dllFileStream = new FileStream(search.First(), FileMode.Open, FileAccess.Read, FileShare.Read);
+                    using var reader = new PEReader(dllFileStream);
+                    var lastPdbInfo = PEHelper.ReadPdbs(reader).Last();
+                    var internalPDBName = lastPdbInfo.Path;
+                    var pdbGuid = lastPdbInfo.Guid;
+                    var pdbAge = lastPdbInfo.Age;
+                    var usablePDBName = Path.GetFileNameWithoutExtension(internalPDBName);
+                    var fileVer = FileVersionInfo.GetVersionInfo(search.First()).FileVersion;
+                    var newSymbol = new Symbol() {
+                        PDBName = usablePDBName, InternalPDBName = internalPDBName,
+                        DownloadURL = string.Format(CultureInfo.CurrentCulture, @"https://msdl.microsoft.com/download/symbols/{0}.pdb/{1}/{0}.pdb",
+                            usablePDBName, pdbGuid.ToString("N", CultureInfo.CurrentCulture) + pdbAge.ToString(CultureInfo.CurrentCulture)), FileVersion = fileVer
+                    };
+                    newSymbol.DownloadVerified = Symbol.IsURLValid(new Uri(newSymbol.DownloadURL));
+                    symbolsFound.Add(newSymbol);
                 }
             }
 
