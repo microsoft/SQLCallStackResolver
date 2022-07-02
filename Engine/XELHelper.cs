@@ -81,7 +81,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             bool internalCancel = false;
             foreach (var file in xelFiles) {
                 var numEvents = 0;
-                using var cts = new CancellationTokenSource();
                 var xeStream = new XEFileEventStreamer(file);
                 try {
                     await xeStream.ReadEventStream(

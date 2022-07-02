@@ -7,5 +7,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         internal string symPath;
         internal List<string> dllPaths;
         internal bool searchPDBsRecursively, searchDLLRecursively, framesOnSingleLine, includeSourceInfo, showInlineFrames, relookupSource, includeOffsets, cachePDB;
+        internal CancellationTokenSource cts;
     }
 }
