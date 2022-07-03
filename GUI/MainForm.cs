@@ -2,24 +2,13 @@
 // Licensed under the MIT License - see LICENSE file in this repo.
 
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
-    using System;
-    using System.Collections.Generic;
-    using System.Configuration;
-    using System.Globalization;
-    using System.IO;
-    using System.Linq;
-    using System.Text;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using System.Windows.Forms;
-
     public partial class MainForm : Form {
         public MainForm() {
             MessageBox.Show("Copyright (c) 2022 Microsoft Corporation. All rights reserved.\r\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.", "SQLCallStackResolver - Legal Notice", MessageBoxButtons.OK, MessageBoxIcon.Information);
             InitializeComponent();
         }
 
-        private readonly StackResolver _resolver = new StackResolver();
+        private readonly StackResolver _resolver = new();
         private Task<string> backgroundTask;
         private CancellationTokenSource BackgroundCTS { get; set; }
         private CancellationToken backgroundCT;
@@ -131,7 +120,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         private void EnterBaseAddresses_Click(object sender, EventArgs e) {
             using var baseAddressForm = new MultilineInput(this._baseAddressesString, true);
             baseAddressForm.StartPosition = FormStartPosition.CenterParent;
-            if (DialogResult.OK == baseAddressForm.ShowDialog(this)) this._baseAddressesString = baseAddressForm.baseaddressesstring;
+            if (DialogResult.OK == baseAddressForm.ShowDialog(this)) this._baseAddressesString = baseAddressForm.Baseaddressesstring;
         }
         private void CallStackInput_KeyDown(object sender, KeyEventArgs e) {
             if (e.Control && e.KeyCode == Keys.A) {

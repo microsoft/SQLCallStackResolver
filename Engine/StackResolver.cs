@@ -1,31 +1,16 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
-    using Dia;
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.IO;
-    using System.Linq;
-    using System.Reflection.PortableExecutable;
-    using System.Runtime.InteropServices;
-    using System.Text;
-    using System.Text.RegularExpressions;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using System.Xml;
-
     public class StackResolver : IDisposable {
         /// This is used to store module name and start / end virtual address ranges
         /// Only populated if the user provides a tab-separated string corresponding to the output of the following SQL query:
         /// select name, base_address from sys.dm_os_loaded_modules where name not like '%.rll'
-        public List<ModuleInfo> LoadedModules = new List<ModuleInfo>();
+        public List<ModuleInfo> LoadedModules = new();
         /// A cache of already resolved addresses
-        private readonly Dictionary<string, string> cachedSymbols = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> cachedSymbols = new();
         /// R/W lock to protect the above cached symbols dictionary
-        private readonly ReaderWriterLockSlim rwLockCachedSymbols = new ReaderWriterLockSlim();
-        private readonly DLLOrdinalHelper dllMapHelper = new DLLOrdinalHelper();
+        private readonly ReaderWriterLockSlim rwLockCachedSymbols = new();
+        private readonly DLLOrdinalHelper dllMapHelper = new();
         /// Status message - populated during associated long-running operations
         public string StatusMessage;
         /// Internal counter used to implement progress reporting
@@ -451,7 +436,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             // Create a pool of threads to process in parallel
             this.StatusMessage = "Creating thread pool to process frames...";
             int numThreads = Math.Min(listOfCallStacks.Count, Environment.ProcessorCount);
-            List<Thread> threads = new List<Thread>();
+            List<Thread> threads = new();
             for (int threadOrdinal = 0; threadOrdinal < numThreads; threadOrdinal++) {
                 var tmpThread = new Thread(ProcessCallStack);
                 threads.Add(tmpThread);

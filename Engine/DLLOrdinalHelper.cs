@@ -1,13 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
-    using System;
-    using System.Collections.Generic;
-    using System.Globalization;
-    using System.IO;
-    using System.Linq;
-    using System.Text.RegularExpressions;
-
     class DLLOrdinalHelper {
         /// This holds the mapping of the various DLL exports for a module and the address (offset) for each such export
         /// Only populated if the user provides the 'image path' to the DLLs

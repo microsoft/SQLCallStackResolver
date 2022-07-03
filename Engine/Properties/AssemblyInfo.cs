@@ -1,9 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
 
-using System.Reflection;
-using System.Runtime.InteropServices;
-
 [assembly: AssemblyTitle("SQLCallStackResolver Engine")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]

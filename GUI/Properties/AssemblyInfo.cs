@@ -1,8 +1,5 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
-using System.Reflection;
-using System.Resources;
-using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("SQLCallStackResolver")]
 [assembly: AssemblyDescription("Utility which helps resolve SQL Server XE callstacks to their readable form")]

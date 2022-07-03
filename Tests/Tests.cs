@@ -1,15 +1,15 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
-namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using System;
-    using System.Collections.Generic;
-    using System.Globalization;
-    using System.IO;
-    using System.Linq;
-    using System.Threading.Tasks;
-    using System.Xml;
+using System;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Xml;
 
+namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     /// <summary>
     /// Class implementing tests.
     /// </summary>
@@ -624,8 +624,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             Assert.IsTrue(Symbol.IsURLValid(new Uri("https://msdl.microsoft.com/download/symbols/sqldk.pdb/6a1934433512464b8b8ed905ad930ee62/sqldk.pdb")));
         }
 
-        [TestMethod][TestCategory("Unit")]
-        public void GetBuildInfo() {
+        [TestMethod][TestCategory("Unit")] public void GetBuildInfo() {
             var builds = SQLBuildInfo.GetSqlBuildInfo(@"..\..\..\Tests\TestCases\buildinfo.sample.json");
             Assert.AreEqual(2, builds.Count);
             Assert.AreEqual(builds["SQL Server 2019 RTM RTM - 15.0.2000.5 - x64 (Nov 2019)"].SymbolDetails[0].PDBName, "SqlDK");

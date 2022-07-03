@@ -1,10 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
-    using System.IO;
-    using System.Text;
-    using System.Windows.Forms;
-
     public partial class MultilineInput : Form {
         public MultilineInput(string initialtext, bool showFilepicker) {
             InitializeComponent();
@@ -12,7 +8,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             loadFromFile.Visible = showFilepicker;
         }
 
-        public string baseaddressesstring {
+        public string Baseaddressesstring {
             get { return this.InputAddresses.Text; }
         }
 
@@ -37,7 +33,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             e.Effect = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
         }
 
-        private void loadFromFile_Click(object sender, System.EventArgs e) {
+        private void LoadFromFile_Click(object sender, System.EventArgs e) {
             fileDlg.Multiselect = false;
             fileDlg.CheckPathExists = true;
             fileDlg.CheckFileExists = true;

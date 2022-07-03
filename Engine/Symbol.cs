@@ -1,10 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
-    using System;
-    using System.Net;
-    using System.Runtime.Serialization;
-
     [DataContract] public class Symbol {
         [DataMember(Order = 0)] public string PDBName;
         [IgnoreDataMember] public string InternalPDBName;

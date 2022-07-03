@@ -1,16 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
-    using System.Collections.Generic;
-    using System.Diagnostics.Contracts;
-    using System.Globalization;
-    using System.IO;
-    using System.Linq;
-    using System.Runtime.Serialization;
-    using System.Runtime.Serialization.Json;
-    using System.Text;
-    using System.Text.RegularExpressions;
-
     [DataContract] public class SQLBuildInfo {
         [DataMember(Order=0)] public string ProductMajorVersion = "<<ProductMajorVersion>>";
         [DataMember(Order = 1)] public string ProductLevel = "<<ProductLevel>>";

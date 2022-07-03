@@ -1,21 +1,13 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
-    using Dia;
-    using System.Collections.Generic;
-    using System.Globalization;
-    using System.IO;
-    using System.Linq;
-    using System.Runtime.InteropServices;
-    using System.Text;
-
     /// Wrapper class around DIA
     internal class DiaUtil {
         internal readonly IDiaDataSource _IDiaDataSource;
         internal readonly IDiaSession _IDiaSession;
         private bool disposedValue = false;
         public readonly bool HasSourceInfo = false;
-        private static readonly object _syncRoot = new object();
+        private static readonly object _syncRoot = new();
 
         internal DiaUtil(string pdbName) {
             _IDiaDataSource = new DiaSource();
