@@ -300,7 +300,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// <param name="cachePDB">Boolean, whether to cache PDBs locally</param>
         /// <param name="outputFilePath">File path, used if output is directly written to a file</param>
         /// <returns></returns>
-        public string ResolveCallstacks(string inputCallstackText, string symPath, bool searchPDBsRecursively, List<string> dllPaths,
+        public async Task<string> ResolveCallstacksAsync(string inputCallstackText, string symPath, bool searchPDBsRecursively, List<string> dllPaths,
             bool searchDLLRecursively, bool framesOnSingleLine, bool includeSourceInfo, bool relookupSource, bool includeOffsets,
             bool showInlineFrames, bool cachePDB, string outputFilePath, CancellationTokenSource cts) {
             this.cachedSymbols.Clear();
@@ -407,7 +407,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             }
 
             this.StatusMessage = "Checking for embedded symbol information...";
-            var syms = ModuleInfoHelper.ParseModuleInfo(listOfCallStacks);
+            var syms = await ModuleInfoHelper.ParseModuleInfoAsync(listOfCallStacks);
             if (syms.Count > 0) {
                 this.StatusMessage = "Downloading symbols as needed...";
                 // if the user has provided such a list of module info, proceed to actually use dbghelp.dll / symsrv.dll to download those PDBs and get local paths for them
@@ -420,7 +420,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 }
                 this.StatusMessage = "Looking for embedded XML-formatted frames and symbol information...";
                 // attempt to check if there are XML-formatted frames each with the related PDB attributes and if so replace those lines with the normalized versions
-                (syms, listOfCallStacks) = ModuleInfoHelper.ParseModuleInfoXML(listOfCallStacks);
+                (syms, listOfCallStacks) = await ModuleInfoHelper.ParseModuleInfoXMLAsync(listOfCallStacks);
                 if (syms.Count > 0) {
                     // if the user has provided such a list of module info, proceed to actually use dbghelp.dll / symsrv.dll to download thos PDBs and get local paths for them
                     var paths = SymSrvHelpers.GetFolderPathsForPDBs(this, symPath, syms.Values.ToList());

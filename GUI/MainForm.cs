@@ -80,8 +80,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 return;
             }
 
-            this.backgroundTask = Task.Run(() => {
-                return this._resolver.ResolveCallstacks(callStackInput.Text, pdbPaths.Text, pdbRecurse.Checked, dllPaths,
+            this.backgroundTask = Task.Run(async () => {
+                return await this._resolver.ResolveCallstacksAsync(callStackInput.Text, pdbPaths.Text, pdbRecurse.Checked, dllPaths,
                     DLLrecurse.Checked, FramesOnSingleLine.Checked, IncludeLineNumbers.Checked, RelookupSource.Checked,
                     includeOffsets.Checked, showInlineFrames.Checked, cachePDB.Checked, outputFilePath.Text, BackgroundCTS);
             });

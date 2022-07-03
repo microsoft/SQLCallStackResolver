@@ -8,7 +8,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// <summary>
         /// Parse the input and return a set of resolved Symbol objects
         /// </summary>
-        public static Dictionary<string, Symbol> ParseModuleInfo(List<StackDetails> listOfCallStacks) {
+        public async static Task<Dictionary<string, Symbol>> ParseModuleInfoAsync(List<StackDetails> listOfCallStacks) {
             var retval = new Dictionary<string, Symbol>();
             Parallel.ForEach(listOfCallStacks.Select(c => c.CallstackFrames), lines => {
                 Contract.Requires(lines.Length > 0);
@@ -51,7 +51,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             return retval;
         }
 
-        public static (Dictionary<string, Symbol>, List<StackDetails>) ParseModuleInfoXML(List<StackDetails> listOfCallStacks) {
+        public async static Task<(Dictionary<string, Symbol>, List<StackDetails>)> ParseModuleInfoXMLAsync(List<StackDetails> listOfCallStacks) {
             var syms = new Dictionary<string, Symbol>();
 
             Parallel.ForEach(listOfCallStacks, currItem => {
