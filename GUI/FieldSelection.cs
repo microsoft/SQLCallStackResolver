@@ -1,14 +1,10 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Windows.Forms;
     public partial class FieldSelection : Form {
-        public List<string> AllActions = new List<string>();
-        public List<string> AllFields = new List<string>();
-        public List<string> SelectedEventItems = new List<string>();
+        public List<string> AllActions = new();
+        public List<string> AllFields = new();
+        public List<string> SelectedEventItems = new();
         private int newItemOrdinal = 1;
         public FieldSelection() {
             InitializeComponent();

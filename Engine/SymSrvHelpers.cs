@@ -1,15 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
-    using System.Globalization;
-    using System.IO;
-    using System.Runtime.InteropServices;
-    using System.Text;
-
     public static class SymSrvHelpers {
         static readonly int processId = Process.GetCurrentProcess().Id;
 
@@ -26,7 +17,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// Private method to locate the local path for a matching PDB. Implicitly handles symbol download if needed.
         private static string GetLocalSymbolFolderForModule(string pdbFilename, string pdbGuid, int pdbAge) {
             const int MAX_PATH = 4096;
-            StringBuilder outPath = new StringBuilder(MAX_PATH);
+            StringBuilder outPath = new(MAX_PATH);
             var guid = Guid.Parse(pdbGuid);
             int rawsize = Marshal.SizeOf(guid);
             IntPtr buffer = Marshal.AllocHGlobal(rawsize);

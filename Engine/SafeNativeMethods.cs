@@ -1,11 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
-    using System;
-    using System.Runtime.InteropServices;
-    using System.Security;
-    using System.Text;
-
     [SuppressUnmanagedCodeSecurityAttribute]
     internal class SafeNativeMethods {
         //Code adapted from Stack Exchange network post https://stackoverflow.com/questions/26514954/registration-free-com-interop-deactivating-activation-context-in-finalizer-thro
@@ -53,7 +48,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         internal static bool EstablishActivationContext() {
-            ACTCTX info = new ACTCTX {
+            ACTCTX info = new() {
                 cbSize = Marshal.SizeOf(typeof(ACTCTX)),
                 dwFlags = ACTCTX_FLAG_RESOURCE_NAME_VALID,
                 lpSource = System.Reflection.Assembly.GetExecutingAssembly().Location,

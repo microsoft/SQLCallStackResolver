@@ -1,16 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
-    using System;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Globalization;
-    using System.IO;
-    using System.Linq;
-    using System.Net;
-    using System.Threading;
-    using System.Windows.Forms;
-
     public partial class SQLBuildsForm : Form {
         public string pathToPDBs = string.Empty;
         public string lastDownloadedSymFolder = string.Empty;
@@ -82,7 +72,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         private void CheckPDBAvail_Click(object sender, EventArgs e) {
             if (treeviewSyms.SelectedNode is null) return;
             if (treeviewSyms.SelectedNode.Tag is SQLBuildInfo bld && bld.SymbolDetails.Count > 0) {
-                List<string> failedUrls = new List<string>();
+                List<string> failedUrls = new();
                 var urls = bld.SymbolDetails.Select(s => s.DownloadURL);
                 foreach (var url in urls) {
                     downloadStatus.Text = url;

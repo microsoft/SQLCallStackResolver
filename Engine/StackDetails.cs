@@ -1,7 +1,5 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
-using System.Text;
-
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     /// <summary>
     /// Helper class for cases where we have XML frames with embedded module information.

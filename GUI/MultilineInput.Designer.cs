@@ -60,7 +60,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.loadFromFile.TabIndex = 3;
             this.loadFromFile.Text = "Load from file";
             this.loadFromFile.UseVisualStyleBackColor = true;
-            this.loadFromFile.Click += new System.EventHandler(this.loadFromFile_Click);
+            this.loadFromFile.Click += new System.EventHandler(this.LoadFromFile_Click);
             this.fileDlg.Filter = "Text files|*.txt";
             this.AcceptButton = this.OkButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
