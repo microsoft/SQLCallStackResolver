@@ -127,4 +127,8 @@
     <PreBuildEvent>cd $(ProjectDir)
 powershell -File "$(ProjectDir)/getBuildPreReqs.ps1"</PreBuildEvent>
   </PropertyGroup>
+  <PropertyGroup>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+  </PropertyGroup>
 </Project>
