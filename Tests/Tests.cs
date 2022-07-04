@@ -293,7 +293,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var ret = await csr.ExtractFromXELAsync(new[] { @"..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, false, new List<string>(new String[] { "callstack" }), cts);
             Assert.AreEqual(550, ret.Item1);
             Assert.IsTrue(ret.Item2.Contains("Tests\\TestCases\\ImportXEL\\xe_wait_completed_0_132353446563350000.xel, UTC: 2020-05-30 20:37:36.3626428, UUID: 992caa1d-ef90-4278-9821-ebdd0180db0d\"><action name='callstack'><value><![CDATA[0x00007FFAF2BD6C7C"));
-            var res = csr.ResolveCallstacks(ret.Item2, string.Empty, false, null, false, false, false, false, false, false, false, null);
+            var res = await csr.ResolveCallstacksAsync(ret.Item2, string.Empty, false, null, false, false, false, false, false, false, false, null, cts);
             Assert.IsTrue(res.StartsWith(@"Event key: File: ..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel, UTC: 2020-05-30 20:37:36.3626428, UUID: 992caa1d-ef90-4278-9821-ebdd0180db0d"));
         }
 
@@ -379,11 +379,12 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         /// Tests the parsing and extraction of PDB details from a set of rows each with commma-separated fields. This sample mixes up \r\n and \n line-endings.
         [TestMethod][TestCategory("Unit")] public async Task ExtractModuleInfo() {
+            using var cts = new CancellationTokenSource();
             var ret = await ModuleInfoHelper.ParseModuleInfoAsync(new List<StackDetails>() { new StackDetails("\"ntdll.dll\",\"10.0.19041.662\",2056192,666871280,2084960,\"ntdll.pdb\",\"{1EB9FACB-04C7-3C5D-EA71-60764CD333D0}\",0,1\r\n" +
 "\"VCRUNTIME140.dll\",\"14.16.27033.0\",86016,1563486943,105788,\"vcruntime140.amd64.pdb\",\"{AF138C3F-2933-4097-8883-C1071B13375E}\",0,1\r\n\r\nsqlservr.exe,7ef4ea08-777a-43b7-8bce-4da6f0fa43c7,2\r\n\"KERNELBASE.dll\",\"10.0.19041.662\",2920448,3965251605,2936791,\"kernelbase.pdb\",\"{1FBE0B2B-89D1-37F0-1510-431FFFBA123E}\",0,1\n" +
-"\"kernel32.dll\",\"10.0.19041.662\",774144,1262097423,770204,\"kernel32.pdb\",\"{54448D8E-EFC5-AB3C-7193-D2C7A6DF9008}\",0,1\r\n", false) });
+"\"kernel32.dll\",\"10.0.19041.662\",774144,1262097423,770204,\"kernel32.pdb\",\"{54448D8E-EFC5-AB3C-7193-D2C7A6DF9008}\",0,1\r\n", false) }, cts);
 
-            Assert.AreEqual(5, ret.Count);
+            Assert.AreEqual(5, ret.Count());
             Assert.AreEqual("ntdll.pdb", ret["ntdll"].PDBName);
             Assert.AreEqual("1EB9FACB04C73C5DEA7160764CD333D0", ret["ntdll"].PDBGuid, ignoreCase: true);
             Assert.AreEqual(1, ret["ntdll"].PDBAge);
@@ -402,11 +403,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 "Frame = <frame id=\"02\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-\r\nd905ad930ee6\" module=\"sqldk.dll\" rva=\"0x40609\" />                                    \r\n" +
 "<frame id=\"03\" pdb=\"vcruntime140.amd64.pdb\" age=\"1\" guid=\"AF138C3F-2933-4097-8883-C1071B13375E\" module=\"VCRUNTIME140.dll\" rva=\"0xB8F0\" />\r\n" +
 "Frame = <frame id=\"04\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x2249f\" />                                    \n", false);
-            var param = new List<StackDetails> { sample };
-            var result = await ModuleInfoHelper.ParseModuleInfoXMLAsync(param);
+            using var cts = new CancellationTokenSource();
+            var result = await ModuleInfoHelper.ParseModuleInfoXMLAsync(new List<StackDetails> { sample }, cts);
 
             var syms = result.Item1;
-            Assert.AreEqual(4, syms.Count);
+            Assert.AreEqual(4, syms.Count());
             Assert.AreEqual("ntdll.pdb", syms["ntdll"].PDBName);
             Assert.AreEqual("C374E05957939B926525386A66A2D3F5", syms["ntdll"].PDBGuid, ignoreCase: true);
             Assert.AreEqual(1, syms["ntdll"].PDBAge);
@@ -423,9 +424,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         /// Tests the parsing and extraction of PDB details from a set of rows each with XML frames. Some of those XML frames do not have sym info or RVA included.
         [TestMethod][TestCategory("Unit")] public async Task ExtractModuleInfoXMLFramesWithCalcBaseAddress() {
+            using var cts = new CancellationTokenSource();
             var input = new StackDetails("Frame = <frame id=\"02\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-\r\nd905ad930ee6\" module=\"sqldk.dll\" rva=\"0x40609\" address = \"0x100440609\"/>\r\n<frame id=\"04\" name=\"sqldk.dll\" address=\"0x10042249f\" />\n", false);
-            var param = new List<StackDetails> { input };
-            var result = await ModuleInfoHelper.ParseModuleInfoXMLAsync(param);
+            var result = await ModuleInfoHelper.ParseModuleInfoXMLAsync(new List<StackDetails> { input }, cts);
 
             var syms = result.Item1;
             Assert.AreEqual(1, syms.Count);
@@ -437,18 +438,19 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         /// Tests the parsing and extraction of PDB details from a set of rows each with commma-separated fields.
         [TestMethod][TestCategory("Unit")] public async Task ExtractModuleInfoEmptyString() {
-            var ret = await ModuleInfoHelper.ParseModuleInfoAsync(new List<StackDetails>() { new StackDetails(string.Empty, false) });
-            Assert.AreEqual(ret.Count, 0);
+            using var cts = new CancellationTokenSource();
+            var ret = await ModuleInfoHelper.ParseModuleInfoAsync(new List<StackDetails>() { new StackDetails(string.Empty, false) }, cts);
+            Assert.AreEqual(ret.Count(), 0);
         }
 
         /// Test obtaining a local path for symbols downloaded from a symbol server.
         [TestMethod][TestCategory("Unit")] public async Task SymSrvLocalPaths() {
+            using var csr = new StackResolver();
+            using var cts = new CancellationTokenSource();
             var ret = await ModuleInfoHelper.ParseModuleInfoAsync(new List<StackDetails>() { new StackDetails("\"ntdll.dll\",\"10.0.19041.662\",2056192,666871280,2084960,\"ntdll.pdb\",\"{1EB9FACB-04C7-3C5D-EA71-60764CD333D0}\",0,1\r\n" +
 "\"VCRUNTIME140.dll\",\"14.16.27033.0\",86016,1563486943,105788,\"vcruntime140.amd64.pdb\",\"{AF138C3F-2933-4097-8883-C1071B13375E}\",0,1\r\n\r\nsqlservr.exe,7ef4ea08-777a-43b7-8bce-4da6f0fa43c7,2\r\n" +
 "\"KERNELBASE.dll\",\"10.0.19041.662\",2920448,3965251605,2936791,\"kernelbase.pdb\",\"{1FBE0B2B-89D1-37F0-1510-431FFFBA123E}\",0,1\n" +
-"\"kernel32.dll\",\"10.0.19041.662\",774144,1262097423,770204,\"kernel32.pdb\",\"{54448D8E-EFC5-AB3C-7193-D2C7A6DF9008}\",0,1\r\n", false)});
-
-            using var csr = new StackResolver();
+"\"kernel32.dll\",\"10.0.19041.662\",774144,1262097423,770204,\"kernel32.pdb\",\"{54448D8E-EFC5-AB3C-7193-D2C7A6DF9008}\",0,1\r\n", false)}, cts);
             var paths = SymSrvHelpers.GetFolderPathsForPDBs(csr, "srv*https://msdl.microsoft.com/download/symbols", ret.Values.ToList());
             Assert.AreEqual(5, paths.Count);
         }
@@ -691,10 +693,28 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var xeventInput = PrepareLargeXEventInput();
             var resolveStacksTask = Task.Run(() => csr.ResolveCallstacksAsync(xeventInput.ToString(), @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, true, false, false, Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()), cts3));
             while (true) {
-                if (resolveStacksTask.Wait(5000)) break;
+                if (resolveStacksTask.Wait(1000)) break;
                 cts3.Cancel();
             }
             Assert.AreEqual("Operation cancelled.", resolveStacksTask.Result);
+
+            using var cts4 = new CancellationTokenSource();
+            var parseModuleInfoXMLTask = Task.Run(() => ModuleInfoHelper.ParseModuleInfoXMLAsync(new List<StackDetails> { new StackDetails(xeventInput.ToString(), false) }, cts4));
+            while (true) {
+                cts4.Cancel();  // because this method is quick, we need to simulate a cancel right away
+                if (parseModuleInfoXMLTask.Wait(5)) break;
+            }
+            Assert.AreEqual(0, parseModuleInfoXMLTask.Result.Item1.Count);
+            Assert.AreEqual(0, parseModuleInfoXMLTask.Result.Item2.Count);
+
+            using var cts5 = new CancellationTokenSource();
+            var parseModuleInfoTask = Task.Run(() => ModuleInfoHelper.ParseModuleInfoAsync(new List<StackDetails> { new StackDetails(xeventInput.ToString(), false) }, cts5));
+            while (true) {
+                if (parseModuleInfoTask.Wait(300)) break;
+                cts5.Cancel();
+            }
+            Assert.AreEqual(0, parseModuleInfoTask.Result.Count);
+            Assert.AreEqual(0, parseModuleInfoTask.Result.Count);
         }
     }
 }

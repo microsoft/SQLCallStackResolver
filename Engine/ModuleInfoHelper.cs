@@ -8,11 +8,13 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// <summary>
         /// Parse the input and return a set of resolved Symbol objects
         /// </summary>
-        public async static Task<Dictionary<string, Symbol>> ParseModuleInfoAsync(List<StackDetails> listOfCallStacks) {
+        public async static Task<Dictionary<string, Symbol>> ParseModuleInfoAsync(List<StackDetails> listOfCallStacks, CancellationTokenSource cts) {
             var retval = new Dictionary<string, Symbol>();
             Parallel.ForEach(listOfCallStacks.Select(c => c.CallstackFrames), lines => {
+                if (cts.IsCancellationRequested) return;
                 Contract.Requires(lines.Length > 0);
                 foreach (var line in lines) {
+                    if (cts.IsCancellationRequested) return;
                     Guid pdbGuid = Guid.Empty;
                     string moduleName = null, pdbName = null;
 
@@ -48,13 +50,14 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 }
             });
 
-            return retval;
+            return cts.IsCancellationRequested ? new Dictionary<string, Symbol>() : retval;
         }
 
-        public async static Task<(Dictionary<string, Symbol>, List<StackDetails>)> ParseModuleInfoXMLAsync(List<StackDetails> listOfCallStacks) {
+        public async static Task<(Dictionary<string, Symbol>, List<StackDetails>)> ParseModuleInfoXMLAsync(List<StackDetails> listOfCallStacks, CancellationTokenSource cts) {
             var syms = new Dictionary<string, Symbol>();
 
             Parallel.ForEach(listOfCallStacks, currItem => {
+                if (cts.IsCancellationRequested) return;
                 var outCallstack = new StringBuilder();
                 // sniff test to allow for quick exit if input has no XML at all
                 if (currItem.Callstack.Contains("<frame")) {
@@ -69,6 +72,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     var lines = currItem.Callstack.Split('\n');
                     bool readStatus = false;
                     foreach (var line in lines) {
+                        if (cts.IsCancellationRequested) return;
                         if (!string.IsNullOrWhiteSpace(line) && line.StartsWith("<frame")) { // only attempt further formal XML parsing if a simple text check works
                             try {
                                 using var sreader = new StringReader(line);
@@ -115,7 +119,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 }
             });
 
-            return (syms, listOfCallStacks);
+            return cts.IsCancellationRequested ? (new Dictionary<string, Symbol>(), new List<StackDetails>()) : (syms, listOfCallStacks);
         }
     }
 }

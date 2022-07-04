@@ -28,12 +28,13 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Convert virtual-address only type frames to their module+offset format
-        private string[] PreProcessVAs(string[] callStackLines, Regex rgxVAOnly) {
+        private string[] PreProcessVAs(string[] callStackLines, Regex rgxVAOnly, CancellationTokenSource cts) {
             if (!this.LoadedModules.Any()) return callStackLines;// only makes sense doing the rest of the work in this function if have loaded module information
 
             string[] retval = new string[callStackLines.Length];
             int frameNum = 0;
             foreach (var currentFrame in callStackLines) {
+                if (cts.IsCancellationRequested) return callStackLines;
                 // let's see if this is an VA-only address
                 var matchVA = rgxVAOnly.Match(currentFrame);
                 if (matchVA.Success) {
@@ -65,6 +66,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var finalCallstack = new StringBuilder();
             int frameNum = int.MinValue;
             foreach (var iterFrame in callStackLines) {
+                if (tp.cts.IsCancellationRequested) return "Operation cancelled.";
                 // hard-coded find-replace for XML markup - useful when importing from XML histograms
                 var currentFrame = iterFrame.Replace("&lt;", "<").Replace("&gt;", ">");
                 if (relookupSource && includeSourceInfo) {
@@ -407,8 +409,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             }
 
             this.StatusMessage = "Checking for embedded symbol information...";
-            var syms = await ModuleInfoHelper.ParseModuleInfoAsync(listOfCallStacks);
-            if (syms.Count > 0) {
+            var syms = await ModuleInfoHelper.ParseModuleInfoAsync(listOfCallStacks, cts);
+            if (cts.IsCancellationRequested) return "Operation cancelled.";
+
+            if (syms.Count() > 0) {
                 this.StatusMessage = "Downloading symbols as needed...";
                 // if the user has provided such a list of module info, proceed to actually use dbghelp.dll / symsrv.dll to download those PDBs and get local paths for them
                 var paths = SymSrvHelpers.GetFolderPathsForPDBs(this, symPath, syms.Values.ToList());
@@ -420,8 +424,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 }
                 this.StatusMessage = "Looking for embedded XML-formatted frames and symbol information...";
                 // attempt to check if there are XML-formatted frames each with the related PDB attributes and if so replace those lines with the normalized versions
-                (syms, listOfCallStacks) = await ModuleInfoHelper.ParseModuleInfoXMLAsync(listOfCallStacks);
-                if (syms.Count > 0) {
+                (syms, listOfCallStacks) = await ModuleInfoHelper.ParseModuleInfoXMLAsync(listOfCallStacks, cts);
+                if (cts.IsCancellationRequested) return "Operation cancelled.";
+                if (syms.Count() > 0) {
                     // if the user has provided such a list of module info, proceed to actually use dbghelp.dll / symsrv.dll to download thos PDBs and get local paths for them
                     var paths = SymSrvHelpers.GetFolderPathsForPDBs(this, symPath, syms.Values.ToList());
                     // we then "inject" those local PDB paths as higher priority than any possible user provided paths
@@ -515,10 +520,12 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 var currstack = tp.listOfCallStacks[tmpStackIndex];
                 var ordinalResolvedFrames = this.dllMapHelper.LoadDllsIfApplicable(currstack.CallstackFrames, tp.searchDLLRecursively, tp.dllPaths);
                 // process any frames which are purely virtual address (in such cases, the caller should have specified base addresses)
-                var callStackLines = PreProcessVAs(ordinalResolvedFrames, rgxVAOnly);
+                var callStackLines = PreProcessVAs(ordinalResolvedFrames, rgxVAOnly, tp.cts);
+                if (tp.cts.IsCancellationRequested) return;
 
                 // resolve symbols by using DIA
                 currstack.Resolvedstack = ResolveSymbols(_diautils, callStackLines, tp.includeSourceInfo, tp.relookupSource, tp.includeOffsets, tp.showInlineFrames, rgxAlreadySymbolizedFrame, rgxModuleName, modulesToIgnore, tp);
+                if (tp.cts.IsCancellationRequested) return;
 
                 var localCounter = Interlocked.Increment(ref this.globalCounter);
                 this.PercentComplete = (int)((double)localCounter / tp.listOfCallStacks.Count * 100.0);
