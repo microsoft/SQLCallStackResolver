@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
@@ -73,8 +74,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task RegularSymbolVirtualAddress() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var moduleAddressesGood = @"c:\mssql\binn\sqldk.dll 00000001`00400000";
-            Assert.IsTrue(csr.ProcessBaseAddresses(moduleAddressesGood));
+            Assert.IsTrue(csr.ProcessBaseAddresses(@"c:\mssql\binn\sqldk.dll 00000001`00400000"));
             var ret = await csr.ResolveCallstacksAsync("0x000000010042249f", @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, true, false, false, null, cts);
             var expectedSymbol = "sqldk!Spinlock<244,2,1>::SpinToAcquireWithExponentialBackoff+349";
             Assert.AreEqual(expectedSymbol, ret.Trim());
@@ -93,11 +93,17 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Perf")] public async Task LargeXEventsInput() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var moduleAddressesGood = @"c:\mssql\binn\sqldk.dll 00000001`00400000";
-            Assert.IsTrue(csr.ProcessBaseAddresses(moduleAddressesGood));
-            var xeventInput = new System.Text.StringBuilder();
-            xeventInput.AppendLine("<Events>");
-            // generate random events with offsets in the module range
+            Assert.IsTrue(csr.ProcessBaseAddresses(@"c:\mssql\binn\sqldk.dll 00000001`00400000"));
+            var xeventInput = PrepareLargeXEventInput();
+            var timer = new System.Diagnostics.Stopwatch();
+            timer.Start();
+            await csr.ResolveCallstacksAsync(xeventInput.ToString(), @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, true, false, false, Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()), cts);
+            timer.Stop();
+            Assert.IsTrue(timer.Elapsed.TotalSeconds < 45 * 60);  // 45 minutes max on GitHub hosted DSv2 runner (2 vCPU, 7 GiB RAM).
+        }
+
+        private StringBuilder PrepareLargeXEventInput() {
+            var xeventInput = new StringBuilder("<Events>");
             var rng = new Random();
             // generate 750K XEvents, each with 25 frames, each frame having a random address between 0000000100400000 and 00000001008c8000, which is a 5013503 byte range
             for (var eventNum = 0; eventNum < 750000; eventNum++) {
@@ -108,11 +114,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 xeventInput.AppendLine($"</value></action></event>");
             }
             xeventInput.AppendLine("</Events>");
-            var timer = new System.Diagnostics.Stopwatch();
-            timer.Start();
-            await csr.ResolveCallstacksAsync(xeventInput.ToString(), @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, true, false, false, Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()), cts);
-            timer.Stop();
-            Assert.IsTrue(timer.Elapsed.TotalSeconds < 45 * 60);  // 45 minutes max on GitHub hosted DSv2 runner (2 vCPU, 7 GiB RAM).
+            return xeventInput;
         }
 
         /// Check the processing of module base address information.
@@ -140,8 +142,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// Check the processing of module base address information.
         [TestMethod][TestCategory("Unit")] public void ModuleLoadAddressInputFullPathSingleLine() {
             using var csr = new StackResolver();
-            var moduleAddressesGood = @"c:\mssql\binn\sqldk.dll 0000000100400000";
-            Assert.IsTrue(csr.ProcessBaseAddresses(moduleAddressesGood));
+            Assert.IsTrue(csr.ProcessBaseAddresses(@"c:\mssql\binn\sqldk.dll 0000000100400000"));
             Assert.AreEqual(1, csr.LoadedModules.Count);
             Assert.AreEqual("sqldk", csr.LoadedModules[0].ModuleName);
         }
@@ -149,8 +150,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// Check the processing of module base address information.
         [TestMethod][TestCategory("Unit")] public void ModuleLoadAddressInputSingleLineBacktick() {
             using var csr = new StackResolver();
-            var moduleAddressesGoodBacktick = @"c:\mssql\binn\sqldk.dll 00000001`00400000";
-            Assert.IsTrue(csr.ProcessBaseAddresses(moduleAddressesGoodBacktick));
+            Assert.IsTrue(csr.ProcessBaseAddresses(@"c:\mssql\binn\sqldk.dll 00000001`00400000"));
             Assert.AreEqual(1, csr.LoadedModules.Count);
             Assert.AreEqual("sqldk", csr.LoadedModules[0].ModuleName);
         }
@@ -158,8 +158,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// Check the processing of module base address information.
         [TestMethod][TestCategory("Unit")] public void ModuleLoadAddressInputModuleNameOnlySingleLine() {
             using var csr = new StackResolver();
-            var moduleAddressesGoodModuleNameOnly0x = @"sqldk.dll 0000000100400000";
-            Assert.IsTrue(csr.ProcessBaseAddresses(moduleAddressesGoodModuleNameOnly0x));
+            Assert.IsTrue(csr.ProcessBaseAddresses(@"sqldk.dll 0000000100400000"));
             Assert.AreEqual(1, csr.LoadedModules.Count);
             Assert.AreEqual("sqldk", csr.LoadedModules[0].ModuleName);
         }
@@ -167,8 +166,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// Check the processing of module base address information.
         [TestMethod][TestCategory("Unit")] public void ModuleLoadAddressInputModuleNameOnlySingleLine0x() {
             using var csr = new StackResolver();
-            var moduleAddressesGoodModuleNameOnly0x = @"sqldk.dll 0x0000000100400000";
-            Assert.IsTrue(csr.ProcessBaseAddresses(moduleAddressesGoodModuleNameOnly0x));
+            Assert.IsTrue(csr.ProcessBaseAddresses(@"sqldk.dll 0x0000000100400000"));
             Assert.AreEqual(1, csr.LoadedModules.Count);
             Assert.AreEqual("sqldk", csr.LoadedModules[0].ModuleName);
         }
@@ -176,8 +174,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// Check the processing of module base address information.
         [TestMethod][TestCategory("Unit")] public void ModuleLoadAddressInputFullPathsTwoModules() {
             using var csr = new StackResolver();
-            var moduleAddressesGood = "c:\\mssql\\binn\\sqldk.dll 0000000100400000\r\nc:\\mssql\\binn\\sqllang.dll 0000000105600000";
-            Assert.IsTrue(csr.ProcessBaseAddresses(moduleAddressesGood));
+            Assert.IsTrue(csr.ProcessBaseAddresses("c:\\mssql\\binn\\sqldk.dll 0000000100400000\r\nc:\\mssql\\binn\\sqllang.dll 0000000105600000"));
             Assert.AreEqual(2, csr.LoadedModules.Count);
             Assert.AreEqual("sqldk", csr.LoadedModules[0].ModuleName);
             Assert.AreEqual("sqllang", csr.LoadedModules[1].ModuleName);
@@ -205,7 +202,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Check whether symbol details for a given binary are correct.
-        [TestMethod][TestCategory("Unit")] public void TestGetSymDetails() {
+        [TestMethod][TestCategory("Unit")] public void GetSymDetails() {
             var dllPaths = new List<string> { @"..\..\..\Tests\TestCases\TestOrdinal" };
             var ret = StackResolver.GetSymbolDetailsForBinaries(dllPaths, true);
             Assert.AreEqual(1, ret.Count);
@@ -218,7 +215,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task SymbolFileCaching() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var ret = await csr.ExtractFromXEL(new[] { @"..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, false, new List<string>(new String[] { "callstack" }), cts);
+            var ret = await csr.ExtractFromXELAsync(new[] { @"..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, false, new List<string>(new String[] { "callstack" }), cts);
             Assert.AreEqual(550, ret.Item1);
             Assert.IsTrue(csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\..\Tests\TestCases\ImportXEL\xe_wait_base_addresses.txt")));
             var pdbPath = @"..\..\..\Tests\TestCases\sqlsyms\14.0.3192.2\x64";
@@ -260,7 +257,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task ImportBinResolveXELEvents() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var ret = await csr.ExtractFromXEL(new[] { @"..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, true, new List<string>(new String[] { "callstack" }), cts);
+            var ret = await csr.ExtractFromXELAsync(new[] { @"..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, true, new List<string>(new String[] { "callstack" }), cts);
             Assert.AreEqual(4, ret.Item1);
 
             var xmldoc = new XmlDocument() { XmlResolver = null };
@@ -293,7 +290,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task ImportIndividualXELEvents() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var ret = await csr.ExtractFromXEL(new[] { @"..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, false, new List<string>(new String[] { "callstack" }), cts);
+            var ret = await csr.ExtractFromXELAsync(new[] { @"..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, false, new List<string>(new String[] { "callstack" }), cts);
             Assert.AreEqual(550, ret.Item1);
             Assert.IsTrue(ret.Item2.Contains("Tests\\TestCases\\ImportXEL\\xe_wait_completed_0_132353446563350000.xel, UTC: 2020-05-30 20:37:36.3626428, UUID: 992caa1d-ef90-4278-9821-ebdd0180db0d\"><action name='callstack'><value><![CDATA[0x00007FFAF2BD6C7C"));
             var res = csr.ResolveCallstacks(ret.Item2, string.Empty, false, null, false, false, false, false, false, false, false, null);
@@ -646,7 +643,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Test for exported symbols
-        [TestMethod][TestCategory("Unit")] public void CheckExportedSymbols() {
+        [TestMethod][TestCategory("Unit")] public void ExportedSymbols() {
             var ret = ExportedSymbol.GetExports(@"..\..\..\Tests\TestCases\TestOrdinal\sqldk.dll");
             Assert.AreEqual(931, ret.Count);
             Assert.AreEqual((uint)1095072, ret[15].Address);
@@ -655,7 +652,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             Assert.AreEqual((uint)1447120, ret[1161].Address);
         }
 
-        [TestMethod][TestCategory("Unit")] public void TestIsUrlValid() {
+        [TestMethod][TestCategory("Unit")] public void IsUrlValid() {
             Assert.IsFalse(Symbol.IsURLValid(new Uri("https://msdl.microsoft.com/download/symbols/sqldk.pdb/6a1934433512464b8b8ed905ad930ee62/someother.pdb")));
             Assert.IsFalse(Symbol.IsURLValid(new Uri("file:///C:/Windows/System32/Kernel32.dll")));
             Assert.ThrowsException<NotSupportedException>(() => Symbol.IsURLValid(new Uri("LDAP://server/distinguishedName")));
@@ -669,10 +666,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Test cancellation of various operations
-        [TestMethod][TestCategory("Unit")] public async Task CancelRunningXELTasks() {
+        [TestMethod][TestCategory("Unit")] public void Cancellations() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var xelTask = Task.Run(() => csr.ExtractFromXEL(new[] { @"..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, true, new List<string>(new String[] { "callstack" }), cts));
+            var xelTask = Task.Run(() => csr.ExtractFromXELAsync(new[] { @"..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, true, new List<string>(new string[] { "callstack" }), cts));
             while (true) {
                 if (xelTask.Wait(300)) break;
                 cts.Cancel();
@@ -688,6 +685,16 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             }
             Assert.AreEqual(0, xelFieldsTask.Result.Item1.Count);
             Assert.AreEqual(0, xelFieldsTask.Result.Item2.Count);
+
+            using var cts3 = new CancellationTokenSource();
+            Assert.IsTrue(csr.ProcessBaseAddresses(@"c:\mssql\binn\sqldk.dll 00000001`00400000"));
+            var xeventInput = PrepareLargeXEventInput();
+            var resolveStacksTask = Task.Run(() => csr.ResolveCallstacksAsync(xeventInput.ToString(), @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, true, false, false, Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()), cts3));
+            while (true) {
+                if (resolveStacksTask.Wait(5000)) break;
+                cts3.Cancel();
+            }
+            Assert.AreEqual("Operation cancelled.", resolveStacksTask.Result);
         }
     }
 }

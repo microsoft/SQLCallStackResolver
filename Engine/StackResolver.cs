@@ -23,7 +23,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Public method which to help import XEL files
-        public async Task<Tuple<int, string>> ExtractFromXEL(string[] xelFiles, bool groupEvents, List<string> relevantFields, CancellationTokenSource cts) {
+        public async Task<Tuple<int, string>> ExtractFromXELAsync(string[] xelFiles, bool groupEvents, List<string> relevantFields, CancellationTokenSource cts) {
             return await XELHelper.ExtractFromXELAsync(this, xelFiles, groupEvents, relevantFields, cts);
         }
 

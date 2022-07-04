@@ -22,7 +22,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         internal static readonly string LatestReleaseTimestampFormat = "yyyy-MM-dd HH:mm";
         internal static readonly string LatestReleaseTimestampCulture = "en-US";
 
-        private void ResolveCallstacks_Click(object sender, EventArgs e) {
+        private async void ResolveCallstacks_Click(object sender, EventArgs e) {
             List<string> dllPaths = null;
             if (!string.IsNullOrEmpty(binaryPaths.Text)) dllPaths = binaryPaths.Text.Split(';').ToList();
             var res = this._resolver.ProcessBaseAddresses(this._baseAddressesString);
@@ -80,16 +80,24 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 return;
             }
 
-            this.backgroundTask = Task.Run(async () => {
-                return await this._resolver.ResolveCallstacksAsync(callStackInput.Text, pdbPaths.Text, pdbRecurse.Checked, dllPaths,
+            //this.backgroundTask = Task.Run(async () => {
+            //    return await this._resolver.ResolveCallstacksAsync(callStackInput.Text, pdbPaths.Text, pdbRecurse.Checked, dllPaths,
+            //        DLLrecurse.Checked, FramesOnSingleLine.Checked, IncludeLineNumbers.Checked, RelookupSource.Checked,
+            //        includeOffsets.Checked, showInlineFrames.Checked, cachePDB.Checked, outputFilePath.Text, BackgroundCTS);
+            //});
+            //this.MonitorBackgroundTask(backgroundTask);
+            //finalOutput.Text = backgroundTask.Result;
+
+            // TODO bring back progress reporting
+            using (BackgroundCTS = new CancellationTokenSource()) {
+                this.EnableCancelButton();
+                finalOutput.Text = (await Task.Run(() => this._resolver.ResolveCallstacksAsync(callStackInput.Text, pdbPaths.Text, pdbRecurse.Checked, dllPaths,
                     DLLrecurse.Checked, FramesOnSingleLine.Checked, IncludeLineNumbers.Checked, RelookupSource.Checked,
-                    includeOffsets.Checked, showInlineFrames.Checked, cachePDB.Checked, outputFilePath.Text, BackgroundCTS);
-            });
+                    includeOffsets.Checked, showInlineFrames.Checked, cachePDB.Checked, outputFilePath.Text, BackgroundCTS)));
+                this.DisableCancelButton();
+            }
 
-            this.MonitorBackgroundTask(backgroundTask);
-
-            finalOutput.Text = backgroundTask.Result;
-            if (backgroundTask.Result.Contains("WARNING:")) {
+            if (finalOutput.Text.Contains("WARNING:")) {
                 MessageBox.Show(this,
                     "One or more potential issues exist in the output. This is sometimes due to mismatched symbols, so please double-check symbol paths and re-run if needed.",
                     "Potential issues with the output", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -144,7 +152,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 }
                 this.ShowStatus("Loading from XEL files; please wait. This may take a while!");
                 this.backgroundTask = Task.Run(async () => {
-                    return (await this._resolver.ExtractFromXEL(genericOpenFileDlg.FileNames, GroupXEvents.Checked, relevantXEFields, BackgroundCTS)).Item2;
+                    return (await this._resolver.ExtractFromXELAsync(genericOpenFileDlg.FileNames, GroupXEvents.Checked, relevantXEFields, BackgroundCTS)).Item2;
                 });
                 this.MonitorBackgroundTask(backgroundTask);
                 callStackInput.Text = backgroundTask.Result;
@@ -186,7 +194,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                             this.ShowStatus("No fields were selected for import from the XEL files. Nothing to do!");
                             return;
                         }
-                        allFilesContent.AppendLine((await this._resolver.ExtractFromXEL(files, GroupXEvents.Checked, relevantXEFields, BackgroundCTS)).Item2);
+                        using (BackgroundCTS = new CancellationTokenSource()) {
+                            this.EnableCancelButton(); // TODO progress reporting
+                            allFilesContent.AppendLine((await Task.Run(() => this._resolver.ExtractFromXELAsync(files, GroupXEvents.Checked, relevantXEFields, BackgroundCTS))).Item2);
+                            this.DisableCancelButton();
+                        }
                         this.ShowStatus(string.Empty);
                     } else foreach (var currFile in files) { // handle the files as text input
                             allFilesContent.AppendLine(File.ReadAllText(currFile));
