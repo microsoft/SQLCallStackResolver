@@ -148,7 +148,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             genericOpenFileDlg.Title = "Select XEL file";
 
             if (DialogResult.Cancel != genericOpenFileDlg.ShowDialog(this)) {
-                List<string> relevantXEFields = await GetUserSelectedXEFieldsAsync();
+                List<string> relevantXEFields = await GetUserSelectedXEFieldsAsync(genericOpenFileDlg.FileNames);
                 this.ShowStatus("Loading from XEL files; please wait. This may take a while!");
                 this.backgroundTask = Task.Run(async () => {
                     return (await this._resolver.ExtractFromXEL(genericOpenFileDlg.FileNames, GroupXEvents.Checked, relevantXEFields)).Item2;
@@ -190,12 +190,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
                 if (files != null && files.Length != 0) {
                     var allFilesContent = new StringBuilder();
-
-                    // sample the first file selected and if it is XEL assume all the files are XEL
-                    // if there is any other format in between, it will be rejected by the ExtractFromXEL code
-                    if (Path.GetExtension(files[0]).ToLower(CultureInfo.CurrentCulture) == ".xel") {
+                    if (files.Where(f => Path.GetExtension(f).ToLower(CultureInfo.CurrentCulture) == ".xel").Count() == files.Count()) {
+                        // all files being dragged are XEL files, work on them.
                         this.ShowStatus("XEL file was dragged; please wait while we extract events from the file");
-                        List<string> relevantXEFields = await GetUserSelectedXEFieldsAsync();
+                        List<string> relevantXEFields = await GetUserSelectedXEFieldsAsync(files);
                         allFilesContent.AppendLine((await this._resolver.ExtractFromXEL(files, GroupXEvents.Checked, relevantXEFields)).Item2);
                         this.ShowStatus(string.Empty);
                     } else foreach (var currFile in files) { // handle the files as text input
@@ -207,10 +205,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             }
         }
 
-        private async Task<List<string>> GetUserSelectedXEFieldsAsync() {
+        private async Task<List<string>> GetUserSelectedXEFieldsAsync(string[] fileNames) {
             using var fieldsListDialog = new FieldSelection();
             fieldsListDialog.Text = "Select relevant XEvent fields";
-            var xeEventItems = await this._resolver.GetDistinctXELFieldsAsync(genericOpenFileDlg.FileNames, 1000);
+            var xeEventItems = await this._resolver.GetDistinctXELFieldsAsync(fileNames, 1000);
             fieldsListDialog.AllActions = xeEventItems.Item1;
             fieldsListDialog.AllFields = xeEventItems.Item2;
             fieldsListDialog.StartPosition = FormStartPosition.CenterParent;
