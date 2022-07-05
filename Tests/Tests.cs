@@ -279,6 +279,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             using var csr = new StackResolver();
             var ret = await csr.ExtractFromXEL(new[] { @"..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, false, new List<string>(new String[] { "callstack" }));
             Assert.AreEqual(550, ret.Item1);
+            Assert.IsTrue(ret.Item2.Contains("Tests\\TestCases\\ImportXEL\\xe_wait_completed_0_132353446563350000.xel, Timestamp: 2020-05-30 13:37:36.3626428, UUID: 992caa1d-ef90-4278-9821-ebdd0180db0d\"><action name='callstack'><value><![CDATA[0x00007FFAF2BD6C7C"));
+            var res = csr.ResolveCallstacks(ret.Item2, string.Empty, false, null, false, false, false, false, false, false, false, null);
+            Assert.IsTrue(res.StartsWith(@"Event key: File: ..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel, Timestamp: 2020-05-30 13:37:36.3626428, UUID: 992caa1d-ef90-4278-9821-ebdd0180db0d"));
         }
 
         [TestMethod][TestCategory("Unit")] public async Task XELActionsAndFieldsAsync() {

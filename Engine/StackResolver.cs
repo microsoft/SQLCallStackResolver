@@ -368,10 +368,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                             var callstackTextNode = currstack.SelectSingleNode("./action[contains(@name, 'callstack')][1]/value[1]");
                             var callstackText = callstackTextNode.InnerText;
-                            // proceed to extract the surrounding XML markup
-                            callstackTextNode.ParentNode.RemoveChild(callstackTextNode);
-                            var eventXMLMarkup = currstack.OuterXml.Replace("\r", string.Empty).Replace("\n", string.Empty);
-                            listOfCallStacks.Add(new StackDetails(callstackText, framesOnSingleLine, $"Event details: {eventXMLMarkup}:{callstackText}"));
+                            var eventDetails = new StringBuilder("Event ");
+                            foreach (XmlNode attr in callstackTextNode.ParentNode.ParentNode.Attributes) {
+                                eventDetails.AppendFormat($"{attr.Name}: {attr.Value.Replace("\r", string.Empty).Replace("\n", string.Empty)}");
+                            }
+                            listOfCallStacks.Add(new StackDetails(callstackText, framesOnSingleLine, eventDetails.ToString()));
                             stacknum++;
                             this.PercentComplete = (int)((double)stacknum / allstacknodes.Count * 100.0);
                         }
