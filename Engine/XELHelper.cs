@@ -20,7 +20,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         var eventKey = string.Join(Environment.NewLine, evt.Actions.Union(evt.Fields).Join(fieldsToGroupOn, l => l.Key, r => r, (l, r) => new { val = l.Value.ToString() }).Select(v => v.val)).Trim();
                         if (!string.IsNullOrWhiteSpace(eventKey)) {
                             if (groupEvents) callstackSlots.AddOrUpdate(eventKey, 1, (k, v) => v + 1);
-                            else callstackRaw.AddOrUpdate(string.Format(CultureInfo.CurrentCulture, "File: {0}, Timestamp: {1}, UUID: {2}:", xelFileName, evt.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss.fffffff", CultureInfo.CurrentCulture), evt.UUID), eventKey, (k, v) => v + $"{Environment.NewLine}{eventKey}");
+                            else callstackRaw.AddOrUpdate(string.Format(CultureInfo.CurrentCulture, "File: {0}, UTC: {1}, UUID: {2}", xelFileName, evt.Timestamp.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss.fffffff", CultureInfo.CurrentCulture), evt.UUID), eventKey, (k, v) => v + $"{Environment.NewLine}{eventKey}");
                         }
                         return Task.CompletedTask;
                     },
