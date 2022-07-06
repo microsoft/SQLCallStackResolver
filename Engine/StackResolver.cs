@@ -329,7 +329,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             }
 
             var finalCallstack = new StringBuilder();
-            var xmldoc = new XmlDocument() { XmlResolver = null };
             bool isXMLdoc = false;
             // we evaluate if the input is XML containing multiple stacks
             try {
@@ -337,71 +336,79 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 this.StatusMessage = "Inspecting input to determine processing plan...";
                 using var sreader = new StringReader(inputCallstackText);
                 using var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null });
-                xmldoc.Load(reader);
-                isXMLdoc = true;
-            } catch (XmlException) { // do nothing because this is not a XML doc
-            }
+                var validElementNames = new List<string>() { "HistogramTarget", "event" };
+                this.StatusMessage = "WARNING: XML input was detected but it does not appear to be a known schema!";
+                while (reader.Read()) {
+                    if (XmlNodeType.Element == reader.NodeType && validElementNames.Contains(reader.Name)) {
+                        this.StatusMessage = "Input seems to be relevant XML, attempting to process...";
+                        isXMLdoc = true;    // assume with reasonable confidence that we have a valid XML doc
+                        break;
+                    }
+                }
+            } catch (XmlException) { this.StatusMessage = "Input is not XML; being treated as a single callstack..."; }
 
             var listOfCallStacks = new List<StackDetails>();
             if (!isXMLdoc) {
-                this.StatusMessage = "Input being treated as a single callstack...";
                 listOfCallStacks.Add(new StackDetails(inputCallstackText, framesOnSingleLine));
-            }
-            else {
-                this.StatusMessage = "Input is well formed XML, proceeding...";
-
-                // since the input was XML containing multiple stacks, construct the list of stacks to process
-                int stacknum = 0;
-                var allstacknodes = xmldoc.SelectNodes("/Histograms/HistogramTarget/Slot");
-
-                // handle the case wherein we are dealing with a ring buffer output with individual events and not a histogram
-                if (0 == allstacknodes.Count) {
-                    allstacknodes = xmldoc.SelectNodes("//event[count(./action[contains(@name, 'callstack')]) > 0]");
-
-                    if (allstacknodes.Count > 0) {
-                        this.StatusMessage = "Pre-processing XEvent events...";
-                        // process individual callstacks
-                        foreach (XmlNode currstack in allstacknodes) {
-                            if (this.cancelRequested) {
-                                return "Operation cancelled.";
+            } else {
+                try {
+                    int stacknum = 0;
+                    using var sreader = new StringReader(inputCallstackText);
+                    using var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null, });
+                    string annotation = string.Empty;
+                    string eventDetails = string.Empty;
+                    string trailingText = string.Empty;
+                    while (reader.Read()) {
+                        if (this.cancelRequested) return "Operation cancelled.";
+                        if (XmlNodeType.Text == reader.NodeType) trailingText = reader.Value.Trim();
+                        if (XmlNodeType.Element == reader.NodeType) {
+                            switch (reader.Name) {
+                                case "HistogramTarget": {   // Parent node for the XML from a histogram target
+                                        annotation = reader.GetAttribute("annotation");
+                                        if (!string.IsNullOrWhiteSpace(annotation)) { annotation = annotation.Trim(); }
+                                        break;
+                                    }
+                                case "Slot": {  // Child node for the XML from a histogram target
+                                        var slotcount = int.Parse(reader.GetAttribute("count"), CultureInfo.CurrentCulture);
+                                        string callstackText = string.Empty;
+                                        if (reader.ReadToDescendant("value")) {
+                                            reader.Read();
+                                            if (XmlNodeType.Text == reader.NodeType || XmlNodeType.CDATA == reader.NodeType) callstackText = reader.Value;
+                                        }
+                                        if (string.IsNullOrEmpty(callstackText)) throw new XmlException();
+                                        listOfCallStacks.Add(new StackDetails(callstackText, framesOnSingleLine, annotation, $"Slot_{stacknum}\t[count:{slotcount}]:"));
+                                        stacknum++;
+                                        break;
+                                    }
+                                case "event": { // ring buffer output with individual events
+                                        var sbTmp = new StringBuilder();
+                                        for (int tmpOrdinal = 0; tmpOrdinal < reader.AttributeCount; tmpOrdinal++) {
+                                            reader.MoveToAttribute(tmpOrdinal);
+                                            sbTmp.AppendFormat($"{reader.Name}: {reader.Value}".Replace("\r", string.Empty).Replace("\n", string.Empty));
+                                        }
+                                        eventDetails = sbTmp.ToString();
+                                        break;
+                                    }
+                                case "action": { // actual action associated with the above ring buffer events
+                                        if (!reader.GetAttribute("name").Contains("callstack")) throw new XmlException();
+                                        if (!reader.ReadToDescendant("value")) throw new XmlException();
+                                        reader.Read();
+                                        if (!(XmlNodeType.Text == reader.NodeType || XmlNodeType.CDATA == reader.NodeType)) throw new XmlException();
+                                        listOfCallStacks.Add(new StackDetails(reader.Value, framesOnSingleLine, string.Empty, $"Event {eventDetails}"));
+                                        stacknum++;
+                                        break;
+                                    }
+                                default: break;
                             }
-
-                            var callstackTextNode = currstack.SelectSingleNode("./action[contains(@name, 'callstack')][1]/value[1]");
-                            var callstackText = callstackTextNode.InnerText;
-                            var eventDetails = new StringBuilder("Event ");
-                            foreach (XmlNode attr in callstackTextNode.ParentNode.ParentNode.Attributes) {
-                                eventDetails.AppendFormat($"{attr.Name}: {attr.Value.Replace("\r", string.Empty).Replace("\n", string.Empty)}");
-                            }
-                            listOfCallStacks.Add(new StackDetails(callstackText, framesOnSingleLine, eventDetails.ToString()));
-                            stacknum++;
-                            this.PercentComplete = (int)((double)stacknum / allstacknodes.Count * 100.0);
                         }
+                        this.PercentComplete = (int)((double)stacknum % 100.0); // since we are streaming, we can only show pseudo-progress (repeatedly go from 0 to 100 and back).
                     }
-                    else this.StatusMessage = "WARNING: XML input was detected but it does not appear to be a known schema!";
-                }
-                else {
-                    this.StatusMessage = "Preprocessing XEvent histogram slots...";
-
-                    // special case to move any trailing text to the annotation for the last callstack
-                    var trailingText = xmldoc.SelectSingleNode("/Histograms[1]/text()")?.Value?.Trim();
-                    if (!string.IsNullOrWhiteSpace(trailingText)) {
-                        if (xmldoc.SelectSingleNode("/Histograms[1]/HistogramTarget[last()]").Attributes["annotation"] is null) xmldoc.SelectSingleNode("/Histograms[1]/HistogramTarget[last()]").Attributes.SetNamedItem(xmldoc.CreateNode(XmlNodeType.Attribute, "annotation", null));
-                        xmldoc.SelectSingleNode("/Histograms[1]/HistogramTarget[last()]").Attributes["annotation"].Value += trailingText;
-                    }
-
-                    // process histograms
-                    foreach (XmlNode currstack in allstacknodes) {
-                        if (this.cancelRequested) {
-                            return "Operation cancelled.";
-                        }
-
-                        var annotation = currstack.ParentNode.Attributes["annotation"]?.Value;
-                        if (!string.IsNullOrWhiteSpace(annotation)) { annotation = annotation.Trim() + Environment.NewLine; }
-                        var slotcount = int.Parse(currstack.Attributes["count"].Value, CultureInfo.CurrentCulture);
-                        listOfCallStacks.Add(new StackDetails(currstack.SelectSingleNode("./value[1]").InnerText, framesOnSingleLine, $"{annotation}Slot_{stacknum}\t[count:{slotcount}]:"));
-                        stacknum++;
-                        this.PercentComplete = (int)((double)stacknum / allstacknodes.Count * 100.0);
-                    }
+                    if (!string.IsNullOrEmpty(trailingText)) listOfCallStacks.Last().UpdateAnnotation(trailingText);
+                } catch (XmlException) {
+                    // our guesstimate that the input is XML, is not correct, so bail out and revert back to handling the callstack as text
+                    this.StatusMessage = "XML-like input was found to be invalid, now being treated as a single callstack...";
+                    listOfCallStacks.Clear();
+                    listOfCallStacks.Add(new StackDetails(inputCallstackText, framesOnSingleLine));
                 }
             }
 
@@ -449,10 +456,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.StatusMessage = "Waiting for threads to finish...";
             threads.ForEach(tmpThread => tmpThread.Join());
 
-            if (this.cancelRequested) {
-                return "Operation cancelled.";
-            }
-
+            if (this.cancelRequested) return "Operation cancelled.";
             this.StatusMessage = "Done with symbol resolution, finalizing output...";
             this.globalCounter = 0;
 
@@ -461,10 +465,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 this.StatusMessage = $@"Writing output to file {outputFilePath}";
                 using var outStream = new StreamWriter(outputFilePath, false);
                 foreach (var currstack in listOfCallStacks) {
-                    if (this.cancelRequested) {
-                        return "Operation cancelled.";
-                    }
-
+                    if (this.cancelRequested) return "Operation cancelled.";
                     if (!string.IsNullOrEmpty(currstack.Resolvedstack)) outStream.WriteLine(currstack.Resolvedstack);
                     else if (!string.IsNullOrEmpty(currstack.Callstack.Trim())) {
                         outStream.WriteLine("WARNING: No output to show. This may indicate an internal error!");
@@ -479,10 +480,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 this.StatusMessage = "Consolidating output for screen display...";
 
                 foreach (var currstack in listOfCallStacks) {
-                    if (this.cancelRequested) {
-                        return "Operation cancelled.";
-                    }
-
+                    if (this.cancelRequested) return "Operation cancelled.";
                     if (!string.IsNullOrEmpty(currstack.Resolvedstack)) finalCallstack.Append(currstack.Resolvedstack);
                     else if (!string.IsNullOrEmpty(currstack.Callstack)) {
                         finalCallstack = new StringBuilder("WARNING: No output to show. This may indicate an internal error!");
