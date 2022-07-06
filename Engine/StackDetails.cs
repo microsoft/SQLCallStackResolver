@@ -5,15 +5,18 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     /// Helper class for cases where we have XML frames with embedded module information.
     /// </summary>
     public class StackDetails {
-        private readonly string _annotation;
+        private string _annotation;
+        private readonly string _stackKey;
         private string _callStack;
         private readonly bool _framesOnSingleLine;
         private string _resolvedStack;
 
-        public StackDetails(string callStack, bool framesOnSingleLine, string annotation = null) {
+        public StackDetails(string callStack, bool framesOnSingleLine, string annotation = null, string stackKey = null) {
             this._annotation = annotation;
+            this._stackKey = stackKey;
             this._framesOnSingleLine = framesOnSingleLine;
-            this._callStack = framesOnSingleLine ? System.Text.RegularExpressions.Regex.Replace(callStack, @"\s{2,}", " ") : callStack;
+            this._callStack = framesOnSingleLine ? Regex.Replace(callStack, @"\s{2,}", " ") : callStack;
+            _stackKey = stackKey;
         }
 
         public string Callstack {
@@ -33,14 +36,19 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         public string Resolvedstack {
             get {
                 var sbOut = new StringBuilder();
-                if (!string.IsNullOrEmpty(this._annotation)) {
-                    sbOut.AppendLine(this._annotation);
+                if (!(string.IsNullOrEmpty(this._annotation) && string.IsNullOrEmpty(this._stackKey))) {
+                    if (!string.IsNullOrEmpty(this._annotation)) sbOut.AppendLine(this._annotation);
+                    if (!string.IsNullOrEmpty(this._stackKey)) sbOut.AppendLine(this._stackKey);
                     sbOut.AppendLine();
                 }
                 sbOut.Append(this._resolvedStack);
                 return sbOut.ToString();
             }
             set { this._resolvedStack = value; }
+        }
+
+        public void UpdateAnnotation(string extra) {
+            this._annotation += extra;
         }
     }
 }
