@@ -337,22 +337,21 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 using var sreader = new StringReader(inputCallstackText);
                 using var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null });
                 var validElementNames = new List<string>() { "HistogramTarget", "event" };
+                this.StatusMessage = "WARNING: XML input was detected but it does not appear to be a known schema!";
                 while (reader.Read()) {
                     if (XmlNodeType.Element == reader.NodeType && validElementNames.Contains(reader.Name)) {
+                        this.StatusMessage = "Input seems to be relevant XML, attempting to process...";
                         isXMLdoc = true;    // assume with reasonable confidence that we have a valid XML doc
                         break;
                     }
                 }
-            } catch (XmlException) { // do nothing because this is not a XML doc
-            }
+            } catch (XmlException) { this.StatusMessage = "Input is not XML; being treated as a single callstack..."; }
 
             var listOfCallStacks = new List<StackDetails>();
             if (!isXMLdoc) {
-                this.StatusMessage = "Input being treated as a single callstack...";
                 listOfCallStacks.Add(new StackDetails(inputCallstackText, framesOnSingleLine));
             } else {
                 try {
-                    this.StatusMessage = "Input seems to be XML, proceeding...";
                     int stacknum = 0;
                     using var sreader = new StringReader(inputCallstackText);
                     using var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null, });
@@ -364,63 +363,50 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         if (XmlNodeType.Text == reader.NodeType) trailingText = reader.Value.Trim();
                         if (XmlNodeType.Element == reader.NodeType) {
                             switch (reader.Name) {
-                                case "HistogramTarget": {
+                                case "HistogramTarget": {   // Parent node for the XML from a histogram target
                                         annotation = reader.GetAttribute("annotation");
                                         if (!string.IsNullOrWhiteSpace(annotation)) { annotation = annotation.Trim(); }
                                         break;
                                     }
-                                case "Slot": {
+                                case "Slot": {  // Child node for the XML from a histogram target
                                         var slotcount = int.Parse(reader.GetAttribute("count"), CultureInfo.CurrentCulture);
                                         string callstackText = string.Empty;
                                         if (reader.ReadToDescendant("value")) {
                                             reader.Read();
                                             if (XmlNodeType.Text == reader.NodeType || XmlNodeType.CDATA == reader.NodeType) callstackText = reader.Value;
                                         }
-                                        if (string.IsNullOrEmpty(callstackText)) {
-                                            // TODO throw? handle errors?
-                                        }
+                                        if (string.IsNullOrEmpty(callstackText)) throw new XmlException();
                                         listOfCallStacks.Add(new StackDetails(callstackText, framesOnSingleLine, annotation, $"Slot_{stacknum}\t[count:{slotcount}]:"));
                                         stacknum++;
-                                        // TODO // this.PercentComplete = (int)((double)stacknum / allstacknodes.Count * 100.0);
                                         break;
                                     }
                                 case "event": { // ring buffer output with individual events
-                                                // this.StatusMessage = "Pre-processing XEvent events...";
-                                                // proceed to extract the surrounding XML markup
                                         var sbTmp = new StringBuilder();
                                         for (int tmpOrdinal = 0; tmpOrdinal < reader.AttributeCount; tmpOrdinal++) {
                                             reader.MoveToAttribute(tmpOrdinal);
                                             sbTmp.AppendFormat($"{reader.Name}: {reader.Value}".Replace("\r", string.Empty).Replace("\n", string.Empty));
                                         }
                                         eventDetails = sbTmp.ToString();
-                                        // TODO // this.PercentComplete = (int)((double)stacknum / allstacknodes.Count * 100.0);
                                         break;
                                     }
-                                case "action": {
-                                        if (reader.GetAttribute("name").Contains("callstack")) {
-                                            if (reader.ReadToDescendant("value")) {
-                                                reader.Read();
-                                                if (XmlNodeType.Text == reader.NodeType || XmlNodeType.CDATA == reader.NodeType) {
-                                                    listOfCallStacks.Add(new StackDetails(reader.Value, framesOnSingleLine, string.Empty, $"Event {eventDetails}"));
-                                                    stacknum++;
-                                                }
-                                            }
-                                        }
-                                        // TODO error handling throughout for the else cases
+                                case "action": { // actual action associated with the above ring buffer events
+                                        if (!reader.GetAttribute("name").Contains("callstack")) throw new XmlException();
+                                        if (!reader.ReadToDescendant("value")) throw new XmlException();
+                                        reader.Read();
+                                        if (!(XmlNodeType.Text == reader.NodeType || XmlNodeType.CDATA == reader.NodeType)) throw new XmlException();
+                                        listOfCallStacks.Add(new StackDetails(reader.Value, framesOnSingleLine, string.Empty, $"Event {eventDetails}"));
+                                        stacknum++;
                                         break;
                                     }
-                                default: {
-                                        // TODO define
-                                        // this.StatusMessage = "WARNING: XML input was detected but it does not appear to be a known schema!";
-                                        break;
-                                    }
+                                default: break;
                             }
                         }
+                        this.PercentComplete = (int)((double)stacknum % 100.0); // since we are streaming, we can only show pseudo-progress (repeatedly go from 0 to 100 and back).
                     }
                     if (!string.IsNullOrEmpty(trailingText)) listOfCallStacks.Last().UpdateAnnotation(trailingText);
                 } catch (XmlException) {
-                    // well, our guesstimate that the input is XML, is not correct, so bail out and revert back to text handling
-                    this.StatusMessage = "XML-like input was invalid, now being treated as a single callstack...";
+                    // our guesstimate that the input is XML, is not correct, so bail out and revert back to handling the callstack as text
+                    this.StatusMessage = "XML-like input was found to be invalid, now being treated as a single callstack...";
                     listOfCallStacks.Clear();
                     listOfCallStacks.Add(new StackDetails(inputCallstackText, framesOnSingleLine));
                 }
