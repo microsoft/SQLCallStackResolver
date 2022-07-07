@@ -302,8 +302,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// <param name="cachePDB">Boolean, whether to cache PDBs locally</param>
         /// <param name="outputFilePath">File path, used if output is directly written to a file</param>
         /// <returns></returns>
-        public async Task<string> ResolveCallstacksAsync(string inputCallstackText, string symPath, bool searchPDBsRecursively, List<string> dllPaths,
-            bool searchDLLRecursively, bool framesOnSingleLine, bool includeSourceInfo, bool relookupSource, bool includeOffsets,
+        public async Task<string> ResolveCallstacksAsync(List<StackDetails> listOfCallStacks, string symPath, bool searchPDBsRecursively, List<string> dllPaths,
+            bool searchDLLRecursively, bool includeSourceInfo, bool relookupSource, bool includeOffsets,
             bool showInlineFrames, bool cachePDB, string outputFilePath, CancellationTokenSource cts) {
             this.cachedSymbols.Clear();
 
@@ -313,100 +313,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 new DirectoryInfo(symCacheFolder).GetFiles("*", SearchOption.AllDirectories).ToList().ForEach(file => file.Delete());
             }
             else Directory.CreateDirectory(symCacheFolder);
-
-            if (Regex.IsMatch(inputCallstackText, @"<HistogramTarget(\s+|\>)") && inputCallstackText.Contains(@"</HistogramTarget>")) {
-                var numHistogramTargets = Regex.Matches(inputCallstackText, @"\<\/HistogramTarget\>").Count;
-                if (numHistogramTargets > 0) {
-                    inputCallstackText = Regex.Replace(inputCallstackText, @"(?<prefix>.*?)(?<starttag>\<HistogramTarget)(?<trailing>.+?\<\/HistogramTarget\>)",
-                        (Match m) => { return $"{m.Groups["starttag"].Value} annotation=\"{System.Net.WebUtility.HtmlEncode(m.Groups["prefix"].Value.Replace("\r", string.Empty).Replace("\n", string.Empty).Trim())}\" {m.Groups["trailing"].Value}"; }
-                        , RegexOptions.Singleline);
-                    inputCallstackText = $"<Histograms>{inputCallstackText}</Histograms>";
-                }
-            }
-
-            var finalCallstack = new StringBuilder();
-            bool isXMLdoc = false;
-            // we evaluate if the input is XML containing multiple stacks
-            try {
-                this.PercentComplete = 0;
-                this.StatusMessage = "Inspecting input to determine processing plan...";
-                using var sreader = new StringReader(inputCallstackText);
-                using var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null });
-                var validElementNames = new List<string>() { "HistogramTarget", "event" };
-                this.StatusMessage = "WARNING: XML input was detected but it does not appear to be a known schema!";
-                while (reader.Read()) {
-                    if (XmlNodeType.Element == reader.NodeType && validElementNames.Contains(reader.Name)) {
-                        this.StatusMessage = "Input seems to be relevant XML, attempting to process...";
-                        isXMLdoc = true;    // assume with reasonable confidence that we have a valid XML doc
-                        break;
-                    }
-                }
-            } catch (XmlException) { this.StatusMessage = "Input is not XML; being treated as a single callstack..."; }
-
-            var listOfCallStacks = new List<StackDetails>();
-            if (!isXMLdoc) {
-                listOfCallStacks.Add(new StackDetails(inputCallstackText, framesOnSingleLine));
-            } else {
-                try {
-                    int stacknum = 0;
-                    using var sreader = new StringReader(inputCallstackText);
-                    using var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null, });
-                    string annotation = string.Empty;
-                    string eventDetails = string.Empty;
-                    string trailingText = string.Empty;
-                    while (reader.Read()) {
-                        if (cts.IsCancellationRequested) return "Operation cancelled.";
-                        if (XmlNodeType.Text == reader.NodeType) trailingText = reader.Value.Trim();
-                        if (XmlNodeType.Element == reader.NodeType) {
-                            switch (reader.Name) {
-                                case "HistogramTarget": {   // Parent node for the XML from a histogram target
-                                        annotation = reader.GetAttribute("annotation");
-                                        if (!string.IsNullOrWhiteSpace(annotation)) { annotation = annotation.Trim(); }
-                                        break;
-                                    }
-                                case "Slot": {  // Child node for the XML from a histogram target
-                                        var slotcount = int.Parse(reader.GetAttribute("count"), CultureInfo.CurrentCulture);
-                                        string callstackText = string.Empty;
-                                        if (reader.ReadToDescendant("value")) {
-                                            reader.Read();
-                                            if (XmlNodeType.Text == reader.NodeType || XmlNodeType.CDATA == reader.NodeType) callstackText = reader.Value;
-                                        }
-                                        if (string.IsNullOrEmpty(callstackText)) throw new XmlException();
-                                        listOfCallStacks.Add(new StackDetails(callstackText, framesOnSingleLine, annotation, $"Slot_{stacknum}\t[count:{slotcount}]:"));
-                                        stacknum++;
-                                        break;
-                                    }
-                                case "event": { // ring buffer output with individual events
-                                        var sbTmp = new StringBuilder();
-                                        for (int tmpOrdinal = 0; tmpOrdinal < reader.AttributeCount; tmpOrdinal++) {
-                                            reader.MoveToAttribute(tmpOrdinal);
-                                            sbTmp.AppendFormat($"{reader.Name}: {reader.Value}".Replace("\r", string.Empty).Replace("\n", string.Empty));
-                                        }
-                                        eventDetails = sbTmp.ToString();
-                                        break;
-                                    }
-                                case "action": { // actual action associated with the above ring buffer events
-                                        if (!reader.GetAttribute("name").Contains("callstack")) throw new XmlException();
-                                        if (!reader.ReadToDescendant("value")) throw new XmlException();
-                                        reader.Read();
-                                        if (!(XmlNodeType.Text == reader.NodeType || XmlNodeType.CDATA == reader.NodeType)) throw new XmlException();
-                                        listOfCallStacks.Add(new StackDetails(reader.Value, framesOnSingleLine, string.Empty, $"Event {eventDetails}"));
-                                        stacknum++;
-                                        break;
-                                    }
-                                default: break;
-                            }
-                        }
-                        this.PercentComplete = (int)((double)stacknum % 100.0); // since we are streaming, we can only show pseudo-progress (repeatedly go from 0 to 100 and back).
-                    }
-                    if (!string.IsNullOrEmpty(trailingText)) listOfCallStacks.Last().UpdateAnnotation(trailingText);
-                } catch (XmlException) {
-                    // our guesstimate that the input is XML, is not correct, so bail out and revert back to handling the callstack as text
-                    this.StatusMessage = "XML-like input was found to be invalid, now being treated as a single callstack...";
-                    listOfCallStacks.Clear();
-                    listOfCallStacks.Add(new StackDetails(inputCallstackText, framesOnSingleLine));
-                }
-            }
 
             this.StatusMessage = "Checking for embedded symbol information...";
             var syms = await ModuleInfoHelper.ParseModuleInfoAsync(listOfCallStacks, cts);
@@ -419,9 +325,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 // we then "inject" those local PDB paths as higher priority than any possible user provided paths
                 symPath = string.Join(";", paths) + ";" + symPath;
             } else {
-                if (listOfCallStacks.Count == 0) {
-                    listOfCallStacks.Add(new StackDetails(inputCallstackText, framesOnSingleLine));
-                }
                 this.StatusMessage = "Looking for embedded XML-formatted frames and symbol information...";
                 // attempt to check if there are XML-formatted frames each with the related PDB attributes and if so replace those lines with the normalized versions
                 (syms, listOfCallStacks) = await ModuleInfoHelper.ParseModuleInfoXMLAsync(listOfCallStacks, cts);
@@ -447,7 +350,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             for (int threadOrdinal = 0; threadOrdinal < numThreads; threadOrdinal++) {
                 var tmpThread = new Thread(ProcessCallStack);
                 threads.Add(tmpThread);
-                tmpThread.Start(new ThreadParams() {dllPaths = dllPaths, framesOnSingleLine = framesOnSingleLine, includeOffsets = includeOffsets,includeSourceInfo = includeSourceInfo,
+                tmpThread.Start(new ThreadParams() {dllPaths = dllPaths, includeOffsets = includeOffsets,includeSourceInfo = includeSourceInfo,
                     showInlineFrames = showInlineFrames, listOfCallStacks = listOfCallStacks, numThreads = numThreads, relookupSource = relookupSource, searchDLLRecursively = searchDLLRecursively,
                     searchPDBsRecursively = searchPDBsRecursively, symPath = symPath, threadOrdinal = threadOrdinal, cachePDB = cachePDB, cts = cts});
             }
@@ -458,6 +361,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.StatusMessage = "Done with symbol resolution, finalizing output...";
             this.globalCounter = 0;
 
+            var finalCallstack = new StringBuilder();
             // populate the output
             if (!string.IsNullOrEmpty(outputFilePath)) {
                 this.StatusMessage = $@"Writing output to file {outputFilePath}";
@@ -473,8 +377,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     this.globalCounter++;
                     this.PercentComplete = (int)((double)this.globalCounter / listOfCallStacks.Count * 100.0);
                 }
-            }
-            else {
+            } else {
                 this.StatusMessage = "Consolidating output for screen display...";
 
                 foreach (var currstack in listOfCallStacks) {
@@ -500,6 +403,110 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
             this.StatusMessage = "Finished!";
             return string.IsNullOrEmpty(outputFilePath) ? finalCallstack.ToString() : $@"Output has been saved to {outputFilePath}";
+        }
+
+        /// <summary>
+        /// Gets a list of StackDetails objects based on the textual callstack input
+        /// </summary>
+        /// <param name="inputCallstackText"></param>
+        /// <param name="framesOnSingleLine"></param>
+        /// <param name="cts"></param>
+        /// <returns>List of StackDetails objects</returns>
+        public List<StackDetails> GetListofCallStacks(string inputCallstackText, bool framesOnSingleLine, CancellationTokenSource cts) {
+            if (Regex.IsMatch(inputCallstackText, @"<HistogramTarget(\s+|\>)") && inputCallstackText.Contains(@"</HistogramTarget>")) {
+                var numHistogramTargets = Regex.Matches(inputCallstackText, @"\<\/HistogramTarget\>").Count;
+                if (numHistogramTargets > 0) {
+                    inputCallstackText = Regex.Replace(inputCallstackText, @"(?<prefix>.*?)(?<starttag>\<HistogramTarget)(?<trailing>.+?\<\/HistogramTarget\>)",
+                        (Match m) => { return $"{m.Groups["starttag"].Value} annotation=\"{System.Net.WebUtility.HtmlEncode(m.Groups["prefix"].Value.Replace("\r", string.Empty).Replace("\n", string.Empty).Trim())}\" {m.Groups["trailing"].Value}"; }
+                        , RegexOptions.Singleline);
+                    inputCallstackText = $"<Histograms>{inputCallstackText}</Histograms>";
+                }
+            }
+
+            bool isXMLdoc = false;
+            // we evaluate if the input is XML containing multiple stacks
+            try {
+                this.PercentComplete = 0;
+                this.StatusMessage = "Inspecting input to determine processing plan...";
+                using var sreader = new StringReader(inputCallstackText);
+                using var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null });
+                var validElementNames = new List<string>() { "HistogramTarget", "event" };
+                this.StatusMessage = "WARNING: XML input was detected but it does not appear to be a known schema!";
+                while (reader.Read()) {
+                    if (XmlNodeType.Element == reader.NodeType && validElementNames.Contains(reader.Name)) {
+                        this.StatusMessage = "Input seems to be relevant XML, attempting to process...";
+                        isXMLdoc = true;    // assume with reasonable confidence that we have a valid XML doc
+                        break;
+                    }
+                }
+            } catch (XmlException) { this.StatusMessage = "Input is not XML; being treated as a single callstack..."; }
+
+            var allStacks = new List<StackDetails>();
+            if (!isXMLdoc) {
+                allStacks.Add(new StackDetails(inputCallstackText, framesOnSingleLine));
+            } else {
+                try {
+                    int stacknum = 0;
+                    using var sreader = new StringReader(inputCallstackText);
+                    using var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null, });
+                    string annotation = string.Empty;
+                    string eventDetails = string.Empty;
+                    string trailingText = string.Empty;
+                    while (reader.Read()) {
+                        if (cts.IsCancellationRequested) return null;
+                        if (XmlNodeType.Text == reader.NodeType) trailingText = reader.Value.Trim();
+                        if (XmlNodeType.Element == reader.NodeType) {
+                            switch (reader.Name) {
+                                case "HistogramTarget": {   // Parent node for the XML from a histogram target
+                                        annotation = reader.GetAttribute("annotation");
+                                        if (!string.IsNullOrWhiteSpace(annotation)) { annotation = annotation.Trim(); }
+                                        break;
+                                    }
+                                case "Slot": {  // Child node for the XML from a histogram target
+                                        var slotcount = int.Parse(reader.GetAttribute("count"), CultureInfo.CurrentCulture);
+                                        string callstackText = string.Empty;
+                                        if (reader.ReadToDescendant("value")) {
+                                            reader.Read();
+                                            if (XmlNodeType.Text == reader.NodeType || XmlNodeType.CDATA == reader.NodeType) callstackText = reader.Value;
+                                        }
+                                        if (string.IsNullOrEmpty(callstackText)) throw new XmlException();
+                                        allStacks.Add(new StackDetails(callstackText, framesOnSingleLine, annotation, $"Slot_{stacknum}\t[count:{slotcount}]:"));
+                                        stacknum++;
+                                        break;
+                                    }
+                                case "event": { // ring buffer output with individual events
+                                        var sbTmp = new StringBuilder();
+                                        for (int tmpOrdinal = 0; tmpOrdinal < reader.AttributeCount; tmpOrdinal++) {
+                                            reader.MoveToAttribute(tmpOrdinal);
+                                            sbTmp.AppendFormat($"{reader.Name}: {reader.Value}".Replace("\r", string.Empty).Replace("\n", string.Empty));
+                                        }
+                                        eventDetails = sbTmp.ToString();
+                                        break;
+                                    }
+                                case "action": { // actual action associated with the above ring buffer events
+                                        if (!reader.GetAttribute("name").Contains("callstack")) throw new XmlException();
+                                        if (!reader.ReadToDescendant("value")) throw new XmlException();
+                                        reader.Read();
+                                        if (!(XmlNodeType.Text == reader.NodeType || XmlNodeType.CDATA == reader.NodeType)) throw new XmlException();
+                                        allStacks.Add(new StackDetails(reader.Value, framesOnSingleLine, string.Empty, $"Event {eventDetails}"));
+                                        stacknum++;
+                                        break;
+                                    }
+                                default: break;
+                            }
+                        }
+                        this.PercentComplete = (int)((double)stacknum % 100.0); // since we are streaming, we can only show pseudo-progress (repeatedly go from 0 to 100 and back).
+                    }
+                    if (!string.IsNullOrEmpty(trailingText)) allStacks.Last().UpdateAnnotation(trailingText);
+                } catch (XmlException) {
+                    // our guesstimate that the input is XML, is not correct, so bail out and revert back to handling the callstack as text
+                    this.StatusMessage = "XML-like input was found to be invalid, now being treated as a single callstack...";
+                    allStacks.Clear();
+                    allStacks.Add(new StackDetails(inputCallstackText, framesOnSingleLine));
+                }
+            }
+
+            return allStacks;
         }
 
         /// Function executed by worker threads to process callstacks. Threads work on portions of the listOfCallStacks based on their thread ordinal.

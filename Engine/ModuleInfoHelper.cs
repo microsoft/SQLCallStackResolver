@@ -10,7 +10,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// </summary>
         public async static Task<Dictionary<string, Symbol>> ParseModuleInfoAsync(List<StackDetails> listOfCallStacks, CancellationTokenSource cts) {
             var retval = new Dictionary<string, Symbol>();
-            Parallel.ForEach(listOfCallStacks.Select(c => c.CallstackFrames), lines => {
+            Parallel.ForEach(listOfCallStacks.Where(c => c.Callstack.Contains(",")).Select(c => c.CallstackFrames), lines => {
                 if (cts.IsCancellationRequested) return;
                 Contract.Requires(lines.Length > 0);
                 foreach (var line in lines) {

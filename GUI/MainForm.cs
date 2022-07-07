@@ -9,7 +9,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         private readonly StackResolver _resolver = new();
-        private Task<string> backgroundTask;
         private CancellationTokenSource BackgroundCTS { get; set; }
 
         private string _baseAddressesString = null;
@@ -80,21 +79,14 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 return;
             }
 
-            //this.backgroundTask = Task.Run(async () => {
-            //    return await this._resolver.ResolveCallstacksAsync(callStackInput.Text, pdbPaths.Text, pdbRecurse.Checked, dllPaths,
-            //        DLLrecurse.Checked, FramesOnSingleLine.Checked, IncludeLineNumbers.Checked, RelookupSource.Checked,
-            //        includeOffsets.Checked, showInlineFrames.Checked, cachePDB.Checked, outputFilePath.Text, BackgroundCTS);
-            //});
-            //this.MonitorBackgroundTask(backgroundTask);
-            //finalOutput.Text = backgroundTask.Result;
-
             // TODO bring back progress reporting
             using (BackgroundCTS = new CancellationTokenSource()) {
-                this.EnableCancelButton();
-                finalOutput.Text = (await Task.Run(() => this._resolver.ResolveCallstacksAsync(callStackInput.Text, pdbPaths.Text, pdbRecurse.Checked, dllPaths,
-                    DLLrecurse.Checked, FramesOnSingleLine.Checked, IncludeLineNumbers.Checked, RelookupSource.Checked,
-                    includeOffsets.Checked, showInlineFrames.Checked, cachePDB.Checked, outputFilePath.Text, BackgroundCTS)));
-                this.DisableCancelButton();
+                var allStacks = this._resolver.GetListofCallStacks(callStackInput.Text, FramesOnSingleLine.Checked, BackgroundCTS);
+                var resolverTask = Task.Run(() => this._resolver.ResolveCallstacksAsync(allStacks, pdbPaths.Text, pdbRecurse.Checked, dllPaths,
+                        DLLrecurse.Checked, IncludeLineNumbers.Checked, RelookupSource.Checked,
+                        includeOffsets.Checked, showInlineFrames.Checked, cachePDB.Checked, outputFilePath.Text, BackgroundCTS));
+                this.MonitorBackgroundTask(resolverTask);
+                finalOutput.Text = resolverTask.Result;
             }
 
             if (finalOutput.Text.Contains("WARNING:")) {
@@ -151,32 +143,30 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     return;
                 }
                 this.ShowStatus("Loading from XEL files; please wait. This may take a while!");
-                this.backgroundTask = Task.Run(async () => {
-                    return (await this._resolver.ExtractFromXELAsync(genericOpenFileDlg.FileNames, GroupXEvents.Checked, relevantXEFields, BackgroundCTS)).Item2;
-                });
-                this.MonitorBackgroundTask(backgroundTask);
-                callStackInput.Text = backgroundTask.Result;
+                using (this.BackgroundCTS = new CancellationTokenSource()) {
+                    var xelTask = Task.Run(() => this._resolver.ExtractFromXELAsync(genericOpenFileDlg.FileNames, GroupXEvents.Checked, relevantXEFields, this.BackgroundCTS));
+                    this.MonitorBackgroundTask(xelTask);    // TODO optimize this
+                    callStackInput.Text = xelTask.Result.Item2;
+                }
                 this.ShowStatus("Finished importing callstacks from XEL file(s)!");
             }
         }
 
         private void MonitorBackgroundTask(Task theTask) {
-            using (BackgroundCTS = new CancellationTokenSource()) {
-                this.EnableCancelButton();
-                while (!theTask.Wait(30)) {
-                    this.ShowStatus(_resolver.StatusMessage);
-                    this.progressBar.Value = _resolver.PercentComplete;
-                    this.statusStrip1.Refresh();
-                    Application.DoEvents();
-                }
-
-                // refresh it one last time to ensure that the last status message is displayed
+            this.EnableCancelButton();
+            while (!theTask.Wait(30)) {
                 this.ShowStatus(_resolver.StatusMessage);
                 this.progressBar.Value = _resolver.PercentComplete;
                 this.statusStrip1.Refresh();
                 Application.DoEvents();
-                this.DisableCancelButton();
             }
+
+            // refresh it one last time to ensure that the last status message is displayed
+            this.ShowStatus(_resolver.StatusMessage);
+            this.progressBar.Value = _resolver.PercentComplete;
+            this.statusStrip1.Refresh();
+            Application.DoEvents();
+            this.DisableCancelButton();
         }
 
         private async void CallStackInput_DragDrop(object sender, DragEventArgs e) {
