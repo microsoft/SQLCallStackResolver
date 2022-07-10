@@ -79,9 +79,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 return;
             }
 
-            // TODO bring back progress reporting
             using (BackgroundCTS = new CancellationTokenSource()) {
-                var allStacks = this._resolver.GetListofCallStacks(callStackInput.Text, FramesOnSingleLine.Checked, BackgroundCTS);
+                var allStacks = await this._resolver.GetListofCallStacksAsync(callStackInput.Text, FramesOnSingleLine.Checked, BackgroundCTS);
                 var resolverTask = Task.Run(() => this._resolver.ResolveCallstacksAsync(allStacks, pdbPaths.Text, pdbRecurse.Checked, dllPaths,
                         DLLrecurse.Checked, IncludeLineNumbers.Checked, RelookupSource.Checked,
                         includeOffsets.Checked, showInlineFrames.Checked, cachePDB.Checked, outputFilePath.Text, BackgroundCTS));
@@ -145,7 +144,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 this.ShowStatus("Loading from XEL files; please wait. This may take a while!");
                 using (this.BackgroundCTS = new CancellationTokenSource()) {
                     var xelTask = Task.Run(() => this._resolver.ExtractFromXELAsync(genericOpenFileDlg.FileNames, GroupXEvents.Checked, relevantXEFields, this.BackgroundCTS));
-                    this.MonitorBackgroundTask(xelTask);    // TODO optimize this
+                    this.MonitorBackgroundTask(xelTask);
                     callStackInput.Text = xelTask.Result.Item2;
                 }
                 this.ShowStatus("Finished importing callstacks from XEL file(s)!");
@@ -185,9 +184,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                             return;
                         }
                         using (BackgroundCTS = new CancellationTokenSource()) {
-                            this.EnableCancelButton(); // TODO progress reporting
-                            allFilesContent.AppendLine((await Task.Run(() => this._resolver.ExtractFromXELAsync(files, GroupXEvents.Checked, relevantXEFields, BackgroundCTS))).Item2);
-                            this.DisableCancelButton();
+                            var xelTask = Task.Run(() => this._resolver.ExtractFromXELAsync(files, GroupXEvents.Checked, relevantXEFields, BackgroundCTS));
+                            this.MonitorBackgroundTask(xelTask);
+                            allFilesContent.AppendLine(xelTask.Result.Item2);
                         }
                         this.ShowStatus(string.Empty);
                     } else foreach (var currFile in files) { // handle the files as text input

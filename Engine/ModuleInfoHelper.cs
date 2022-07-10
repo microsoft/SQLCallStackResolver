@@ -10,7 +10,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// </summary>
         public async static Task<Dictionary<string, Symbol>> ParseModuleInfoAsync(List<StackDetails> listOfCallStacks, CancellationTokenSource cts) {
             var retval = new Dictionary<string, Symbol>();
-            Parallel.ForEach(listOfCallStacks.Where(c => c.Callstack.Contains(",")).Select(c => c.CallstackFrames), lines => {
+            await Task.Run(() => Parallel.ForEach(listOfCallStacks.Where(c => c.Callstack.Contains(",")).Select(c => c.CallstackFrames), lines => {
                 if (cts.IsCancellationRequested) return;
                 Contract.Requires(lines.Length > 0);
                 foreach (var line in lines) {
@@ -48,7 +48,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         }
                     }
                 }
-            });
+            }));
 
             return cts.IsCancellationRequested ? new Dictionary<string, Symbol>() : retval;
         }
@@ -56,7 +56,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         public async static Task<(Dictionary<string, Symbol>, List<StackDetails>)> ParseModuleInfoXMLAsync(List<StackDetails> listOfCallStacks, CancellationTokenSource cts) {
             var syms = new Dictionary<string, Symbol>();
 
-            Parallel.ForEach(listOfCallStacks, currItem => {
+            await Task.Run(() => Parallel.ForEach(listOfCallStacks, currItem => {
                 if (cts.IsCancellationRequested) return;
                 var outCallstack = new StringBuilder();
                 // sniff test to allow for quick exit if input has no XML at all
@@ -117,7 +117,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     }
                     currItem.Callstack = outCallstack.ToString();
                 }
-            });
+            }));
 
             return cts.IsCancellationRequested ? (new Dictionary<string, Symbol>(), new List<StackDetails>()) : (syms, listOfCallStacks);
         }

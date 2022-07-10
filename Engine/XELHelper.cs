@@ -9,6 +9,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var callstackRaw = new ConcurrentDictionary<string, string>();
             var xmlEquivalent = new StringBuilder();
             foreach (var xelFileName in xelFiles.Where(f => File.Exists(f))) {
+                var numEvents = 0;
                 parent.StatusMessage = $@"Reading {xelFileName}...";
                 var xeStream = new XEFileEventStreamer(xelFileName);
                 try {
@@ -17,6 +18,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         return Task.CompletedTask;
                     },
                     evt => {
+                        parent.PercentComplete = (int)((Interlocked.Increment(ref numEvents) % 1000.0) / 10.0);
                         var eventKey = string.Join(Environment.NewLine, evt.Actions.Union(evt.Fields).Join(fieldsToGroupOn, l => l.Key, r => r, (l, r) => new { val = l.Value.ToString() }).Select(v => v.val)).Trim();
                         if (!string.IsNullOrWhiteSpace(eventKey)) {
                             if (groupEvents) callstackSlots.AddOrUpdate(eventKey, 1, (k, v) => v + 1);
