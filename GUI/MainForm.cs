@@ -21,7 +21,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         internal static readonly string LatestReleaseTimestampFormat = "yyyy-MM-dd HH:mm";
         internal static readonly string LatestReleaseTimestampCulture = "en-US";
 
-        private async void ResolveCallstacks_Click(object sender, EventArgs e) {
+        private void ResolveCallstacks_Click(object sender, EventArgs e) {
             List<string> dllPaths = null;
             if (!string.IsNullOrEmpty(binaryPaths.Text)) dllPaths = binaryPaths.Text.Split(';').ToList();
             var res = this._resolver.ProcessBaseAddresses(this._baseAddressesString);
@@ -79,11 +79,16 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 return;
             }
 
+            List<StackDetails> allStacks = null;
             using (BackgroundCTS = new CancellationTokenSource()) {
-                var allStacks = await this._resolver.GetListofCallStacksAsync(callStackInput.Text, FramesOnSingleLine.Checked, BackgroundCTS);
-                var resolverTask = Task.Run(() => this._resolver.ResolveCallstacksAsync(allStacks, pdbPaths.Text, pdbRecurse.Checked, dllPaths,
+                var allStacksTask = this._resolver.GetListofCallStacksAsync(callStackInput.Text, FramesOnSingleLine.Checked, BackgroundCTS);
+                this.MonitorBackgroundTask(allStacksTask);
+                allStacks = allStacksTask.Result;
+            }
+            if (allStacks.Any()) using (BackgroundCTS = new CancellationTokenSource()) {
+                var resolverTask = this._resolver.ResolveCallstacksAsync(allStacks, pdbPaths.Text, pdbRecurse.Checked, dllPaths,
                         DLLrecurse.Checked, IncludeLineNumbers.Checked, RelookupSource.Checked,
-                        includeOffsets.Checked, showInlineFrames.Checked, cachePDB.Checked, outputFilePath.Text, BackgroundCTS));
+                        includeOffsets.Checked, showInlineFrames.Checked, cachePDB.Checked, outputFilePath.Text, BackgroundCTS);
                 this.MonitorBackgroundTask(resolverTask);
                 finalOutput.Text = resolverTask.Result;
             }
@@ -143,7 +148,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 }
                 this.ShowStatus("Loading from XEL files; please wait. This may take a while!");
                 using (this.BackgroundCTS = new CancellationTokenSource()) {
-                    var xelTask = Task.Run(() => this._resolver.ExtractFromXELAsync(genericOpenFileDlg.FileNames, GroupXEvents.Checked, relevantXEFields, this.BackgroundCTS));
+                    var xelTask = this._resolver.ExtractFromXELAsync(genericOpenFileDlg.FileNames, GroupXEvents.Checked, relevantXEFields, this.BackgroundCTS);
                     this.MonitorBackgroundTask(xelTask);
                     callStackInput.Text = xelTask.Result.Item2;
                 }
@@ -156,14 +161,14 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             while (!theTask.Wait(30)) {
                 this.ShowStatus(_resolver.StatusMessage);
                 this.progressBar.Value = _resolver.PercentComplete;
-                this.statusStrip1.Refresh();
+                this.statusStrip.Refresh();
                 Application.DoEvents();
             }
 
             // refresh it one last time to ensure that the last status message is displayed
             this.ShowStatus(_resolver.StatusMessage);
             this.progressBar.Value = _resolver.PercentComplete;
-            this.statusStrip1.Refresh();
+            this.statusStrip.Refresh();
             Application.DoEvents();
             this.DisableCancelButton();
         }
@@ -184,7 +189,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                             return;
                         }
                         using (BackgroundCTS = new CancellationTokenSource()) {
-                            var xelTask = Task.Run(() => this._resolver.ExtractFromXELAsync(files, GroupXEvents.Checked, relevantXEFields, BackgroundCTS));
+                            var xelTask = this._resolver.ExtractFromXELAsync(files, GroupXEvents.Checked, relevantXEFields, BackgroundCTS);
                             this.MonitorBackgroundTask(xelTask);
                             allFilesContent.AppendLine(xelTask.Result.Item2);
                         }

@@ -46,7 +46,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.includeOffsets = new System.Windows.Forms.CheckBox();
             this.RelookupSource = new System.Windows.Forms.CheckBox();
             this.ResolveCallStackButton = new System.Windows.Forms.Button();
-            this.statusStrip1 = new System.Windows.Forms.StatusStrip();
+            this.statusStrip = new System.Windows.Forms.StatusStrip();
             this.statusLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.progressBar = new System.Windows.Forms.ToolStripProgressBar();
             this.cancelButton = new System.Windows.Forms.ToolStripDropDownButton();
@@ -64,7 +64,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.groupBox3.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox1.SuspendLayout();
-            this.statusStrip1.SuspendLayout();
+            this.statusStrip.SuspendLayout();
             this.SuspendLayout();
             this.splitContainer2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainer2.FixedPanel = System.Windows.Forms.FixedPanel.Panel2;
@@ -383,16 +383,16 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.ResolveCallStackButton.Text = "STEP 3: Resolve callstacks!";
             this.ResolveCallStackButton.UseVisualStyleBackColor = true;
             this.ResolveCallStackButton.Click += new System.EventHandler(this.ResolveCallstacks_Click);
-            this.statusStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
-            this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.statusStrip.ImageScalingSize = new System.Drawing.Size(20, 20);
+            this.statusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.statusLabel,
             this.progressBar,
             this.cancelButton});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 643);
-            this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(979, 30);
-            this.statusStrip1.TabIndex = 0;
-            this.statusStrip1.Text = "statusStrip1";
+            this.statusStrip.Location = new System.Drawing.Point(0, 643);
+            this.statusStrip.Name = "statusStrip1";
+            this.statusStrip.Size = new System.Drawing.Size(979, 30);
+            this.statusStrip.TabIndex = 0;
+            this.statusStrip.Text = "statusStrip1";
             this.statusLabel.AutoSize = false;
             this.statusLabel.Name = "statusLabel";
             this.statusLabel.Size = new System.Drawing.Size(700, 25);
@@ -421,7 +421,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
             this.ClientSize = new System.Drawing.Size(979, 673);
-            this.Controls.Add(this.statusStrip1);
+            this.Controls.Add(this.statusStrip);
             this.Controls.Add(this.splitContainer2);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Margin = new System.Windows.Forms.Padding(2);
@@ -447,8 +447,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.groupBox2.PerformLayout();
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
-            this.statusStrip1.ResumeLayout(false);
-            this.statusStrip1.PerformLayout();
+            this.statusStrip.ResumeLayout(false);
+            this.statusStrip.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -479,7 +479,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         private System.Windows.Forms.CheckBox includeOffsets;
         private System.Windows.Forms.CheckBox RelookupSource;
         private System.Windows.Forms.Button ResolveCallStackButton;
-        private System.Windows.Forms.StatusStrip statusStrip1;
+        private System.Windows.Forms.StatusStrip statusStrip;
         private System.Windows.Forms.ToolStripStatusLabel statusLabel;
         private System.Windows.Forms.CheckBox cachePDB;
         private System.Windows.Forms.ToolTip formToolTip;

@@ -669,7 +669,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task Cancellations() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var xelTask = Task.Run(() => csr.ExtractFromXELAsync(new[] { @"..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, true, new List<string>(new string[] { "callstack" }), cts));
+            var xelTask = csr.ExtractFromXELAsync(new[] { @"..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, true, new List<string>(new string[] { "callstack" }), cts);
             while (true) {
                 if (xelTask.Wait(300)) break;
                 cts.Cancel();
@@ -678,7 +678,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             Assert.AreEqual("Operation cancelled.", xelTask.Result.Item2);
 
             using var cts2 = new CancellationTokenSource();
-            var xelFieldsTask = Task.Run(() => csr.GetDistinctXELFieldsAsync(new[] { @"..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, int.MaxValue, cts2));
+            var xelFieldsTask = csr.GetDistinctXELFieldsAsync(new[] { @"..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, int.MaxValue, cts2);
             while (true) {
                 if (xelFieldsTask.Wait(300)) break;
                 cts2.Cancel();
@@ -690,7 +690,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             Assert.IsTrue(csr.ProcessBaseAddresses(@"c:\mssql\binn\sqldk.dll 00000001`00400000"));
             var xeventInput = PrepareLargeXEventInput().ToString();
             var xeStacks = await csr.GetListofCallStacksAsync(xeventInput, false, cts3);
-            var resolveStacksTask = Task.Run(() => csr.ResolveCallstacksAsync(xeStacks, @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, true, false, false, Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()), cts3));
+            var resolveStacksTask = csr.ResolveCallstacksAsync(xeStacks, @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, true, false, false, Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()), cts3);
             while (true) {
                 if (resolveStacksTask.Wait(1000)) break;
                 cts3.Cancel();
@@ -698,7 +698,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             Assert.AreEqual("Operation cancelled.", resolveStacksTask.Result);
 
             using var cts4 = new CancellationTokenSource();
-            var parseModuleInfoXMLTask = Task.Run(() => ModuleInfoHelper.ParseModuleInfoXMLAsync(xeStacks, cts4));
+            var parseModuleInfoXMLTask = ModuleInfoHelper.ParseModuleInfoXMLAsync(xeStacks, cts4);
             while (true) {
                 cts4.Cancel();  // because this method is quick, we need to simulate a cancel right away
                 if (parseModuleInfoXMLTask.Wait(5)) break;
@@ -707,7 +707,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             Assert.AreEqual(0, parseModuleInfoXMLTask.Result.Item2.Count);
 
             using var cts5 = new CancellationTokenSource();
-            var parseModuleInfoTask = Task.Run(() => ModuleInfoHelper.ParseModuleInfoAsync(xeStacks, cts5));
+            var parseModuleInfoTask = ModuleInfoHelper.ParseModuleInfoAsync(xeStacks, cts5);
             while (true) {
                 if (parseModuleInfoTask.Wait(300)) break;
                 cts5.Cancel();

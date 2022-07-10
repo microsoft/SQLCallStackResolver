@@ -86,7 +86,6 @@
     <Compile Include="Symbol.cs" />
     <Compile Include="StackDetails.cs" />
     <Compile Include="SymSrvHelpers.cs" />
-    <Compile Include="ThreadParams.cs" />
     <Compile Include="XELHelper.cs" />
   </ItemGroup>
   <ItemGroup>
