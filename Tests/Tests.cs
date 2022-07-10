@@ -56,7 +56,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task OrdinalBasedSymbol() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var dllPaths = new List<string> { @"..\..\..\Tests\TestCases\TestOrdinal" };
+            var dllPaths = new List<string> { Path.GetTempPath(), @"..\..\..\Tests\TestCases\TestOrdinal", Path.GetTempPath() };    // use different paths to validate the multi-path handling
             var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync("sqldk!Ordinal298+00000000000004A5\r\n00007FF818405E70      Module(sqldk+0000000000003505) (Ordinal298 + 00000000000004A5)", false, cts), @"..\..\..\Tests\TestCases\TestOrdinal", false, dllPaths, false, false, false, true, false, false, null, cts);
             Assert.AreEqual("sqldk!SOS_Scheduler::SwitchContext+941\r\nsqldk!SOS_Scheduler::SwitchContext+941", ret.Trim());
         }
@@ -671,16 +671,16 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             using var cts = new CancellationTokenSource();
             var xelTask = csr.ExtractFromXELAsync(new[] { @"..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, true, new List<string>(new string[] { "callstack" }), cts);
             while (true) {
-                if (xelTask.Wait(300)) break;
+                if (xelTask.Wait(StackResolver.OperationWaitIntervalMilliseconds)) break;
                 cts.Cancel();
             }
             Assert.AreEqual(0, xelTask.Result.Item1);
-            Assert.AreEqual("Operation cancelled.", xelTask.Result.Item2);
+            Assert.AreEqual(StackResolver.OperationCanceled, xelTask.Result.Item2);
 
             using var cts2 = new CancellationTokenSource();
             var xelFieldsTask = csr.GetDistinctXELFieldsAsync(new[] { @"..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, int.MaxValue, cts2);
             while (true) {
-                if (xelFieldsTask.Wait(300)) break;
+                if (xelFieldsTask.Wait(StackResolver.OperationWaitIntervalMilliseconds)) break;
                 cts2.Cancel();
             }
             Assert.AreEqual(0, xelFieldsTask.Result.Item1.Count);
@@ -692,16 +692,16 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var xeStacks = await csr.GetListofCallStacksAsync(xeventInput, false, cts3);
             var resolveStacksTask = csr.ResolveCallstacksAsync(xeStacks, @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, true, false, false, Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()), cts3);
             while (true) {
-                if (resolveStacksTask.Wait(1000)) break;
+                if (resolveStacksTask.Wait(StackResolver.OperationWaitIntervalMilliseconds)) break;
                 cts3.Cancel();
             }
-            Assert.AreEqual("Operation cancelled.", resolveStacksTask.Result);
+            Assert.AreEqual(StackResolver.OperationCanceled, resolveStacksTask.Result);
 
             using var cts4 = new CancellationTokenSource();
             var parseModuleInfoXMLTask = ModuleInfoHelper.ParseModuleInfoXMLAsync(xeStacks, cts4);
             while (true) {
                 cts4.Cancel();  // because this method is quick, we need to simulate a cancel right away
-                if (parseModuleInfoXMLTask.Wait(5)) break;
+                if (parseModuleInfoXMLTask.Wait(StackResolver.OperationWaitIntervalMilliseconds)) break;
             }
             Assert.AreEqual(0, parseModuleInfoXMLTask.Result.Item1.Count);
             Assert.AreEqual(0, parseModuleInfoXMLTask.Result.Item2.Count);
@@ -709,7 +709,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             using var cts5 = new CancellationTokenSource();
             var parseModuleInfoTask = ModuleInfoHelper.ParseModuleInfoAsync(xeStacks, cts5);
             while (true) {
-                if (parseModuleInfoTask.Wait(300)) break;
+                if (parseModuleInfoTask.Wait(StackResolver.OperationWaitIntervalMilliseconds)) break;
                 cts5.Cancel();
             }
             Assert.AreEqual(0, parseModuleInfoTask.Result.Count);

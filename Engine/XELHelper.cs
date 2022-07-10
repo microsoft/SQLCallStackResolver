@@ -14,11 +14,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     parent.StatusMessage = $@"Reading {xelFileName}...";
                     var xeStream = new XEFileEventStreamer(xelFileName);
                     try {
-                        await xeStream.ReadEventStream(
-                        () => {
-                            return Task.CompletedTask;
-                        },
-                        evt => {
+                        await xeStream.ReadEventStream(evt => {
                             parent.PercentComplete = (int)((Interlocked.Increment(ref numEvents) % 1000.0) / 10.0);
                             var eventKey = string.Join(Environment.NewLine, evt.Actions.Union(evt.Fields).Join(fieldsToGroupOn, l => l.Key, r => r, (l, r) => new { val = l.Value.ToString() }).Select(v => v.val)).Trim();
                             if (!string.IsNullOrWhiteSpace(eventKey)) {
@@ -29,10 +25,15 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         },
                         cts.Token);
                     } catch (AggregateException e) {
-                        if (e.InnerException is OperationCanceledException) return new Tuple<int, string>(0, "Operation cancelled.");
-                        else throw;
+                        if (e.InnerException is OperationCanceledException) {
+                            parent.StatusMessage = StackResolver.OperationCanceled;
+                            parent.PercentComplete = 0;
+                            return new Tuple<int, string>(0, StackResolver.OperationCanceled);
+                        } else throw;
                     } catch (OperationCanceledException) {
-                        return new Tuple<int, string>(0, "Operation cancelled.");
+                        parent.StatusMessage = StackResolver.OperationCanceled;
+                        parent.PercentComplete = 0;
+                        return new Tuple<int, string>(0, StackResolver.OperationCanceled);
                     }
                 }
 
@@ -72,6 +73,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 }
 
                 parent.StatusMessage = $@"Finished processing {xelFiles.Length} XEL files";
+                parent.PercentComplete = StackResolver.Operation100Percent;
                 return new Tuple<int, string>(finalEventCount, xmlEquivalent.ToString());
             });
         }
@@ -86,8 +88,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     var numEvents = 0;
                     var xeStream = new XEFileEventStreamer(file);
                     try {
-                        await xeStream.ReadEventStream(
-                            evt => {
+                        await xeStream.ReadEventStream(evt => {
                                 if (Interlocked.Increment(ref numEvents) > eventsToSampleFromEachFile) {
                                     internalCancel = true;
                                     cts.Cancel();
@@ -97,7 +98,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                                 return Task.CompletedTask;
                             }, cts.Token);
                     } catch (AggregateException e) {
-                        if (e.InnerException is OperationCanceledException) if (!internalCancel) new Tuple<List<string>, List<string>>(new List<string>(), new List<string>());
+                        if (e.InnerException is OperationCanceledException) if (!internalCancel) return new Tuple<List<string>, List<string>>(new List<string>(), new List<string>());
                             else throw;
                     } catch (OperationCanceledException) { if (!internalCancel) return new Tuple<List<string>, List<string>>(new List<string>(), new List<string>()); }
                 }

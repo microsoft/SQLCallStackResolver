@@ -5,7 +5,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     /// Helper class which stores DLL export name and address (offset)
     /// </summary>
     public class ExportedSymbol {
-        public string OrdinalName { get; set; }
         public ulong Address { get; set; }
 
         /// <summary>
@@ -23,14 +22,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             // this is the placeholder for the final mapping of ordinal # to address map
             Dictionary<int, ExportedSymbol> exports = new(count);
             var functionsOffset = PEHelper.RvaToOffset(exportDirectory.AddressOfFunctions, dllImage.PEHeaders.SectionHeaders);
-            var ordinalBase = exportDirectory.Base;
             for (uint funcOrdinal = 0; funcOrdinal < count; funcOrdinal++) {
-                // read function address
-                var address = mmfAccessor.ReadUInt32(functionsOffset + funcOrdinal * 4);
-
-                if (0 != address) {
-                    exports.Add((int)(ordinalBase + funcOrdinal), new ExportedSymbol { OrdinalName = string.Format(CultureInfo.CurrentCulture, "Ordinal{0}", ordinalBase + funcOrdinal), Address = address });
-                }
+                var address = mmfAccessor.ReadUInt32(functionsOffset + funcOrdinal * 4); // read function address
+                if (0 != address) exports.Add((int)(exportDirectory.Base + funcOrdinal), new ExportedSymbol { Address = address });
             }
 
             return exports;

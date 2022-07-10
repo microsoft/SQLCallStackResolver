@@ -2,6 +2,10 @@
 // Licensed under the MIT License - see LICENSE file in this repo.
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     public class StackResolver : IDisposable {
+        public const string OperationCanceled = "Operation cancelled.";
+        public const int OperationWaitIntervalMilliseconds = 300;
+        public const int Operation100Percent = 100;
+
         /// This is used to store module name and start / end virtual address ranges
         /// Only populated if the user provides a tab-separated string corresponding to the output of the following SQL query:
         /// select name, base_address from sys.dm_os_loaded_modules where name not like '%.rll'
@@ -12,11 +16,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         private readonly ReaderWriterLockSlim rwLockCachedSymbols = new();
         private readonly DLLOrdinalHelper dllMapHelper = new();
         /// Status message - populated during associated long-running operations
-        public string StatusMessage;
+        public string StatusMessage { get; set; }
+        /// Percent completed - populated during associated long-running operations
+        public int PercentComplete { get; set; }
         /// Internal counter used to implement progress reporting
         internal int globalCounter = 0;
-        /// Percent completed - populated during associated long-running operations
-        public int PercentComplete;
 
         public Task<Tuple<List<string>, List<string>>> GetDistinctXELFieldsAsync(string[] xelFiles, int eventsToSample, CancellationTokenSource cts) {
             return XELHelper.GetDistinctXELActionsFieldsAsync(xelFiles, eventsToSample, cts);
@@ -66,7 +70,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var finalCallstack = new StringBuilder();
             int frameNum = int.MinValue;
             foreach (var iterFrame in callStackLines) {
-                if (cts.IsCancellationRequested) return "Operation cancelled.";
+                if (cts.IsCancellationRequested) { StatusMessage = OperationCanceled; PercentComplete = 0; return OperationCanceled; }
                 // hard-coded find-replace for XML markup - useful when importing from XML histograms
                 var currentFrame = iterFrame.Replace("&lt;", "<").Replace("&gt;", ">");
                 if (relookupSource && includeSourceInfo) {
@@ -316,7 +320,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                 this.StatusMessage = "Checking for embedded symbol information...";
                 var syms = await ModuleInfoHelper.ParseModuleInfoAsync(listOfCallStacks, cts);
-                if (cts.IsCancellationRequested) return "Operation cancelled.";
+                if (cts.IsCancellationRequested) { StatusMessage = OperationCanceled; PercentComplete = 0; return OperationCanceled; }
 
                 if (syms.Count() > 0) {
                     this.StatusMessage = "Downloading symbols as needed...";
@@ -328,7 +332,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     this.StatusMessage = "Looking for embedded XML-formatted frames and symbol information...";
                     // attempt to check if there are XML-formatted frames each with the related PDB attributes and if so replace those lines with the normalized versions
                     (syms, listOfCallStacks) = await ModuleInfoHelper.ParseModuleInfoXMLAsync(listOfCallStacks, cts);
-                    if (cts.IsCancellationRequested) return "Operation cancelled.";
+                    if (cts.IsCancellationRequested) { StatusMessage = OperationCanceled; PercentComplete = 0; return OperationCanceled; }
                     if (syms.Count() > 0) {
                         // if the user has provided such a list of module info, proceed to actually use dbghelp.dll / symsrv.dll to download thos PDBs and get local paths for them
                         var paths = SymSrvHelpers.GetFolderPathsForPDBs(this, symPath, syms.Values.ToList());
@@ -353,9 +357,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                 this.StatusMessage = "Waiting for tasks to finish...";
                 while (true) {
-                    if (Task.WaitAll(tasks.ToArray(), 300)) break;
+                    if (Task.WaitAll(tasks.ToArray(), OperationWaitIntervalMilliseconds)) break;
                 }
-                if (cts.IsCancellationRequested) return "Operation cancelled.";
+                if (cts.IsCancellationRequested) { StatusMessage = OperationCanceled; PercentComplete = 0; return OperationCanceled; }
                 this.StatusMessage = "Done with symbol resolution, finalizing output...";
                 this.globalCounter = 0;
 
@@ -365,7 +369,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     this.StatusMessage = $@"Writing output to file {outputFilePath}";
                     using var outStream = new StreamWriter(outputFilePath, false);
                     foreach (var currstack in listOfCallStacks) {
-                        if (cts.IsCancellationRequested) return "Operation cancelled.";
+                        if (cts.IsCancellationRequested) { StatusMessage = OperationCanceled; PercentComplete = 0; return OperationCanceled; }
                         if (!string.IsNullOrEmpty(currstack.Resolvedstack)) outStream.WriteLine(currstack.Resolvedstack);
                         else if (!string.IsNullOrEmpty(currstack.Callstack.Trim())) {
                             outStream.WriteLine("WARNING: No output to show. This may indicate an internal error!");
@@ -379,7 +383,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     this.StatusMessage = "Consolidating output for screen display...";
 
                     foreach (var currstack in listOfCallStacks) {
-                        if (cts.IsCancellationRequested) return "Operation cancelled.";
+                        if (cts.IsCancellationRequested) { StatusMessage = OperationCanceled; PercentComplete = 0; return OperationCanceled; }
                         if (!string.IsNullOrEmpty(currstack.Resolvedstack)) finalCallstack.Append(currstack.Resolvedstack);
                         else if (!string.IsNullOrEmpty(currstack.Callstack)) {
                             finalCallstack = new StringBuilder("WARNING: No output to show. This may indicate an internal error!");
@@ -399,6 +403,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
 
+                this.PercentComplete = StackResolver.Operation100Percent;
                 this.StatusMessage = "Finished!";
                 return string.IsNullOrEmpty(outputFilePath) ? finalCallstack.ToString() : $@"Output has been saved to {outputFilePath}";
             });
@@ -506,6 +511,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         allStacks.Add(new StackDetails(inputCallstackText, framesOnSingleLine));
                     }
                 }
+                this.PercentComplete = StackResolver.Operation100Percent;
                 return allStacks;
             });
         }
@@ -543,10 +549,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                 // cleanup any older COM objects
                 if (_diautils != null) {
-                    foreach (var diautil in _diautils.Values) {
-                        diautil.Dispose();
-                    }
-
+                    foreach (var diautil in _diautils.Values) diautil.Dispose();
                     _diautils.Clear();
                 }
 

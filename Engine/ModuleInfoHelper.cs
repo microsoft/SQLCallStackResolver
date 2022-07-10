@@ -15,17 +15,16 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 Contract.Requires(lines.Length > 0);
                 foreach (var line in lines) {
                     if (cts.IsCancellationRequested) return;
-                    Guid pdbGuid = Guid.Empty;
                     string moduleName = null, pdbName = null;
 
                     // foreach line, split into comma-delimited fields
                     var fields = line.Split(',');
                     // only attempt to process further if this line does look like it has delimited fields
                     if (fields.Length >= 3) {
+                        Guid pdbGuid = Guid.Empty;
                         foreach (var field in fields.Select(f => f.Trim().TrimEnd('"').TrimStart('"'))) {
-                            Guid tmpGuid = Guid.Empty;
                             // for each field, attempt using regexes to detect file name and GUIDs
-                            if (Guid.TryParse(field, out tmpGuid)) pdbGuid = tmpGuid;
+                            if (Guid.TryParse(field, out Guid tmpGuid)) pdbGuid = tmpGuid;
                             if (string.IsNullOrEmpty(moduleName)) {
                                 var matchFilename = rgxFileName.Match(field);
                                 if (matchFilename.Success) moduleName = matchFilename.Groups["module"].Value;
@@ -55,7 +54,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         public async static Task<(Dictionary<string, Symbol>, List<StackDetails>)> ParseModuleInfoXMLAsync(List<StackDetails> listOfCallStacks, CancellationTokenSource cts) {
             var syms = new Dictionary<string, Symbol>();
-
             await Task.Run(() => Parallel.ForEach(listOfCallStacks, currItem => {
                 if (cts.IsCancellationRequested) return;
                 var outCallstack = new StringBuilder();
@@ -63,22 +61,21 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 if (currItem.Callstack.Contains("<frame")) {
                     // use a multi-line regex replace to reassemble XML fragments which were split across lines
                     currItem.Callstack = Regex.Replace(currItem.Callstack, @"(?<prefix>\<frame[^\/\>]*?)(?<newline>(\r\n|\n))(?<suffix>.*?\/\>\s*?$)", @"${prefix}${suffix}", RegexOptions.Multiline);
+                    if (cts.IsCancellationRequested) return;
                     // ensure that each <frame> element starts on a newline
                     currItem.Callstack = Regex.Replace(currItem.Callstack, @"/\>\s*\<frame", "/>\r\n<frame");
+                    if (cts.IsCancellationRequested) return;
                     // next, replace any pre-post stuff from the XML frame lines
                     currItem.Callstack = Regex.Replace(currItem.Callstack, @"(?<prefix>.*?)(?<retain>\<frame.+\/\>)(?<suffix>.*?)", "${retain}");
+                    if (cts.IsCancellationRequested) return;
 
-                    // split into multiple lines
-                    var lines = currItem.Callstack.Split('\n');
-                    bool readStatus = false;
-                    foreach (var line in lines) {
+                    foreach (var line in currItem.Callstack.Split('\n')) {
                         if (cts.IsCancellationRequested) return;
                         if (!string.IsNullOrWhiteSpace(line) && line.StartsWith("<frame")) { // only attempt further formal XML parsing if a simple text check works
                             try {
                                 using var sreader = new StringReader(line);
                                 using var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null });
-                                readStatus = reader.Read();
-                                if (readStatus) {
+                                if (reader.Read()) {
                                     // seems to be XML; process attributes only if all 3 are there
                                     var moduleNameAttributeVal = reader.GetAttribute("module");
                                     if (string.IsNullOrEmpty(moduleNameAttributeVal)) moduleNameAttributeVal = reader.GetAttribute("name");
