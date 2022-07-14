@@ -55,9 +55,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         public static string GetDownloadScriptPowerShell(SQLBuildInfo bld, bool includeMarkdown) {
             Contract.Requires(bld != null);
-
             var symcmds = new StringBuilder();
-
             if (null != bld.SymbolDetails && bld.SymbolDetails.Where(s => s.DownloadVerified).Any()) {
                 if (includeMarkdown) {
                     symcmds.AppendLine($"# {bld}");

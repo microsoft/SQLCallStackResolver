@@ -79,9 +79,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// Internal helper function to return the symbolized frame text (not including source info)
         internal static string GetSymbolizedFrame(string moduleName, IDiaSymbol mysym, bool useUndecorateLogic, bool includeOffset, int displacement, bool isInLinee) {
             string funcname2;
-            if (!useUndecorateLogic) {
-                funcname2 = mysym.name;
-            }
+            if (!useUndecorateLogic) funcname2 = mysym.name;
             else {
                 // refer https://msdn.microsoft.com/en-us/library/kszfk0fs.aspx
                 // UNDNAME_NAME_ONLY == 0x1000: Gets only the name for primary declaration; returns just [scope::]name. Expands template params. 

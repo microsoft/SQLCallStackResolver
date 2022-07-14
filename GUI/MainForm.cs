@@ -9,9 +9,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         private readonly StackResolver _resolver = new();
-        private Task<string> backgroundTask;
         private CancellationTokenSource BackgroundCTS { get; set; }
-        private CancellationToken backgroundCT;
 
         private string _baseAddressesString = null;
         internal static readonly string SqlBuildInfoFileName = @"sqlbuildinfo.json";
@@ -81,26 +79,21 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 return;
             }
 
-            this.backgroundTask = Task.Run(() => {
-                return this._resolver.ResolveCallstacks(callStackInput.Text,
-                    pdbPaths.Text,
-                    pdbRecurse.Checked,
-                    dllPaths,
-                    DLLrecurse.Checked,
-                    FramesOnSingleLine.Checked,
-                    IncludeLineNumbers.Checked,
-                    RelookupSource.Checked,
-                    includeOffsets.Checked,
-                    showInlineFrames.Checked,
-                    cachePDB.Checked,
-                    outputFilePath.Text
-                    );
-            });
+            List<StackDetails> allStacks = null;
+            using (BackgroundCTS = new CancellationTokenSource()) {
+                var allStacksTask = this._resolver.GetListofCallStacksAsync(callStackInput.Text, FramesOnSingleLine.Checked, BackgroundCTS);
+                this.MonitorBackgroundTask(allStacksTask);
+                allStacks = allStacksTask.Result;
+            }
+            if (allStacks.Any()) using (BackgroundCTS = new CancellationTokenSource()) {
+                var resolverTask = this._resolver.ResolveCallstacksAsync(allStacks, pdbPaths.Text, pdbRecurse.Checked, dllPaths,
+                        DLLrecurse.Checked, IncludeLineNumbers.Checked, RelookupSource.Checked,
+                        includeOffsets.Checked, showInlineFrames.Checked, cachePDB.Checked, outputFilePath.Text, BackgroundCTS);
+                this.MonitorBackgroundTask(resolverTask);
+                finalOutput.Text = resolverTask.Result;
+            }
 
-            this.MonitorBackgroundTask(backgroundTask);
-
-            finalOutput.Text = backgroundTask.Result;
-            if (backgroundTask.Result.Contains("WARNING:")) {
+            if (finalOutput.Text.Contains("WARNING:")) {
                 MessageBox.Show(this,
                     "One or more potential issues exist in the output. This is sometimes due to mismatched symbols, so please double-check symbol paths and re-run if needed.",
                     "Potential issues with the output", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -134,8 +127,15 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             }
         }
 
-        private void ShowStatus(string txt) {
-            this.statusLabel.Text = txt;
+        private void UpdateOperationProgress() {
+            this.statusLabel.Text = _resolver.StatusMessage;
+            this.progressBar.Value = _resolver.PercentComplete;
+            this.statusStrip.Refresh();
+            Application.DoEvents();
+        }
+
+        private void UpdateStatus(string message) {
+            this.statusLabel.Text = message;
             Application.DoEvents();
         }
 
@@ -149,38 +149,26 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
             if (DialogResult.Cancel != genericOpenFileDlg.ShowDialog(this)) {
                 List<string> relevantXEFields = await GetUserSelectedXEFieldsAsync(genericOpenFileDlg.FileNames);
-                this.ShowStatus("Loading from XEL files; please wait. This may take a while!");
-                this.backgroundTask = Task.Run(async () => {
-                    return (await this._resolver.ExtractFromXEL(genericOpenFileDlg.FileNames, GroupXEvents.Checked, relevantXEFields)).Item2;
-                });
-                this.MonitorBackgroundTask(backgroundTask);
-                callStackInput.Text = backgroundTask.Result;
-                this.ShowStatus("Finished importing callstacks from XEL file(s)!");
+                if (!relevantXEFields.Any()) {
+                    this.UpdateStatus("No fields were selected for import from the XEL files. Nothing to do!");
+                    return;
+                }
+                this.UpdateStatus("Loading from XEL files; please wait. This may take a while!");
+                using (this.BackgroundCTS = new CancellationTokenSource()) {
+                    var xelTask = this._resolver.ExtractFromXELAsync(genericOpenFileDlg.FileNames, GroupXEvents.Checked, relevantXEFields, this.BackgroundCTS);
+                    this.MonitorBackgroundTask(xelTask);
+                    callStackInput.Text = xelTask.Result.Item2;
+                    if (BackgroundCTS.IsCancellationRequested) return;
+                }
+                this.UpdateStatus("Finished importing callstacks from XEL file(s)!");
             }
         }
 
         private void MonitorBackgroundTask(Task theTask) {
-            using (BackgroundCTS = new CancellationTokenSource()) {
-                backgroundCT = BackgroundCTS.Token;
-                this.EnableCancelButton();
-                while (!theTask.Wait(30)) {
-                    if (backgroundCT.IsCancellationRequested) {
-                        this._resolver.CancelRunningTasks();
-                    }
-
-                    this.ShowStatus(_resolver.StatusMessage);
-                    this.progressBar.Value = _resolver.PercentComplete;
-                    this.statusStrip1.Refresh();
-                    Application.DoEvents();
-                }
-
-                // refresh it one last time to ensure that the last status message is displayed
-                this.ShowStatus(_resolver.StatusMessage);
-                this.progressBar.Value = _resolver.PercentComplete;
-                this.statusStrip1.Refresh();
-                Application.DoEvents();
-                this.DisableCancelButton();
-            }
+            this.EnableCancelButton();
+            while (!theTask.Wait(50)) this.UpdateOperationProgress();
+            this.UpdateOperationProgress();  // status update after task exits
+            this.DisableCancelButton();
         }
 
         private async void CallStackInput_DragDrop(object sender, DragEventArgs e) {
@@ -192,10 +180,18 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     var allFilesContent = new StringBuilder();
                     if (files.Where(f => Path.GetExtension(f).ToLower(CultureInfo.CurrentCulture) == ".xel").Count() == files.Count()) {
                         // all files being dragged are XEL files, work on them.
-                        this.ShowStatus("XEL file was dragged; please wait while we extract events from the file");
+                        this.UpdateStatus("XEL file was dragged; please wait while we extract events from the file");
                         List<string> relevantXEFields = await GetUserSelectedXEFieldsAsync(files);
-                        allFilesContent.AppendLine((await this._resolver.ExtractFromXEL(files, GroupXEvents.Checked, relevantXEFields)).Item2);
-                        this.ShowStatus(string.Empty);
+                        if (!relevantXEFields.Any()) {
+                            this.UpdateStatus("No fields were selected for import from the XEL files. Nothing to do!");
+                            return;
+                        }
+                        using (BackgroundCTS = new CancellationTokenSource()) {
+                            var xelTask = this._resolver.ExtractFromXELAsync(files, GroupXEvents.Checked, relevantXEFields, BackgroundCTS);
+                            this.MonitorBackgroundTask(xelTask);
+                            allFilesContent.AppendLine(xelTask.Result.Item2);
+                        }
+                        this.UpdateStatus(string.Empty);
                     } else foreach (var currFile in files) { // handle the files as text input
                             allFilesContent.AppendLine(File.ReadAllText(currFile));
                         }
@@ -207,8 +203,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         private async Task<List<string>> GetUserSelectedXEFieldsAsync(string[] fileNames) {
             using var fieldsListDialog = new FieldSelection();
+            using var cts = new CancellationTokenSource();
             fieldsListDialog.Text = "Select relevant XEvent fields";
-            var xeEventItems = await this._resolver.GetDistinctXELFieldsAsync(fileNames, 1000);
+            var xeEventItems = await this._resolver.GetDistinctXELFieldsAsync(fileNames, 1000, cts);
+            if (xeEventItems.Item1.Count + xeEventItems.Item2.Count == 0) return new List<string>();
             fieldsListDialog.AllActions = xeEventItems.Item1;
             fieldsListDialog.AllFields = xeEventItems.Item2;
             fieldsListDialog.StartPosition = FormStartPosition.CenterParent;

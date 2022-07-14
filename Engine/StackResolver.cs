@@ -2,6 +2,10 @@
 // Licensed under the MIT License - see LICENSE file in this repo.
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     public class StackResolver : IDisposable {
+        public const string OperationCanceled = "Operation cancelled.";
+        public const int OperationWaitIntervalMilliseconds = 300;
+        public const int Operation100Percent = 100;
+
         /// This is used to store module name and start / end virtual address ranges
         /// Only populated if the user provides a tab-separated string corresponding to the output of the following SQL query:
         /// select name, base_address from sys.dm_os_loaded_modules where name not like '%.rll'
@@ -12,33 +16,29 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         private readonly ReaderWriterLockSlim rwLockCachedSymbols = new();
         private readonly DLLOrdinalHelper dllMapHelper = new();
         /// Status message - populated during associated long-running operations
-        public string StatusMessage;
+        public string StatusMessage { get; set; }
+        /// Percent completed - populated during associated long-running operations
+        public int PercentComplete { get; set; }
         /// Internal counter used to implement progress reporting
         internal int globalCounter = 0;
-        internal bool cancelRequested = false;
-        /// Percent completed - populated during associated long-running operations
-        public int PercentComplete;
 
-        public void CancelRunningTasks() {
-            this.cancelRequested = true;
+        public Task<Tuple<List<string>, List<string>>> GetDistinctXELFieldsAsync(string[] xelFiles, int eventsToSample, CancellationTokenSource cts) {
+            return XELHelper.GetDistinctXELActionsFieldsAsync(xelFiles, eventsToSample, cts);
         }
 
-        public Task<Tuple<List<string>, List<string>>> GetDistinctXELFieldsAsync(string[] xelFiles, int eventsToSample) {
-            return XELHelper.GetDistinctXELActionsFieldsAsync(xelFiles, eventsToSample);
-            }
-
         /// Public method which to help import XEL files
-        public async Task<Tuple<int, string>> ExtractFromXEL(string[] xelFiles, bool groupEvents, List<string> relevantFields) {
-            return await XELHelper.ExtractFromXELAsync(this, xelFiles, groupEvents, relevantFields);
+        public async Task<Tuple<int, string>> ExtractFromXELAsync(string[] xelFiles, bool groupEvents, List<string> relevantFields, CancellationTokenSource cts) {
+            return await XELHelper.ExtractFromXELAsync(this, xelFiles, groupEvents, relevantFields, cts);
         }
 
         /// Convert virtual-address only type frames to their module+offset format
-        private string[] PreProcessVAs(string[] callStackLines, Regex rgxVAOnly) {
+        private string[] PreProcessVAs(string[] callStackLines, Regex rgxVAOnly, CancellationTokenSource cts) {
             if (!this.LoadedModules.Any()) return callStackLines;// only makes sense doing the rest of the work in this function if have loaded module information
 
             string[] retval = new string[callStackLines.Length];
             int frameNum = 0;
             foreach (var currentFrame in callStackLines) {
+                if (cts.IsCancellationRequested) return callStackLines;
                 // let's see if this is an VA-only address
                 var matchVA = rgxVAOnly.Match(currentFrame);
                 if (matchVA.Success) {
@@ -66,10 +66,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Runs through each of the frames in a call stack and looks up symbols for each
-        private string ResolveSymbols(Dictionary<string, DiaUtil> _diautils, string[] callStackLines, bool includeSourceInfo, bool relookupSource, bool includeOffsets, bool showInlineFrames, Regex rgxAlreadySymbolizedFrame, Regex rgxModuleName, List<string> modulesToIgnore, ThreadParams tp) {
+        private string ResolveSymbols(Dictionary<string, DiaUtil> _diautils, string[] callStackLines, string symPath, bool searchPDBsRecursively, bool cachePDB, bool includeSourceInfo, bool relookupSource, bool includeOffsets, bool showInlineFrames, Regex rgxAlreadySymbolizedFrame, Regex rgxModuleName, List<string> modulesToIgnore, CancellationTokenSource cts) {
             var finalCallstack = new StringBuilder();
             int frameNum = int.MinValue;
             foreach (var iterFrame in callStackLines) {
+                if (cts.IsCancellationRequested) { StatusMessage = OperationCanceled; PercentComplete = 0; return OperationCanceled; }
                 // hard-coded find-replace for XML markup - useful when importing from XML histograms
                 var currentFrame = iterFrame.Replace("&lt;", "<").Replace("&gt;", ">");
                 if (relookupSource && includeSourceInfo) {
@@ -82,7 +83,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     var matchAlreadySymbolized = rgxAlreadySymbolizedFrame.Match(currentFrame);
                     if (matchAlreadySymbolized.Success) {
                         var matchedModuleName = matchAlreadySymbolized.Groups["module"].Value;
-                        if (!_diautils.ContainsKey(matchedModuleName)) DiaUtil.LocateandLoadPDBs(_diautils, tp.symPath, tp.searchPDBsRecursively, new List<string>() { matchedModuleName }, tp.cachePDB, modulesToIgnore);
+                        if (!_diautils.ContainsKey(matchedModuleName)) DiaUtil.LocateandLoadPDBs(_diautils, symPath, searchPDBsRecursively, new List<string>() { matchedModuleName }, cachePDB, modulesToIgnore);
                         if (_diautils.TryGetValue(matchedModuleName, out var existingEntry) && _diautils[matchedModuleName].HasSourceInfo) {
                             var myDIAsession = existingEntry._IDiaSession;
                             myDIAsession.findChildrenEx(myDIAsession.globalScope, SymTagEnum.SymTagNull, matchAlreadySymbolized.Groups["symbolizedfunc"].Value, 0, out IDiaEnumSymbols matchedSyms);
@@ -121,7 +122,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 if (match.Success) {
                     var matchedModuleName = match.Groups["module"].Value;
                     // maybe we have a "not well-known" module, attempt to (best effort) find PDB for it.
-                    if (!_diautils.ContainsKey(matchedModuleName)) DiaUtil.LocateandLoadPDBs(_diautils, tp.symPath, tp.searchPDBsRecursively, new List<string>() { matchedModuleName }, tp.cachePDB, modulesToIgnore);
+                    if (!_diautils.ContainsKey(matchedModuleName)) DiaUtil.LocateandLoadPDBs(_diautils, symPath, searchPDBsRecursively, new List<string>() { matchedModuleName }, cachePDB, modulesToIgnore);
                     frameNum = string.IsNullOrWhiteSpace(match.Groups["framenum"].Value) ? int.MinValue : frameNum == int.MinValue ? Convert.ToInt32(match.Groups["framenum"].Value, 16) : frameNum;
                     if (_diautils.ContainsKey(matchedModuleName)) {
                         string processedFrame = ProcessFrameModuleOffset(_diautils, ref frameNum, matchedModuleName, match.Groups["offset"].Value, includeSourceInfo, includeOffsets, showInlineFrames);
@@ -305,242 +306,255 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// <param name="cachePDB">Boolean, whether to cache PDBs locally</param>
         /// <param name="outputFilePath">File path, used if output is directly written to a file</param>
         /// <returns></returns>
-        public string ResolveCallstacks(string inputCallstackText, string symPath, bool searchPDBsRecursively, List<string> dllPaths,
-            bool searchDLLRecursively, bool framesOnSingleLine, bool includeSourceInfo, bool relookupSource, bool includeOffsets,
-            bool showInlineFrames, bool cachePDB, string outputFilePath) {
-            this.cancelRequested = false;
-            this.cachedSymbols.Clear();
+        public async Task<string> ResolveCallstacksAsync(List<StackDetails> listOfCallStacks, string symPath, bool searchPDBsRecursively, List<string> dllPaths,
+            bool searchDLLRecursively, bool includeSourceInfo, bool relookupSource, bool includeOffsets,
+            bool showInlineFrames, bool cachePDB, string outputFilePath, CancellationTokenSource cts) {
+            return await Task.Run(async () => {
+                this.cachedSymbols.Clear();
 
-            // delete and recreate the cached PDB folder
-            var symCacheFolder = Path.Combine(Path.GetTempPath(), "SymCache");
-            if (Directory.Exists(symCacheFolder)) {
-                new DirectoryInfo(symCacheFolder).GetFiles("*", SearchOption.AllDirectories).ToList().ForEach(file => file.Delete());
-            }
-            else Directory.CreateDirectory(symCacheFolder);
+                // delete and recreate the cached PDB folder
+                var symCacheFolder = Path.Combine(Path.GetTempPath(), "SymCache");
+                if (Directory.Exists(symCacheFolder)) {
+                    new DirectoryInfo(symCacheFolder).GetFiles("*", SearchOption.AllDirectories).ToList().ForEach(file => file.Delete());
+                } else Directory.CreateDirectory(symCacheFolder);
 
-            if (Regex.IsMatch(inputCallstackText, @"<HistogramTarget(\s+|\>)") && inputCallstackText.Contains(@"</HistogramTarget>")) {
-                var numHistogramTargets = Regex.Matches(inputCallstackText, @"\<\/HistogramTarget\>").Count;
-                if (numHistogramTargets > 0) {
-                    inputCallstackText = Regex.Replace(inputCallstackText, @"(?<prefix>.*?)(?<starttag>\<HistogramTarget)(?<trailing>.+?\<\/HistogramTarget\>)",
-                        (Match m) => { return $"{m.Groups["starttag"].Value} annotation=\"{System.Net.WebUtility.HtmlEncode(m.Groups["prefix"].Value.Replace("\r", string.Empty).Replace("\n", string.Empty).Trim())}\" {m.Groups["trailing"].Value}"; }
-                        , RegexOptions.Singleline);
-                    inputCallstackText = $"<Histograms>{inputCallstackText}</Histograms>";
-                }
-            }
+                this.StatusMessage = "Checking for embedded symbol information...";
+                var syms = await ModuleInfoHelper.ParseModuleInfoAsync(listOfCallStacks, cts);
+                if (cts.IsCancellationRequested) { StatusMessage = OperationCanceled; PercentComplete = 0; return OperationCanceled; }
 
-            var finalCallstack = new StringBuilder();
-            bool isXMLdoc = false;
-            // we evaluate if the input is XML containing multiple stacks
-            try {
-                this.PercentComplete = 0;
-                this.StatusMessage = "Inspecting input to determine processing plan...";
-                using var sreader = new StringReader(inputCallstackText);
-                using var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null });
-                var validElementNames = new List<string>() { "HistogramTarget", "event" };
-                this.StatusMessage = "WARNING: XML input was detected but it does not appear to be a known schema!";
-                while (reader.Read()) {
-                    if (XmlNodeType.Element == reader.NodeType && validElementNames.Contains(reader.Name)) {
-                        this.StatusMessage = "Input seems to be relevant XML, attempting to process...";
-                        isXMLdoc = true;    // assume with reasonable confidence that we have a valid XML doc
-                        break;
-                    }
-                }
-            } catch (XmlException) { this.StatusMessage = "Input is not XML; being treated as a single callstack..."; }
-
-            var listOfCallStacks = new List<StackDetails>();
-            if (!isXMLdoc) {
-                listOfCallStacks.Add(new StackDetails(inputCallstackText, framesOnSingleLine));
-            } else {
-                try {
-                    int stacknum = 0;
-                    using var sreader = new StringReader(inputCallstackText);
-                    using var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null, });
-                    string annotation = string.Empty;
-                    string eventDetails = string.Empty;
-                    string trailingText = string.Empty;
-                    while (reader.Read()) {
-                        if (this.cancelRequested) return "Operation cancelled.";
-                        if (XmlNodeType.Text == reader.NodeType) trailingText = reader.Value.Trim();
-                        if (XmlNodeType.Element == reader.NodeType) {
-                            switch (reader.Name) {
-                                case "HistogramTarget": {   // Parent node for the XML from a histogram target
-                                        annotation = reader.GetAttribute("annotation");
-                                        if (!string.IsNullOrWhiteSpace(annotation)) { annotation = annotation.Trim(); }
-                                        break;
-                                    }
-                                case "Slot": {  // Child node for the XML from a histogram target
-                                        var slotcount = int.Parse(reader.GetAttribute("count"), CultureInfo.CurrentCulture);
-                                        string callstackText = string.Empty;
-                                        if (reader.ReadToDescendant("value")) {
-                                            reader.Read();
-                                            if (XmlNodeType.Text == reader.NodeType || XmlNodeType.CDATA == reader.NodeType) callstackText = reader.Value;
-                                        }
-                                        if (string.IsNullOrEmpty(callstackText)) throw new XmlException();
-                                        listOfCallStacks.Add(new StackDetails(callstackText, framesOnSingleLine, annotation, $"Slot_{stacknum}\t[count:{slotcount}]:"));
-                                        stacknum++;
-                                        break;
-                                    }
-                                case "event": { // ring buffer output with individual events
-                                        var sbTmp = new StringBuilder();
-                                        for (int tmpOrdinal = 0; tmpOrdinal < reader.AttributeCount; tmpOrdinal++) {
-                                            reader.MoveToAttribute(tmpOrdinal);
-                                            sbTmp.AppendFormat($"{reader.Name}: {reader.Value}".Replace("\r", string.Empty).Replace("\n", string.Empty));
-                                        }
-                                        eventDetails = sbTmp.ToString();
-                                        break;
-                                    }
-                                case "action": { // actual action associated with the above ring buffer events
-                                        if (!reader.GetAttribute("name").Contains("callstack")) throw new XmlException();
-                                        if (!reader.ReadToDescendant("value")) throw new XmlException();
-                                        reader.Read();
-                                        if (!(XmlNodeType.Text == reader.NodeType || XmlNodeType.CDATA == reader.NodeType)) throw new XmlException();
-                                        listOfCallStacks.Add(new StackDetails(reader.Value, framesOnSingleLine, string.Empty, $"Event {eventDetails}"));
-                                        stacknum++;
-                                        break;
-                                    }
-                                default: break;
-                            }
-                        }
-                        this.PercentComplete = (int)((double)stacknum % 100.0); // since we are streaming, we can only show pseudo-progress (repeatedly go from 0 to 100 and back).
-                    }
-                    if (!string.IsNullOrEmpty(trailingText)) listOfCallStacks.Last().UpdateAnnotation(trailingText);
-                } catch (XmlException) {
-                    // our guesstimate that the input is XML, is not correct, so bail out and revert back to handling the callstack as text
-                    this.StatusMessage = "XML-like input was found to be invalid, now being treated as a single callstack...";
-                    listOfCallStacks.Clear();
-                    listOfCallStacks.Add(new StackDetails(inputCallstackText, framesOnSingleLine));
-                }
-            }
-
-            this.StatusMessage = "Checking for embedded symbol information...";
-            var syms = ModuleInfoHelper.ParseModuleInfo(listOfCallStacks);
-            if (syms.Count > 0) {
-                this.StatusMessage = "Downloading symbols as needed...";
-                // if the user has provided such a list of module info, proceed to actually use dbghelp.dll / symsrv.dll to download those PDBs and get local paths for them
-                var paths = SymSrvHelpers.GetFolderPathsForPDBs(this, symPath, syms.Values.ToList());
-                // we then "inject" those local PDB paths as higher priority than any possible user provided paths
-                symPath = string.Join(";", paths) + ";" + symPath;
-            } else {
-                if (listOfCallStacks.Count == 0) {
-                    listOfCallStacks.Add(new StackDetails(inputCallstackText, framesOnSingleLine));
-                }
-                this.StatusMessage = "Looking for embedded XML-formatted frames and symbol information...";
-                // attempt to check if there are XML-formatted frames each with the related PDB attributes and if so replace those lines with the normalized versions
-                (syms, listOfCallStacks) = ModuleInfoHelper.ParseModuleInfoXML(listOfCallStacks);
-                if (syms.Count > 0) {
-                    // if the user has provided such a list of module info, proceed to actually use dbghelp.dll / symsrv.dll to download thos PDBs and get local paths for them
+                if (syms.Count() > 0) {
+                    this.StatusMessage = "Downloading symbols as needed...";
+                    // if the user has provided such a list of module info, proceed to actually use dbghelp.dll / symsrv.dll to download those PDBs and get local paths for them
                     var paths = SymSrvHelpers.GetFolderPathsForPDBs(this, symPath, syms.Values.ToList());
                     // we then "inject" those local PDB paths as higher priority than any possible user provided paths
                     symPath = string.Join(";", paths) + ";" + symPath;
-                }
-            }
-
-            this.StatusMessage = "Resolving callstacks to symbols...";
-            this.globalCounter = 0;
-
-            // (re-)initialize the DLL Ordinal Map
-            this.dllMapHelper.Initialize();
-
-            // Create a pool of threads to process in parallel
-            this.StatusMessage = "Creating thread pool to process frames...";
-            int numThreads = Math.Min(listOfCallStacks.Count, Environment.ProcessorCount);
-            List<Thread> threads = new();
-            for (int threadOrdinal = 0; threadOrdinal < numThreads; threadOrdinal++) {
-                var tmpThread = new Thread(ProcessCallStack);
-                threads.Add(tmpThread);
-                tmpThread.Start(new ThreadParams() {dllPaths = dllPaths, framesOnSingleLine = framesOnSingleLine, includeOffsets = includeOffsets,includeSourceInfo = includeSourceInfo,
-                    showInlineFrames = showInlineFrames, listOfCallStacks = listOfCallStacks, numThreads = numThreads, relookupSource = relookupSource,
-                    searchDLLRecursively = searchDLLRecursively, searchPDBsRecursively = searchPDBsRecursively, symPath = symPath, threadOrdinal = threadOrdinal, cachePDB = cachePDB});
-            }
-
-            this.StatusMessage = "Waiting for threads to finish...";
-            threads.ForEach(tmpThread => tmpThread.Join());
-
-            if (this.cancelRequested) return "Operation cancelled.";
-            this.StatusMessage = "Done with symbol resolution, finalizing output...";
-            this.globalCounter = 0;
-
-            // populate the output
-            if (!string.IsNullOrEmpty(outputFilePath)) {
-                this.StatusMessage = $@"Writing output to file {outputFilePath}";
-                using var outStream = new StreamWriter(outputFilePath, false);
-                foreach (var currstack in listOfCallStacks) {
-                    if (this.cancelRequested) return "Operation cancelled.";
-                    if (!string.IsNullOrEmpty(currstack.Resolvedstack)) outStream.WriteLine(currstack.Resolvedstack);
-                    else if (!string.IsNullOrEmpty(currstack.Callstack.Trim())) {
-                        outStream.WriteLine("WARNING: No output to show. This may indicate an internal error!");
-                        break;
+                } else {
+                    this.StatusMessage = "Looking for embedded XML-formatted frames and symbol information...";
+                    // attempt to check if there are XML-formatted frames each with the related PDB attributes and if so replace those lines with the normalized versions
+                    (syms, listOfCallStacks) = await ModuleInfoHelper.ParseModuleInfoXMLAsync(listOfCallStacks, cts);
+                    if (cts.IsCancellationRequested) { StatusMessage = OperationCanceled; PercentComplete = 0; return OperationCanceled; }
+                    if (syms.Count() > 0) {
+                        // if the user has provided such a list of module info, proceed to actually use dbghelp.dll / symsrv.dll to download thos PDBs and get local paths for them
+                        var paths = SymSrvHelpers.GetFolderPathsForPDBs(this, symPath, syms.Values.ToList());
+                        // we then "inject" those local PDB paths as higher priority than any possible user provided paths
+                        symPath = string.Join(";", paths) + ";" + symPath;
                     }
-
-                    this.globalCounter++;
-                    this.PercentComplete = (int)((double)this.globalCounter / listOfCallStacks.Count * 100.0);
                 }
-            }
-            else {
-                this.StatusMessage = "Consolidating output for screen display...";
 
-                foreach (var currstack in listOfCallStacks) {
-                    if (this.cancelRequested) return "Operation cancelled.";
-                    if (!string.IsNullOrEmpty(currstack.Resolvedstack)) finalCallstack.Append(currstack.Resolvedstack);
-                    else if (!string.IsNullOrEmpty(currstack.Callstack)) {
-                        finalCallstack = new StringBuilder("WARNING: No output to show. This may indicate an internal error!");
-                        break;
-                    }
+                this.StatusMessage = "Resolving callstacks to symbols...";
+                this.globalCounter = 0;
 
-                    if (finalCallstack.Length > int.MaxValue * 0.1) {
-                        this.StatusMessage = "WARNING: output is too large to display on screen. Use the option to output to file directly (instead of screen). Re-run after specifying file path!";
-                        break;
-                    }
+                // (re-)initialize the DLL Ordinal Map
+                this.dllMapHelper.Initialize();
 
-                    this.globalCounter++;
-                    this.PercentComplete = (int)((double)this.globalCounter / listOfCallStacks.Count * 100.0);
+                // Create a pool of threads to process in parallel
+                this.StatusMessage = "Starting tasks to process frames...";
+                int numThreads = Math.Min(listOfCallStacks.Count, Environment.ProcessorCount);
+                List<Task> tasks = new();
+                for (int taskOrdinal = 0; taskOrdinal < numThreads; taskOrdinal++) tasks.Add(ProcessCallStack(taskOrdinal, numThreads, listOfCallStacks,
+                    symPath, dllPaths, searchPDBsRecursively, searchDLLRecursively, includeSourceInfo, showInlineFrames,
+                    relookupSource, includeOffsets, cachePDB, cts));
+
+                this.StatusMessage = "Waiting for tasks to finish...";
+                while (true) {
+                    if (Task.WaitAll(tasks.ToArray(), OperationWaitIntervalMilliseconds)) break;
                 }
-            }
+                if (cts.IsCancellationRequested) { StatusMessage = OperationCanceled; PercentComplete = 0; return OperationCanceled; }
+                this.StatusMessage = "Done with symbol resolution, finalizing output...";
+                this.globalCounter = 0;
 
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
+                var finalCallstack = new StringBuilder();
+                // populate the output
+                if (!string.IsNullOrEmpty(outputFilePath)) {
+                    this.StatusMessage = $@"Writing output to file {outputFilePath}";
+                    using var outStream = new StreamWriter(outputFilePath, false);
+                    foreach (var currstack in listOfCallStacks) {
+                        if (cts.IsCancellationRequested) { StatusMessage = OperationCanceled; PercentComplete = 0; return OperationCanceled; }
+                        if (!string.IsNullOrEmpty(currstack.Resolvedstack)) outStream.WriteLine(currstack.Resolvedstack);
+                        else if (!string.IsNullOrEmpty(currstack.Callstack.Trim())) {
+                            outStream.WriteLine("WARNING: No output to show. This may indicate an internal error!");
+                            break;
+                        }
 
-            this.StatusMessage = "Finished!";
-            return string.IsNullOrEmpty(outputFilePath) ? finalCallstack.ToString() : $@"Output has been saved to {outputFilePath}";
+                        this.globalCounter++;
+                        this.PercentComplete = (int)((double)this.globalCounter / listOfCallStacks.Count * 100.0);
+                    }
+                } else {
+                    this.StatusMessage = "Consolidating output for screen display...";
+
+                    foreach (var currstack in listOfCallStacks) {
+                        if (cts.IsCancellationRequested) { StatusMessage = OperationCanceled; PercentComplete = 0; return OperationCanceled; }
+                        if (!string.IsNullOrEmpty(currstack.Resolvedstack)) finalCallstack.Append(currstack.Resolvedstack);
+                        else if (!string.IsNullOrEmpty(currstack.Callstack)) {
+                            finalCallstack = new StringBuilder("WARNING: No output to show. This may indicate an internal error!");
+                            break;
+                        }
+
+                        if (finalCallstack.Length > int.MaxValue * 0.1) {
+                            this.StatusMessage = "WARNING: output is too large to display on screen. Use the option to output to file directly (instead of screen). Re-run after specifying file path!";
+                            break;
+                        }
+
+                        this.globalCounter++;
+                        this.PercentComplete = (int)((double)this.globalCounter / listOfCallStacks.Count * 100.0);
+                    }
+                }
+
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+
+                this.PercentComplete = StackResolver.Operation100Percent;
+                this.StatusMessage = "Finished!";
+                return string.IsNullOrEmpty(outputFilePath) ? finalCallstack.ToString() : $@"Output has been saved to {outputFilePath}";
+            });
+        }
+
+        /// <summary>
+        /// Gets a list of StackDetails objects based on the textual callstack input
+        /// </summary>
+        /// <param name="inputCallstackText"></param>
+        /// <param name="framesOnSingleLine"></param>
+        /// <param name="cts"></param>
+        /// <returns>List of StackDetails objects</returns>
+        public async Task<List<StackDetails>> GetListofCallStacksAsync(string inputCallstackText, bool framesOnSingleLine, CancellationTokenSource cts) {
+            return await Task.Run(() => {
+                this.StatusMessage = "Analyzing input...";
+                if (Regex.IsMatch(inputCallstackText, @"<HistogramTarget(\s+|\>)") && inputCallstackText.Contains(@"</HistogramTarget>")) {
+                    var numHistogramTargets = Regex.Matches(inputCallstackText, @"\<\/HistogramTarget\>").Count;
+                    if (numHistogramTargets > 0) {
+                        inputCallstackText = Regex.Replace(inputCallstackText, @"(?<prefix>.*?)(?<starttag>\<HistogramTarget)(?<trailing>.+?\<\/HistogramTarget\>)",
+                            (Match m) => { return $"{m.Groups["starttag"].Value} annotation=\"{System.Net.WebUtility.HtmlEncode(m.Groups["prefix"].Value.Replace("\r", string.Empty).Replace("\n", string.Empty).Trim())}\" {m.Groups["trailing"].Value}"; }
+                            , RegexOptions.Singleline);
+                        inputCallstackText = $"<Histograms>{inputCallstackText}</Histograms>";
+                    }
+                }
+
+                bool isXMLdoc = false;
+                // we evaluate if the input is XML containing multiple stacks
+                try {
+                    this.PercentComplete = 0;
+                    this.StatusMessage = "Determining processing plan...";
+                    using var sreader = new StringReader(inputCallstackText);
+                    using var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null });
+                    var validElementNames = new List<string>() { "HistogramTarget", "event" };
+                    this.StatusMessage = "WARNING: XML input was detected but it does not appear to be a known schema!";
+                    while (reader.Read()) {
+                        if (XmlNodeType.Element == reader.NodeType && validElementNames.Contains(reader.Name)) {
+                            this.StatusMessage = "Input seems to be relevant XML, attempting to process...";
+                            isXMLdoc = true;    // assume with reasonable confidence that we have a valid XML doc
+                            break;
+                        }
+                    }
+                } catch (XmlException) { this.StatusMessage = "Input is not XML; being treated as a single callstack..."; }
+
+                var allStacks = new List<StackDetails>();
+                if (!isXMLdoc) {
+                    allStacks.Add(new StackDetails(inputCallstackText, framesOnSingleLine));
+                } else {
+                    try {
+                        int stacknum = 0;
+                        using var sreader = new StringReader(inputCallstackText);
+                        using var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null, });
+                        string annotation = string.Empty;
+                        string eventDetails = string.Empty;
+                        string trailingText = string.Empty;
+                        while (reader.Read()) {
+                            if (cts.IsCancellationRequested) return null;
+                            if (XmlNodeType.Text == reader.NodeType) trailingText = reader.Value.Trim();
+                            if (XmlNodeType.Element == reader.NodeType) {
+                                switch (reader.Name) {
+                                    case "HistogramTarget": {   // Parent node for the XML from a histogram target
+                                            annotation = reader.GetAttribute("annotation");
+                                            if (!string.IsNullOrWhiteSpace(annotation)) { annotation = annotation.Trim(); }
+                                            break;
+                                        }
+                                    case "Slot": {  // Child node for the XML from a histogram target
+                                            var slotcount = int.Parse(reader.GetAttribute("count"), CultureInfo.CurrentCulture);
+                                            string callstackText = string.Empty;
+                                            if (reader.ReadToDescendant("value")) {
+                                                reader.Read();
+                                                if (XmlNodeType.Text == reader.NodeType || XmlNodeType.CDATA == reader.NodeType) callstackText = reader.Value;
+                                            }
+                                            if (string.IsNullOrEmpty(callstackText)) throw new XmlException();
+                                            allStacks.Add(new StackDetails(callstackText, framesOnSingleLine, annotation, $"Slot_{stacknum}\t[count:{slotcount}]:"));
+                                            stacknum++;
+                                            break;
+                                        }
+                                    case "event": { // ring buffer output with individual events
+                                            var sbTmp = new StringBuilder();
+                                            for (int tmpOrdinal = 0; tmpOrdinal < reader.AttributeCount; tmpOrdinal++) {
+                                                reader.MoveToAttribute(tmpOrdinal);
+                                                sbTmp.AppendFormat($"{reader.Name}: {reader.Value}".Replace("\r", string.Empty).Replace("\n", string.Empty));
+                                            }
+                                            eventDetails = sbTmp.ToString();
+                                            break;
+                                        }
+                                    case "action": { // actual action associated with the above ring buffer events
+                                            if (!reader.GetAttribute("name").Contains("callstack")) throw new XmlException();
+                                            if (!reader.ReadToDescendant("value")) throw new XmlException();
+                                            reader.Read();
+                                            if (!(XmlNodeType.Text == reader.NodeType || XmlNodeType.CDATA == reader.NodeType)) throw new XmlException();
+                                            allStacks.Add(new StackDetails(reader.Value, framesOnSingleLine, string.Empty, $"Event {eventDetails}"));
+                                            stacknum++;
+                                            break;
+                                        }
+                                    default: break;
+                                }
+                            }
+                            this.PercentComplete = (int)((double)stacknum % 100.0); // since we are streaming, we can only show pseudo-progress (repeatedly go from 0 to 100 and back).
+                        }
+                        if (!string.IsNullOrEmpty(trailingText)) allStacks.Last().UpdateAnnotation(trailingText);
+                    } catch (XmlException) {
+                        // our guesstimate that the input is XML, is not correct, so bail out and revert back to handling the callstack as text
+                        this.StatusMessage = "XML-like input was found to be invalid, now being treated as a single callstack...";
+                        allStacks.Clear();
+                        allStacks.Add(new StackDetails(inputCallstackText, framesOnSingleLine));
+                    }
+                }
+                this.PercentComplete = StackResolver.Operation100Percent;
+                return allStacks;
+            });
         }
 
         /// Function executed by worker threads to process callstacks. Threads work on portions of the listOfCallStacks based on their thread ordinal.
-        private void ProcessCallStack(Object obj) {
-            SafeNativeMethods.EstablishActivationContext();
-            var tp = (ThreadParams)obj;
-            var _diautils = new Dictionary<string, DiaUtil>();
-            var rgxOptions = tp.listOfCallStacks.Count > 10 ? RegexOptions.Compiled : RegexOptions.None;
-            var rgxModuleName = new Regex(@"((?<framenum>[0-9a-fA-F]+)\s+)*(?<module>\w+)(\.(dll|exe))*\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*", rgxOptions);
-            var rgxVAOnly = new Regex(@"^\s*0[xX](?<vaddress>[0-9a-fA-F]+)\s*$", rgxOptions);
-            var rgxAlreadySymbolizedFrame = new Regex(@"((?<framenum>\d+)\s+)*(?<module>\w+)(\.(dll|exe))*!(?<symbolizedfunc>.+?)\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*", rgxOptions);
-            var modulesToIgnore = new List<string>();
+        private async Task ProcessCallStack(int threadOrdinal, int numThreads, List<StackDetails> listOfCallStacks,
+        string symPath, List<string> dllPaths, bool searchPDBsRecursively, bool searchDLLRecursively,
+        bool includeSourceInfo, bool showInlineFrames, bool relookupSource, bool includeOffsets, bool cachePDB, CancellationTokenSource cts) {
+            await Task.Run(() => {
+                SafeNativeMethods.EstablishActivationContext();
+                var _diautils = new Dictionary<string, DiaUtil>();
+                var rgxOptions = listOfCallStacks.Count > 10 ? RegexOptions.Compiled : RegexOptions.None;
+                var rgxModuleName = new Regex(@"((?<framenum>[0-9a-fA-F]+)\s+)*(?<module>\w+)(\.(dll|exe))*\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*", rgxOptions);
+                var rgxVAOnly = new Regex(@"^\s*0[xX](?<vaddress>[0-9a-fA-F]+)\s*$", rgxOptions);
+                var rgxAlreadySymbolizedFrame = new Regex(@"((?<framenum>\d+)\s+)*(?<module>\w+)(\.(dll|exe))*!(?<symbolizedfunc>.+?)\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*", rgxOptions);
+                var modulesToIgnore = new List<string>();
 
-            for (int tmpStackIndex = 0; tmpStackIndex < tp.listOfCallStacks.Count; tmpStackIndex++) {
-                if (this.cancelRequested) break;
-                if (tmpStackIndex % tp.numThreads != tp.threadOrdinal) continue;
+                for (int tmpStackIndex = 0; tmpStackIndex < listOfCallStacks.Count; tmpStackIndex++) {
+                    if (cts.IsCancellationRequested) break;
+                    if (tmpStackIndex % numThreads != threadOrdinal) continue;
 
-                var currstack = tp.listOfCallStacks[tmpStackIndex];
-                var ordinalResolvedFrames = this.dllMapHelper.LoadDllsIfApplicable(currstack.CallstackFrames, tp.searchDLLRecursively, tp.dllPaths);
-                // process any frames which are purely virtual address (in such cases, the caller should have specified base addresses)
-                var callStackLines = PreProcessVAs(ordinalResolvedFrames, rgxVAOnly);
+                    var currstack = listOfCallStacks[tmpStackIndex];
+                    var ordinalResolvedFrames = this.dllMapHelper.LoadDllsIfApplicable(currstack.CallstackFrames, searchDLLRecursively, dllPaths);
+                    // process any frames which are purely virtual address (in such cases, the caller should have specified base addresses)
+                    var callStackLines = PreProcessVAs(ordinalResolvedFrames, rgxVAOnly, cts);
+                    if (cts.IsCancellationRequested) return;
 
-                // resolve symbols by using DIA
-                currstack.Resolvedstack = ResolveSymbols(_diautils, callStackLines, tp.includeSourceInfo, tp.relookupSource, tp.includeOffsets, tp.showInlineFrames, rgxAlreadySymbolizedFrame, rgxModuleName, modulesToIgnore, tp);
+                    // resolve symbols by using DIA
+                    currstack.Resolvedstack = ResolveSymbols(_diautils, callStackLines, symPath, searchPDBsRecursively, cachePDB,  includeSourceInfo, relookupSource, includeOffsets, showInlineFrames, rgxAlreadySymbolizedFrame, rgxModuleName, modulesToIgnore, cts);
+                    if (cts.IsCancellationRequested) return;
 
-                var localCounter = Interlocked.Increment(ref this.globalCounter);
-                this.PercentComplete = (int)((double)localCounter / tp.listOfCallStacks.Count * 100.0);
-            }
-
-            // cleanup any older COM objects
-            if (_diautils != null) {
-                foreach (var diautil in _diautils.Values) {
-                    diautil.Dispose();
+                    var localCounter = Interlocked.Increment(ref this.globalCounter);
+                    this.PercentComplete = (int)((double)localCounter / listOfCallStacks.Count * 100.0);
                 }
 
-                _diautils.Clear();
-            }
+                // cleanup any older COM objects
+                if (_diautils != null) {
+                    foreach (var diautil in _diautils.Values) diautil.Dispose();
+                    _diautils.Clear();
+                }
 
-            SafeNativeMethods.DestroyActivationContext();
+                SafeNativeMethods.DestroyActivationContext();
+            });
         }
 
         static readonly string[] wellKnownModuleNames = new string[] { "ntdll", "kernel32", "kernelbase", "ntoskrnl", "sqldk", "sqlmin", "sqllang", "sqltses", "sqlaccess", "qds", "hkruntime", "hkengine", "hkcompile", "sqlos", "sqlservr", "SqlServerSpatial", "SqlServerSpatial110", "SqlServerSpatial120", "SqlServerSpatial130", "SqlServerSpatial140", "SqlServerSpatial150" };

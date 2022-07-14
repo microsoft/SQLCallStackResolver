@@ -5,11 +5,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     /// Helper class for cases where we have XML frames with embedded module information.
     /// </summary>
     public class StackDetails {
-        private string _annotation;
+        private string _annotation, _callStack, _resolvedStack;
         private readonly string _stackKey;
-        private string _callStack;
         private readonly bool _framesOnSingleLine;
-        private string _resolvedStack;
 
         public StackDetails(string callStack, bool framesOnSingleLine, string annotation = null, string stackKey = null) {
             this._annotation = annotation;

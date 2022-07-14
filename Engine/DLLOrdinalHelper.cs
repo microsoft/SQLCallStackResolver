@@ -35,13 +35,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                 // then we see if there is a matched DLL in any of the paths we have
                 foreach (var currmodule in moduleNames) {
-                    foreach (var currPath in dllPaths) {
-                        var foundFiles = Directory.EnumerateFiles(currPath, currmodule + ".dll", recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
-                        lock (_DLLOrdinalMap) {
-                            if (!_DLLOrdinalMap.ContainsKey(currmodule) && foundFiles.Any()) {
-                                _DLLOrdinalMap.Add(currmodule, ExportedSymbol.GetExports(foundFiles.First()));
-                                break;
-                            }
+                    var foundFiles = dllPaths.SelectMany(currPath => Directory.EnumerateFiles(currPath, currmodule + ".dll", recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly));
+                    lock (_DLLOrdinalMap) {
+                        if (!_DLLOrdinalMap.ContainsKey(currmodule) && foundFiles.Any()) {
+                            _DLLOrdinalMap.Add(currmodule, ExportedSymbol.GetExports(foundFiles.First()));
+                            break;
                         }
                     }
                 }
