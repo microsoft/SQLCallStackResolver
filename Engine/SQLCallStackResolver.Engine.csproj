@@ -3,8 +3,11 @@
 		<TargetFramework>net6.0-windows</TargetFramework>
 		<OutputType>Library</OutputType>
 		<RootNamespace>Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver</RootNamespace>
+		<ImplicitUsings>enable</ImplicitUsings>
 		<Platforms>x64</Platforms>
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+		<SelfContained>false</SelfContained>
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
 		<OutputPath>..\Target\Debug\</OutputPath>

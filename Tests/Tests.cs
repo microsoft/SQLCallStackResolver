@@ -44,7 +44,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task BlockResolution() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var pdbPath = @"..\..\..\..\..\..\Tests\TestCases\TestBlockResolution";
+            var pdbPath = @"..\..\..\..\..\Tests\TestCases\TestBlockResolution";
             var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync("Return Addr: 00007FF830D4CDA4 Module(KERNELBASE+000000000009CDA4)", false, cts), pdbPath, false, null, false, false, false, true, false, false, null, cts);
             Assert.AreEqual("KERNELBASE!SignalObjectAndWait+147716", ret.Trim());
         }
@@ -53,8 +53,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task OrdinalBasedSymbol() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var dllPaths = new List<string> { Path.GetTempPath(), @"..\..\..\..\..\..\Tests\TestCases\TestOrdinal", Path.GetTempPath() };    // use different paths to validate the multi-path handling
-            var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync("sqldk!Ordinal298+00000000000004A5\r\n00007FF818405E70      Module(sqldk+0000000000003505) (Ordinal298 + 00000000000004A5)", false, cts), @"..\..\..\..\..\..\Tests\TestCases\TestOrdinal", false, dllPaths, false, false, false, true, false, false, null, cts);
+            var dllPaths = new List<string> { Path.GetTempPath(), @"..\..\..\..\..\Tests\TestCases\TestOrdinal", Path.GetTempPath() };    // use different paths to validate the multi-path handling
+            var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync("sqldk!Ordinal298+00000000000004A5\r\n00007FF818405E70      Module(sqldk+0000000000003505) (Ordinal298 + 00000000000004A5)", false, cts), @"..\..\..\..\..\Tests\TestCases\TestOrdinal", false, dllPaths, false, false, false, true, false, false, null, cts);
             Assert.AreEqual("sqldk!SOS_Scheduler::SwitchContext+941\r\nsqldk!SOS_Scheduler::SwitchContext+941", ret.Trim());
         }
 
@@ -62,7 +62,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task RegularSymbolHexOffset() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync("sqldk +0x40609\r\nsqldk+40609", false, cts), @"..\..\..\..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, true, false, false, null, cts);
+            var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync("sqldk +0x40609\r\nsqldk+40609", false, cts), @"..\..\..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, true, false, false, null, cts);
             var expectedSymbol = "sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644";
             Assert.AreEqual(expectedSymbol + Environment.NewLine + expectedSymbol, ret.Trim());
         }
@@ -72,7 +72,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
             Assert.IsTrue(csr.ProcessBaseAddresses(@"c:\mssql\binn\sqldk.dll 00000001`00400000"));
-            var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync("0x000000010042249f", false, cts), @"..\..\..\..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, true, false, false, null, cts);
+            var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync("0x000000010042249f", false, cts), @"..\..\..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, true, false, false, null, cts);
             var expectedSymbol = "sqldk!Spinlock<244,2,1>::SpinToAcquireWithExponentialBackoff+349";
             Assert.AreEqual(expectedSymbol, ret.Trim());
         }
@@ -82,7 +82,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             using var cts = new CancellationTokenSource();
             var moduleAddresses = "c:\\mssql\\binn\\sqldk.dll 00000001`00400000\r\nc:\\windows\\temp\\sqldk.dll 00000001`00400000";
             Assert.IsFalse(csr.ProcessBaseAddresses(moduleAddresses));
-            var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync("0x000000010042249f\r\nsqldk+0x40609", false, cts), @"..\..\..\..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, true, false, false, null, cts);
+            var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync("0x000000010042249f\r\nsqldk+0x40609", false, cts), @"..\..\..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, true, false, false, null, cts);
             Assert.AreEqual("0x000000010042249f\r\nsqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644", ret.Trim());
         }
 
@@ -97,7 +97,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             timer.Start();
             var input = PrepareLargeXEventInput();
             var outputFilename = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            var res = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(input, false, cts), @"..\..\..\..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, true, false, false, outputFilename, cts);
+            var res = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(input, false, cts), @"..\..\..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, true, false, false, outputFilename, cts);
             timer.Stop();
             Assert.IsTrue(timer.Elapsed.TotalSeconds < 45 * 60);  // 45 minutes max on GitHub hosted DSv2 runner (2 vCPU, 7 GiB RAM).
             Assert.IsTrue((await File.ReadAllTextAsync(outputFilename)).Length > input.Length);
@@ -133,7 +133,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// Check the processing of module base address information.
         [TestMethod][TestCategory("Unit")] public void ModuleLoadAddressInputColHeaders() {
             using var csr = new StackResolver();
-            var moduleAddressesColHeader = File.ReadAllText(@"..\..\..\..\..\..\Tests\TestCases\ImportXEL\xe_wait_base_addresses.txt");
+            var moduleAddressesColHeader = File.ReadAllText(@"..\..\..\..\..\Tests\TestCases\ImportXEL\xe_wait_base_addresses.txt");
             Assert.IsTrue(csr.ProcessBaseAddresses(moduleAddressesColHeader));
             var sqllang = csr.LoadedModules.Where(m => m.ModuleName == "sqllang").First();
             Assert.IsNotNull(sqllang);
@@ -187,7 +187,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task RegularSymbolHexOffsetNoOutputOffset() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync("sqldk+0x40609", false, cts), @"..\..\..\..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, false, false, null, cts);
+            var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync("sqldk+0x40609", false, cts), @"..\..\..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, false, false, null, cts);
             var expectedSymbol = "sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode";
             Assert.AreEqual(expectedSymbol, ret.Trim());
         }
@@ -198,14 +198,14 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task RegularSymbolHexOffsetNoOutputOffsetWithFrameNums() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync("00 sqldk+0x40609", false, cts), @"..\..\..\..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, false, false, null, cts);
+            var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync("00 sqldk+0x40609", false, cts), @"..\..\..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, false, false, false, null, cts);
             var expectedSymbol = "00 sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode";
             Assert.AreEqual(expectedSymbol, ret.Trim());
         }
 
         /// Check whether symbol details for a given binary are correct.
         [TestMethod][TestCategory("Unit")] public async Task GetSymDetails() {
-            var dllPaths = new List<string> { @"..\..\..\..\..\..\Tests\TestCases\TestOrdinal" };
+            var dllPaths = new List<string> { @"..\..\..\..\..\Tests\TestCases\TestOrdinal" };
             var ret = await StackResolver.GetSymbolDetailsForBinaries(dllPaths, true);
             Assert.AreEqual(1, ret.Count);
             Assert.AreEqual("https://msdl.microsoft.com/download/symbols/sqldk.pdb/6a1934433512464b8b8ed905ad930ee62/sqldk.pdb", ret[0].DownloadURL);
@@ -217,10 +217,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task SymbolFileCaching() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var ret = await csr.ExtractFromXELAsync(new[] { @"..\..\..\..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, false, new List<string>(new String[] { "callstack" }), cts);
+            var ret = await csr.ExtractFromXELAsync(new[] { @"..\..\..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, false, new List<string>(new String[] { "callstack" }), cts);
             Assert.AreEqual(550, ret.Item1);
-            Assert.IsTrue(csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\..\..\..\..\Tests\TestCases\ImportXEL\xe_wait_base_addresses.txt")));
-            var pdbPath = @"..\..\..\..\..\..\Tests\TestCases\sqlsyms\14.0.3192.2\x64";
+            Assert.IsTrue(csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\..\..\..\Tests\TestCases\ImportXEL\xe_wait_base_addresses.txt")));
+            var pdbPath = @"..\..\..\..\..\Tests\TestCases\sqlsyms\14.0.3192.2\x64";
             var symres = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(ret.Item2, false, cts), pdbPath, false, null, false, false, false, false, false, true, null, cts);
             Assert.IsTrue(symres.Contains("sqldk!XeSosPkg::wait_completed::Publish\r\nsqldk!SOS_Scheduler::UpdateWaitTimeStats\r\nsqldk!SOS_Task::PostWait\r\nsqllang!SOS_Task::Sleep\r\nsqllang!YieldAndCheckForAbort\r\nsqllang!OptimizerUtil::YieldAndCheckForMemoryAndAbort\r\nsqllang!OptTypeVRSetArray::IFindSet\r\nsqllang!CConstraintProp::FEquivalent\r\nsqllang!CJoinEdge::FConstrainsColumnSolvably\r\nsqllang!CStCollOuterJoin::CardForColumns\r\nsqllang!CStCollGroupBy::CStCollGroupBy\r\nsqllang!CCardFrameworkSQL12::CardDistinct\r\nsqllang!CCostUtils::CalcLoopJoinCachedInfo\r\nsqllang!CCostUtils::PcctxLoopJoinHelper\r\nsqllang!COpArg::PcctxCalculateNormalizeCtx\r\nsqllang!CTask_OptInputs::Perform\r\nsqllang!CMemo::ExecuteTasks\r\nsqllang!CMemo::PerformOptimizationStage\r\nsqllang!CMemo::OptimizeQuery\r\nsqllang!COptContext::PexprSearchPlan\r\nsqllang!COptContext::PcxteOptimizeQuery\r\nsqllang!COptContext::PqteOptimizeWrapper\r\nsqllang!PqoBuild\r\nsqllang!CStmtQuery::InitQuery"));
         }
@@ -230,7 +230,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task SourceInformation() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var pdbPath = @"..\..\..\..\..\..\Tests\TestCases\SourceInformation";
+            var pdbPath = @"..\..\..\..\..\Tests\TestCases\SourceInformation";
             var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync("Wdf01000+17f27", false, cts), pdbPath, false, null, false, true, false, true, false, false, null, cts);
             Assert.AreEqual("Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143\t(minkernel\\wdf\\framework\\shared\\inc\\private\\common\\FxPkgPnp.hpp:4127)", ret.Trim());
         }
@@ -240,7 +240,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task SourceInformationLineInfoOff() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var pdbPath = @"..\..\..\..\..\..\Tests\TestCases\SourceInformation";
+            var pdbPath = @"..\..\..\..\..\Tests\TestCases\SourceInformation";
             var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync("Wdf01000+17f27", false, cts), pdbPath, false, null, false, false, false, true, false, false, null, cts);
             Assert.AreEqual("Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143", ret.Trim());
         }
@@ -250,7 +250,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task RelookupSourceInformation() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var pdbPath = @"..\..\..\..\..\..\Tests\TestCases\SourceInformation";
+            var pdbPath = @"..\..\..\..\..\Tests\TestCases\SourceInformation";
             var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync("Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143", false, cts), pdbPath, false, null, false, true, true, true, false, false, null, cts);
             Assert.AreEqual("Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143\t(minkernel\\wdf\\framework\\shared\\inc\\private\\common\\FxPkgPnp.hpp:4127)", ret.Trim());
         }
@@ -259,7 +259,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task ImportBinResolveXELEvents() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var ret = await csr.ExtractFromXELAsync(new[] { @"..\..\..\..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, true, new List<string>(new String[] { "callstack" }), cts);
+            var ret = await csr.ExtractFromXELAsync(new[] { @"..\..\..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, true, new List<string>(new String[] { "callstack" }), cts);
             Assert.AreEqual(4, ret.Item1);
 
             var xmldoc = new XmlDocument() { XmlResolver = null };
@@ -280,9 +280,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             }
 
             Assert.AreEqual(3051540, eventCountFromXML);
-            csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\..\..\..\..\Tests\TestCases\ImportXEL\base_addresses.txt"));
+            csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\..\..\..\Tests\TestCases\ImportXEL\base_addresses.txt"));
             Assert.AreEqual(20, csr.LoadedModules.Count);
-            var pdbPath = @"..\..\..\..\..\..\Tests\TestCases\sqlsyms\13.0.4001.0\x64";
+            var pdbPath = @"..\..\..\..\..\Tests\TestCases\sqlsyms\13.0.4001.0\x64";
             var symres = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(ret.Item2, false, cts), pdbPath, false, null, false, true, false, true, false, false, null, cts);
             Assert.IsTrue(symres.Contains("sqldk!XeSosPkg::spinlock_backoff::Publish+425\r\nsqldk!SpinlockBase::Sleep+182\r\nsqlmin!Spinlock<143,7,1>::SpinToAcquireWithExponentialBackoff+363\r\nsqlmin!lck_lockInternal+2042\r\nsqlmin!MDL::LockGenericLocal+382\r\nsqlmin!MDL::LockGenericIdsLocal+101\r\nsqlmin!CMEDCacheEntryFactory::GetProxiedCacheEntryById+263\r\nsqlmin!CMEDProxyDatabase::GetOwnerByOwnerId+122\r\nsqllang!CSECAccessAuditBase::SetSecurable+427\r\nsqllang!CSECManager::_AccessCheck+151\r\nsqllang!CSECManager::AccessCheck+2346\r\nsqllang!FHasEntityPermissionsWithAuditState+1505\r\nsqllang!FHasEntityPermissions+165\r\nsqllang!CSQLObject::FPostCacheLookup+2562\r\nsqllang!CSQLSource::Transform+2194\r\nsqllang!CSQLSource::Execute+944\r\nsqllang!CStmtExecProc::XretLocalExec+622\r\nsqllang!CStmtExecProc::XretExecExecute+1153\r\nsqllang!CXStmtExecProc::XretExecute+56\r\nsqllang!CMsqlExecContext::ExecuteStmts<1,1>+1037\r\nsqllang!CMsqlExecContext::FExecute+2718\r\nsqllang!CSQLSource::Execute+2435\r\nsqllang!process_request+3681\r\nsqllang!process_commands_internal+735"));
         }
@@ -291,17 +291,17 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task ImportIndividualXELEvents() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var ret = await csr.ExtractFromXELAsync(new[] { @"..\..\..\..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, false, new List<string>(new String[] { "callstack" }), cts);
+            var ret = await csr.ExtractFromXELAsync(new[] { @"..\..\..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, false, new List<string>(new String[] { "callstack" }), cts);
             Assert.AreEqual(550, ret.Item1);
             Assert.IsTrue(ret.Item2.Contains("Tests\\TestCases\\ImportXEL\\xe_wait_completed_0_132353446563350000.xel, UTC: 2020-05-30 20:37:36.3626428, UUID: 992caa1d-ef90-4278-9821-ebdd0180db0d\"><action name='callstack'><value><![CDATA[0x00007FFAF2BD6C7C"));
             var res = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(ret.Item2, false, cts), string.Empty, false, null, false, false, false, false, false, false, null, cts);
-            Assert.IsTrue(res.StartsWith(@"Event key: File: ..\..\..\..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel, UTC: 2020-05-30 20:37:36.3626428, UUID: 992caa1d-ef90-4278-9821-ebdd0180db0d"));
+            Assert.IsTrue(res.StartsWith(@"Event key: File: ..\..\..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel, UTC: 2020-05-30 20:37:36.3626428, UUID: 992caa1d-ef90-4278-9821-ebdd0180db0d"));
         }
 
         [TestMethod][TestCategory("Unit")] public async Task XELActionsAndFieldsAsync() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var ret = await csr.GetDistinctXELFieldsAsync(new[] { @"..\..\..\..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, 1000, cts);
+            var ret = await csr.GetDistinctXELFieldsAsync(new[] { @"..\..\..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, 1000, cts);
             Assert.AreEqual(1, ret.Item1.Count);   // just the callstack action
             Assert.AreEqual("callstack", ret.Item1.First());    // verify the name
             Assert.AreEqual(5, ret.Item2.Count);   // 5 fields
@@ -312,7 +312,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task XELActionsAndFieldsAsyncMultipleFiles() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var ret = await csr.GetDistinctXELFieldsAsync(new[] { @"..\..\..\..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel", @"..\..\..\..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, 1000, cts);
+            var ret = await csr.GetDistinctXELFieldsAsync(new[] { @"..\..\..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel", @"..\..\..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, 1000, cts);
             Assert.AreEqual(1, ret.Item1.Count);   // just the callstack action
             Assert.AreEqual("callstack", ret.Item1.First());    // verify the name
             Assert.AreEqual(9, ret.Item2.Count);   // 9 fields in total across the 2 XEL files
@@ -324,8 +324,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task SingleLineCallStack() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\..\..\..\..\Tests\TestCases\ImportXEL\base_addresses.txt"));
-            var pdbPath = @"..\..\..\..\..\..\Tests\TestCases\sqlsyms\13.0.4001.0\x64";
+            csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\..\..\..\Tests\TestCases\ImportXEL\base_addresses.txt"));
+            var pdbPath = @"..\..\..\..\..\Tests\TestCases\sqlsyms\13.0.4001.0\x64";
             var callStack = @"callstack	          0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  0x00007FFEAC1EE447  0x00007FFEAC1EE6F5  0x00007FFEAC1D48B0  0x00007FFEAC71475A  0x00007FFEA9A708F1  0x00007FFEA9991FB9  0x00007FFEA9993D21  0x00007FFEA99B59F1  0x00007FFEA99B5055  0x00007FFEA99B2B8F  0x00007FFEA9675AD1  0x00007FFEA9671EFB  0x00007FFEAA37D83D  0x00007FFEAA37D241  0x00007FFEAA379F98  0x00007FFEA96719CA  0x00007FFEA9672933  0x00007FFEA9672041  0x00007FFEA967A82B  0x00007FFEA9681542  ";
             var symres = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(callStack, true, cts), pdbPath, false, null, false, false, false, true, false, false, null, cts);
             Assert.AreEqual("callstack\r\nsqldk!XeSosPkg::spinlock_backoff::Publish+425\r\nsqldk!SpinlockBase::Sleep+182\r\nsqlmin!Spinlock<143,7,1>::SpinToAcquireWithExponentialBackoff+363\r\nsqlmin!lck_lockInternal+2042\r\nsqlmin!MDL::LockGenericLocal+382\r\nsqlmin!MDL::LockGenericIdsLocal+101\r\nsqlmin!CMEDCacheEntryFactory::GetProxiedCacheEntryById+263\r\nsqlmin!CMEDProxyDatabase::GetOwnerByOwnerId+122\r\nsqllang!CSECAccessAuditBase::SetSecurable+427\r\nsqllang!CSECManager::_AccessCheck+151\r\nsqllang!CSECManager::AccessCheck+2346\r\nsqllang!FHasEntityPermissionsWithAuditState+1505\r\nsqllang!FHasEntityPermissions+165\r\nsqllang!CSQLObject::FPostCacheLookup+2562\r\nsqllang!CSQLSource::Transform+2194\r\nsqllang!CSQLSource::Execute+944\r\nsqllang!CStmtExecProc::XretLocalExec+622\r\nsqllang!CStmtExecProc::XretExecExecute+1153\r\nsqllang!CXStmtExecProc::XretExecute+56\r\nsqllang!CMsqlExecContext::ExecuteStmts<1,1>+1037\r\nsqllang!CMsqlExecContext::FExecute+2718\r\nsqllang!CSQLSource::Execute+2435\r\nsqllang!process_request+3681\r\nsqllang!process_commands_internal+735", symres.Trim());
@@ -336,7 +336,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task InlineFrameResolution() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var pdbPath = @"..\..\..\..\..\..\Tests\TestCases\SourceInformation";
+            var pdbPath = @"..\..\..\..\..\Tests\TestCases\SourceInformation";
             var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync("Wdf01000+17f27", false, cts), pdbPath, false, null, false, true, false, true, true, false, null, cts);
             Assert.AreEqual(
                 "(Inline Function) Wdf01000!Mx::MxLeaveCriticalRegion+12	(minkernel\\wdf\\framework\\shared\\inc\\primitives\\km\\MxGeneralKm.h:198)\r\n(Inline Function) Wdf01000!FxWaitLockInternal::ReleaseLock+62	(minkernel\\wdf\\framework\\shared\\inc\\private\\common\\FxWaitLock.hpp:305)\r\n(Inline Function) Wdf01000!FxEnumerationInfo::ReleaseParentPowerStateLock+62	(minkernel\\wdf\\framework\\shared\\inc\\private\\common\\FxPkgPnp.hpp:510)\r\nWdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143	(minkernel\\wdf\\framework\\shared\\inc\\private\\common\\FxPkgPnp.hpp:4127)",
@@ -348,7 +348,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task RandomInlineFrameResolution() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var pdbPath = @"..\..\..\..\..\..\Tests\TestCases\SourceInformation";
+            var pdbPath = @"..\..\..\..\..\Tests\TestCases\SourceInformation";
             var callstackInput = new StringBuilder();
             // generate frames with random offsets
             var rng = new Random();
@@ -365,7 +365,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task InlineFrameResolutionNoSourceInfo() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var pdbPath = @"..\..\..\..\..\..\Tests\TestCases\SourceInformation";
+            var pdbPath = @"..\..\..\..\..\Tests\TestCases\SourceInformation";
             var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync("Wdf01000+17f27", false, cts), pdbPath, false, null, false, false, false, true, true, false, null, cts);
             Assert.AreEqual("(Inline Function) Wdf01000!Mx::MxLeaveCriticalRegion+12\r\n(Inline Function) Wdf01000!FxWaitLockInternal::ReleaseLock+62\r\n(Inline Function) Wdf01000!FxEnumerationInfo::ReleaseParentPowerStateLock+62\r\nWdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143", ret.Trim());
         }
@@ -373,7 +373,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task InlineFrameResolutionNoSourceInfoWithInputFrameNums() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var pdbPath = @"..\..\..\..\..\..\Tests\TestCases\SourceInformation;..\..\..\..\..\..\Tests\TestCases\TestOrdinal";
+            var pdbPath = @"..\..\..\..\..\Tests\TestCases\SourceInformation;..\..\..\..\..\Tests\TestCases\TestOrdinal";
             var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync("00 sqldk+0x40609\r\n01 Wdf01000+17f27\r\n02 sqldk+0x40609", false, cts), pdbPath, false, null, false, false, false, true, true, false, null, cts);
             Assert.AreEqual("00 sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644\r\n01 (Inline Function) Wdf01000!Mx::MxLeaveCriticalRegion+12\r\n02 (Inline Function) Wdf01000!FxWaitLockInternal::ReleaseLock+62\r\n03 (Inline Function) Wdf01000!FxEnumerationInfo::ReleaseParentPowerStateLock+62\r\n04 Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143\r\n05 sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644", ret.Trim());
         }
@@ -565,8 +565,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task E2EHistogramAddresses() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\..\..\..\..\Tests\TestCases\ImportXEL\base_addresses.txt"));
-            var pdbPath = @"..\..\..\..\..\..\Tests\TestCases\sqlsyms\13.0.4001.0\x64";
+            csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\..\..\..\Tests\TestCases\ImportXEL\base_addresses.txt"));
+            var pdbPath = @"..\..\..\..\..\Tests\TestCases\sqlsyms\13.0.4001.0\x64";
             var input = "<HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value>0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  </value></Slot></HistogramTarget>";
             var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(input, true, cts), pdbPath, false, null, true, false, false, true, false, false, null, cts);
             var expected = "Slot_0	[count:5]:\r\n\r\nsqldk!XeSosPkg::spinlock_backoff::Publish+425\r\nsqldk!SpinlockBase::Sleep+182\r\nsqlmin!Spinlock<143,7,1>::SpinToAcquireWithExponentialBackoff+363\r\nsqlmin!lck_lockInternal+2042";
@@ -594,8 +594,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task E2ESymSrvXMLFramesMultiHistogramAddressesSingleLine() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\..\..\..\..\Tests\TestCases\ImportXEL\base_addresses.txt"));
-            var pdbPath = @"..\..\..\..\..\..\Tests\TestCases\sqlsyms\13.0.4001.0\x64";
+            csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\..\..\..\Tests\TestCases\ImportXEL\base_addresses.txt"));
+            var pdbPath = @"..\..\..\..\..\Tests\TestCases\sqlsyms\13.0.4001.0\x64";
             var input = "Annotation for histogram #1    <HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value>0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF</value></Slot></HistogramTarget>" +
                 "Annotation for histogram #2    <HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value>0x00007FFEAC0F80CF  0x00007FFEAC1EE447  0x00007FFEAC1EE6F5</value></Slot></HistogramTarget>";
 
@@ -607,8 +607,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task E2ESymSrvXMLFramesMultiHistogramAddressesSingleLineTrailingText() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\..\..\..\..\Tests\TestCases\ImportXEL\base_addresses.txt"));
-            var pdbPath = @"..\..\..\..\..\..\Tests\TestCases\sqlsyms\13.0.4001.0\x64";
+            csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\..\..\..\Tests\TestCases\ImportXEL\base_addresses.txt"));
+            var pdbPath = @"..\..\..\..\..\Tests\TestCases\sqlsyms\13.0.4001.0\x64";
             var input = "Annotation for histogram #1    <HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value>0x00007FFEABD0D919        0x00007FFEABC4D45D      </value></Slot></HistogramTarget> trailing text 1" +
                 "Annotation for histogram #2    <HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value>0x00007FFEAC1EE447  0x00007FFEAC1EE6F5</value></Slot></HistogramTarget>     trailing text 2";
             var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(input, true, cts), pdbPath, false, null, false, false, false, true, false, false, null, cts);
@@ -619,8 +619,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task E2EHistogramAddressesFuzz() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\..\..\..\..\Tests\TestCases\ImportXEL\base_addresses.txt"));
-            var pdbPath = @"..\..\..\..\..\..\Tests\TestCases\sqlsyms\13.0.4001.0\x64";
+            csr.ProcessBaseAddresses(File.ReadAllText(@"..\..\..\..\..\Tests\TestCases\ImportXEL\base_addresses.txt"));
+            var pdbPath = @"..\..\..\..\..\Tests\TestCases\sqlsyms\13.0.4001.0\x64";
             var input = "<HistogramTargetWrongTag truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value>0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  </value></Slot></HistogramTargetWrongTag>";
             var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(input, true, cts), pdbPath, false, null, false, false, false, true, false, false, null, cts);
             var expected = "<HistogramTargetWrongTag\r\ntruncated=\"0\"\r\nbuckets=\"256\"><Slot\r\ncount=\"5\"><value>0x00007FFEABD0D919\r\nsqldk!SpinlockBase::Sleep+182\r\nsqlmin!Spinlock<143,7,1>::SpinToAcquireWithExponentialBackoff+363\r\nsqlmin!lck_lockInternal+2042\r\n</value></Slot></HistogramTargetWrongTag>";
@@ -663,7 +663,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         /// Test for exported symbols
         [TestMethod][TestCategory("Unit")] public void ExportedSymbols() {
-            var ret = ExportedSymbol.GetExports(@"..\..\..\..\..\..\Tests\TestCases\TestOrdinal\sqldk.dll");
+            var ret = ExportedSymbol.GetExports(@"..\..\..\..\..\Tests\TestCases\TestOrdinal\sqldk.dll");
             Assert.AreEqual(931, ret.Count);
             Assert.AreEqual((uint)1095072, ret[15].Address);
             Assert.AreEqual((uint)897568, ret[259].Address);
@@ -679,7 +679,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         [TestMethod][TestCategory("Unit")] public void GetBuildInfo() {
-            var builds = SQLBuildInfo.GetSqlBuildInfo(@"..\..\..\..\..\..\Tests\TestCases\buildinfo.sample.json");
+            var builds = SQLBuildInfo.GetSqlBuildInfo(@"..\..\..\..\..\Tests\TestCases\buildinfo.sample.json");
             Assert.AreEqual(2, builds.Count);
             Assert.AreEqual(builds["SQL Server 2019 RTM RTM - 15.0.2000.5 - x64 (Nov 2019)"].SymbolDetails[0].PDBName, "SqlDK");
         }
@@ -688,7 +688,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task Cancellations() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var xelTask = csr.ExtractFromXELAsync(new[] { @"..\..\..\..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, true, new List<string>(new string[] { "callstack" }), cts);
+            var xelTask = csr.ExtractFromXELAsync(new[] { @"..\..\..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, true, new List<string>(new string[] { "callstack" }), cts);
             while (true) {
                 if (xelTask.Wait(StackResolver.OperationWaitIntervalMilliseconds)) break;
                 cts.Cancel();
@@ -697,7 +697,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             Assert.AreEqual(StackResolver.OperationCanceled, xelTask.Result.Item2);
 
             using var cts2 = new CancellationTokenSource();
-            var xelFieldsTask = csr.GetDistinctXELFieldsAsync(new[] { @"..\..\..\..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, int.MaxValue, cts2);
+            var xelFieldsTask = csr.GetDistinctXELFieldsAsync(new[] { @"..\..\..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, int.MaxValue, cts2);
             while (true) {
                 if (xelFieldsTask.Wait(StackResolver.OperationWaitIntervalMilliseconds)) break;
                 cts2.Cancel();
@@ -709,7 +709,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             Assert.IsTrue(csr.ProcessBaseAddresses(@"c:\mssql\binn\sqldk.dll 00000001`00400000"));
             var xeventInput = PrepareLargeXEventInput().ToString();
             var xeStacks = await csr.GetListofCallStacksAsync(xeventInput, false, cts3);
-            var resolveStacksTask = csr.ResolveCallstacksAsync(xeStacks, @"..\..\..\..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, true, false, false, Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()), cts3);
+            var resolveStacksTask = csr.ResolveCallstacksAsync(xeStacks, @"..\..\..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, true, false, false, Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()), cts3);
             while (true) {
                 if (resolveStacksTask.Wait(StackResolver.OperationWaitIntervalMilliseconds)) break;
                 cts3.Cancel();
