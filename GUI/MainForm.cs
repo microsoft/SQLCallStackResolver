@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
 
+using Microsoft.Extensions.Configuration;
+
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     public partial class MainForm : Form {
         public MainForm() {
@@ -31,7 +33,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 return;
             }
 
-            bool isSingleLineInput = this._resolver.IsInputSingleLine(callStackInput.Text, ConfigurationManager.AppSettings["PatternsToTreatAsMultiline"]);
+            bool isSingleLineInput = this._resolver.IsInputSingleLine(callStackInput.Text, cfg["PatternsToTreatAsMultiline"]);
             if (isSingleLineInput && !FramesOnSingleLine.Checked && DialogResult.Yes == MessageBox.Show(this,
                     "Maybe this is intentional, but your input seems to have all the frames on a single line, but the 'Callstack frames are in single line' checkbox is unchecked. " +
                     "This may cause problems resolving symbols. Would you like to enable this?", "Enable the 'frames on single line' option?", MessageBoxButtons.YesNo)) {
@@ -178,7 +180,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
                 if (files != null && files.Length != 0) {
                     var allFilesContent = new StringBuilder();
-                    if (files.Where(f => Path.GetExtension(f).ToLower(CultureInfo.CurrentCulture) == ".xel").Count() == files.Count()) {
+                    if (files.Where(f => Path.GetExtension(f).ToLower(CultureInfo.CurrentCulture) == ".xel").Count() == files.Length) {
                         // all files being dragged are XEL files, work on them.
                         this.UpdateStatus("XEL file was dragged; please wait while we extract events from the file");
                         List<string> relevantXEFields = await GetUserSelectedXEFieldsAsync(files);
@@ -240,11 +242,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         private void SelectSQLPDB_Click(object sender, EventArgs e) {
             if (!File.Exists(MainForm.SqlBuildInfoFileName)) {
                 MessageBox.Show(this,
-                    $"Could not find the SQL build info JSON file: {MainForm.SqlBuildInfoFileName}. You might need to manually obtain it from one of these locations: {ConfigurationManager.AppSettings["SQLBuildInfoURLs"]}",
+                    $"Could not find the SQL build info JSON file: {MainForm.SqlBuildInfoFileName}. You might need to manually obtain it from one of these locations: {cfg["SQLBuildInfoURLs"]}",
                     "SQL build info missing", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            using var sqlbuildsForm = new SQLBuildsForm {pathToPDBs = ConfigurationManager.AppSettings["PDBDownloadFolder"]};
+            using var sqlbuildsForm = new SQLBuildsForm { pathToPDBs = cfg["PDBDownloadFolder"] };
             sqlbuildsForm.StartPosition = FormStartPosition.CenterParent;
             sqlbuildsForm.ShowDialog(this);
             this.pdbPaths.AppendText((pdbPaths.TextLength == 0 ? string.Empty : ";") + sqlbuildsForm.lastDownloadedSymFolder);
@@ -253,7 +255,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         private async void MainForm_Load(object sender, EventArgs e) {
             DateTime latestReleaseDateTimeServer = DateTime.MinValue;
             DateTime latestReleaseDateTimeLocal = DateTime.MinValue;
-            var latestReleaseURLs = ConfigurationManager.AppSettings["LatestReleaseURLs"].Split(';');
+            var latestReleaseURLs = cfg["LatestReleaseURLs"].Split(';');
 
             // get latest release timestamp from the web
             var t = latestReleaseURLs.Select(url => Utils.GetTextFromUrl(url)).ToArray();
@@ -277,8 +279,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
             DateTime lastUpdDateTimeServer = DateTime.MinValue;
             DateTime lastUpdDateTimeLocal = DateTime.MinValue;
-            var sqlBuildInfoUpdateURLs = ConfigurationManager.AppSettings["SQLBuildInfoUpdateURLs"].Split(';');
-            var sqlBuildInfoURLs = ConfigurationManager.AppSettings["SQLBuildInfoURLs"].Split(';');
+            var sqlBuildInfoUpdateURLs = cfg["SQLBuildInfoUpdateURLs"].Split(';');
+            var sqlBuildInfoURLs = cfg["SQLBuildInfoURLs"].Split(';');
 
             // get the timestamp contained within the first valid file within SQLBuildInfoURLs
             t = sqlBuildInfoUpdateURLs.Select(url => Utils.GetTextFromUrl(url)).ToArray();
