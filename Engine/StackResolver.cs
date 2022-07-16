@@ -251,25 +251,18 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// </summary>
         public bool ProcessBaseAddresses(string baseAddressesString) {
             bool retVal = true;
-            if (string.IsNullOrEmpty(baseAddressesString)) {
-                // changed this to return true because this is not a true error condition
-                return true;
-            }
+            if (string.IsNullOrEmpty(baseAddressesString)) return true; // not a true error condition so we are okay
             LoadedModules.Clear();
             var mcmodules = rgxmoduleaddress.Matches(baseAddressesString);
-            if (mcmodules.Count == 0) {
-                // it is likely that we have malformed input, cannot ignore this so return false.
-                return false;
-            }
+            if (mcmodules.Count == 0) return false; // it is likely that we have malformed input, cannot ignore this so return false.
 
             try {
-                foreach (Match matchedmoduleinfo in mcmodules) {
-                    LoadedModules.Add(new ModuleInfo() {
-                        ModuleName = Path.GetFileNameWithoutExtension(matchedmoduleinfo.Groups["filepath"].Value),
-                        BaseAddress = Convert.ToUInt64(matchedmoduleinfo.Groups["baseaddress"].Value.Replace("`", string.Empty), 16),
-                        EndAddress = ulong.MaxValue // stub this with an 'infinite' end address; only the highest loaded module will end up with this value finally
-                    });
-                }
+                string[] validExtensions = { ".dll", ".exe" };
+                mcmodules.Where(m => validExtensions.Contains(Path.GetExtension(m.Groups["filepath"].Value).Trim().ToLower())).ToList().ForEach(matchedmoduleinfo => LoadedModules.Add(new ModuleInfo() {
+                    ModuleName = Path.GetFileNameWithoutExtension(matchedmoduleinfo.Groups["filepath"].Value),
+                    BaseAddress = Convert.ToUInt64(matchedmoduleinfo.Groups["baseaddress"].Value.Replace("`", string.Empty), 16),
+                    EndAddress = ulong.MaxValue // stub this with an 'infinite' end address; only the highest loaded module will end up with this value finally
+                }));
             } catch (FormatException) {
                 // typically errors with non-numeric info passed to Convert.ToUInt64
                 retVal = false;
@@ -280,6 +273,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 // typically these are malformed paths passed to Path.GetFileNameWithoutExtension
                 retVal = false;
             }
+
+            if (!LoadedModules.Any()) return false; // no valid modules found
 
             // check for duplicate base addresses - this should normally never be possible unless there is wrong data input
             if (LoadedModules.Select(m => m.BaseAddress).GroupBy(m => m).Where(g => g.Count() > 1).Any()) return false;
