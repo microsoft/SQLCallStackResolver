@@ -256,7 +256,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
             try {
                 string[] validExtensions = { ".dll", ".exe" };
-                mcmodules.Cast<Match>().Where(m => validExtensions.Contains(Path.GetExtension(m.Groups["filepath"].Value).Trim().ToLower())).ToList().ForEach(matchedmoduleinfo => LoadedModules.Add(new ModuleInfo() {
+                mcmodules.Where(m => validExtensions.Contains(Path.GetExtension(m.Groups["filepath"].Value).Trim().ToLower())).ToList().ForEach(matchedmoduleinfo => LoadedModules.Add(new ModuleInfo() {
                     ModuleName = Path.GetFileNameWithoutExtension(matchedmoduleinfo.Groups["filepath"].Value),
                     BaseAddress = Convert.ToUInt64(matchedmoduleinfo.Groups["baseaddress"].Value.Replace("`", string.Empty), 16),
                     EndAddress = ulong.MaxValue // stub this with an 'infinite' end address; only the highest loaded module will end up with this value finally
@@ -271,6 +271,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 // typically these are malformed paths passed to Path.GetFileNameWithoutExtension
                 retVal = false;
             }
+            if (!LoadedModules.Any()) return false; // no valid modules found
+
             if (!LoadedModules.Any()) return false; // no valid modules found
 
             // check for duplicate base addresses - this should normally never be possible unless there is wrong data input
