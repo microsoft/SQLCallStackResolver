@@ -678,10 +678,16 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             Assert.IsTrue(await Symbol.IsURLValid(new Uri("https://msdl.microsoft.com/download/symbols/sqldk.pdb/6a1934433512464b8b8ed905ad930ee62/sqldk.pdb")));
         }
 
-        [TestMethod][TestCategory("Unit")] public void GetBuildInfo() {
+        [TestMethod][TestCategory("Unit")] public void VerifyBuildInfo() {
             var builds = SQLBuildInfo.GetSqlBuildInfo(@"..\..\..\..\..\Tests\TestCases\buildinfo.sample.json");
             Assert.AreEqual(2, builds.Count);
             Assert.AreEqual(builds["SQL Server 2019 RTM RTM - 15.0.2000.5 - x64 (Nov 2019)"].SymbolDetails[0].PDBName, "SqlDK");
+            var outputFilename = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            builds["SQL Server 2019 RTM RTM - 15.0.2000.5 - x64 (Nov 2019)"].SymbolDetails[0].DownloadURL = "https://localhost/fake.pdb";
+            SQLBuildInfo.SaveSqlBuildInfo(builds.Values.ToList(), outputFilename);
+            builds = SQLBuildInfo.GetSqlBuildInfo(outputFilename); // read back
+            Assert.AreEqual(2, builds.Count);
+            Assert.AreEqual("https://localhost/fake.pdb", builds["SQL Server 2019 RTM RTM - 15.0.2000.5 - x64 (Nov 2019)"].SymbolDetails[0].DownloadURL);
         }
 
         /// Test cancellation of various operations
