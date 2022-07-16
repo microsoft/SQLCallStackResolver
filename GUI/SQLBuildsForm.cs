@@ -69,14 +69,14 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             activeDownload = false;
         }
 
-        private void CheckPDBAvail_Click(object sender, EventArgs e) {
+        private async void CheckPDBAvail_Click(object sender, EventArgs e) {
             if (treeviewSyms.SelectedNode is null) return;
             if (treeviewSyms.SelectedNode.Tag is SQLBuildInfo bld && bld.SymbolDetails.Count > 0) {
                 List<string> failedUrls = new();
                 var urls = bld.SymbolDetails.Select(s => s.DownloadURL);
                 foreach (var url in urls) {
                     downloadStatus.Text = url;
-                    if (!Symbol.IsURLValid(new Uri(url))) failedUrls.Add(url);
+                    if (!(await Symbol.IsURLValid(new Uri(url)))) failedUrls.Add(url);
                 }
 
                 if (failedUrls.Count > 0) MessageBox.Show(string.Join(",", failedUrls));

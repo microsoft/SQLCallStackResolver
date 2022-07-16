@@ -1,133 +1,64 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
-  <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{782BBD60-EE45-43CD-8A4F-0505EFE4FF1A}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver</RootNamespace>
-    <AssemblyName>SQLCallStackResolver.Engine</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <Deterministic>true</Deterministic>
-    <TargetFrameworkProfile />
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
-  </PropertyGroup>
-  <PropertyGroup>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>..\Target\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <LangVersion>10.0</LangVersion>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>..\Target\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <LangVersion>10.0</LangVersion>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-  </PropertyGroup>
-  <PropertyGroup>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="Microsoft.SqlServer.XEvent.XELite, Version=1.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.XEvent.XELite.2021.12.12.2\lib\net462\Microsoft.SqlServer.XEvent.XELite.dll</HintPath>
-    </Reference>
-    <Reference Include="msdia140typelib_clr0200">
-      <HintPath>..\packages\Microsoft.TestPlatform.17.2.0\tools\net451\Common7\IDE\Extensions\TestPlatform\msdia140typelib_clr0200.dll</HintPath>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Collections.Immutable, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Collections.Immutable.6.0.0\lib\net461\System.Collections.Immutable.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Memory, Version=4.0.1.2, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Memory.4.5.5\lib\net461\System.Memory.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Numerics.Vectors, Version=4.1.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Reflection.Metadata, Version=6.0.0.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Reflection.Metadata.6.0.1\lib\net461\System.Reflection.Metadata.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Runtime.Serialization" />
-    <Reference Include="System.Xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="GlobalUsings.cs" />
-    <Compile Include="DLLOrdinalHelper.cs" />
-    <Compile Include="ModuleInfoHelper.cs" />
-    <Compile Include="PEHelper.cs" />
-    <Compile Include="SafeNativeMethods.cs" />
-    <Compile Include="DiaUtil.cs" />
-    <Compile Include="ExportedSymbol.cs" />
-    <Compile Include="ImageExportDirectory.cs" />
-    <Compile Include="ModuleInfo.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SQLBuildInfo.cs" />
-    <Compile Include="StackResolver.cs" />
-    <Compile Include="Symbol.cs" />
-    <Compile Include="StackDetails.cs" />
-    <Compile Include="SymSrvHelpers.cs" />
-    <Compile Include="XELHelper.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="app.manifest" />
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ContentWithTargetPath Include="..\packages\Microsoft.TestPlatform.17.2.0\tools\net451\Common7\IDE\Extensions\TestPlatform\x64\msdia140.dll.manifest">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <TargetPath>msdia140.dll.manifest</TargetPath>
-      <Link>DIA\msdia140.dll.manifest</Link>
-    </ContentWithTargetPath>
-    <ContentWithTargetPath Include="..\packages\Microsoft.TestPlatform.17.2.0\tools\net451\Common7\IDE\Extensions\TestPlatform\x64\msdia140.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <TargetPath>msdia140.dll</TargetPath>
-      <Link>DIA\msdia140.dll</Link>
-    </ContentWithTargetPath>
-  </ItemGroup>
-  <ItemGroup>
-    <ContentWithTargetPath Include="..\packages\Microsoft.Debugging.Platform.DbgEng.20220617.1556.0\content\amd64\dbghelp.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <TargetPath>dbghelp.dll</TargetPath>
-      <Link>DebuggerFiles\dbghelp.dll</Link>
-    </ContentWithTargetPath>
-    <ContentWithTargetPath Include="..\packages\Microsoft.Debugging.Platform.SymSrv.20220617.1556.0\content\amd64\symsrv.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <TargetPath>symsrv.dll</TargetPath>
-      <Link>DebuggerFiles\symsrv.dll</Link>
-    </ContentWithTargetPath>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-  </Target>
-  <PropertyGroup>
-    <PreBuildEvent>cd $(ProjectDir)
-powershell -File "$(ProjectDir)/getBuildPreReqs.ps1"</PreBuildEvent>
-  </PropertyGroup>
-  <PropertyGroup>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
-  </PropertyGroup>
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net6.0-windows</TargetFramework>
+		<OutputType>Library</OutputType>
+		<RootNamespace>Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver</RootNamespace>
+		<Platforms>x64</Platforms>
+		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+		<OutputPath>..\Target\Debug\</OutputPath>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+		<OutputPath>..\Target\Release\</OutputPath>
+	</PropertyGroup>
+	<PropertyGroup>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
+	</PropertyGroup>
+	<ItemGroup>
+		<Reference Include="msdia140typelib_clr0200">
+			<HintPath>..\packages\Microsoft.TestPlatform.17.2.0\tools\net451\Common7\IDE\Extensions\TestPlatform\msdia140typelib_clr0200.dll</HintPath>
+			<EmbedInteropTypes>True</EmbedInteropTypes>
+		</Reference>
+	</ItemGroup>
+	<ItemGroup>
+		<ContentWithTargetPath Include="..\packages\Microsoft.TestPlatform.17.2.0\tools\net451\Common7\IDE\Extensions\TestPlatform\x64\msdia140.dll.manifest">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<TargetPath>msdia140.dll.manifest</TargetPath>
+			<Link>DIA\msdia140.dll.manifest</Link>
+		</ContentWithTargetPath>
+		<ContentWithTargetPath Include="..\packages\Microsoft.TestPlatform.17.2.0\tools\net451\Common7\IDE\Extensions\TestPlatform\x64\msdia140.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<TargetPath>msdia140.dll</TargetPath>
+			<Link>DIA\msdia140.dll</Link>
+		</ContentWithTargetPath>
+	</ItemGroup>
+	<ItemGroup>
+		<ContentWithTargetPath Include="..\packages\Microsoft.Debugging.Platform.DbgEng.20220617.1556.0\content\amd64\dbghelp.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<TargetPath>dbghelp.dll</TargetPath>
+			<Link>DebuggerFiles\dbghelp.dll</Link>
+		</ContentWithTargetPath>
+		<ContentWithTargetPath Include="..\packages\Microsoft.Debugging.Platform.SymSrv.20220617.1556.0\content\amd64\symsrv.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<TargetPath>symsrv.dll</TargetPath>
+			<Link>DebuggerFiles\symsrv.dll</Link>
+		</ContentWithTargetPath>
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Debugging.Platform.DbgEng" Version="20220617.1556.0" />
+		<PackageReference Include="Microsoft.Debugging.Platform.SymSrv" Version="20220617.1556.0" />
+		<PackageReference Include="Microsoft.SqlServer.XEvent.XELite" Version="2021.12.12.2" />
+		<PackageReference Include="Microsoft.TestPlatform" Version="17.2.0" />
+	</ItemGroup>
+	<PropertyGroup />
+	<PropertyGroup>
+		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+		<GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+		<BaseOutputPath>..\Target</BaseOutputPath>
+		<PlatformTarget>x64</PlatformTarget>
+	</PropertyGroup>
+	<Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+		<Exec Command="cd $(ProjectDir)&#xD;&#xA;powershell -File &quot;$(ProjectDir)/getBuildPreReqs.ps1&quot;" />
+	</Target>
 </Project>

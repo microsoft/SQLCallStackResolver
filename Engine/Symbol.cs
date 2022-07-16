@@ -1,5 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
+using System.Net.Http;
+
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     [DataContract] public class Symbol {
         [DataMember(Order = 0)] public string PDBName;
@@ -11,14 +13,13 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [DataMember(Order = 2)] public bool DownloadVerified;
         [DataMember(Order = 3)] public string FileVersion;
 
-        public static bool IsURLValid(Uri url) {
+        public static async Task<bool> IsURLValid(Uri url) {
             try {
-                if (WebRequest.Create(url) is HttpWebRequest request) {
-                    request.Method = "HEAD";
-                    if (request.GetResponse() is HttpWebResponse response) response.Close();
-                    return true;
-                }
-            } catch (WebException) { /* this will fall through to the return false so it is okay to leave blank */ }
+                var client = new HttpClient(new HttpClientHandler());
+                var res = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
+                if (null != res.EnsureSuccessStatusCode()) return true;
+            } catch (HttpRequestException) { /* this will fall through to the return false so it is okay to leave blank */ } 
+            catch (NotSupportedException) { /* this will fall through to the return false so it is okay to leave blank */ }
             return false;
         }
     }

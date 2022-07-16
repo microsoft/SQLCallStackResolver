@@ -15,7 +15,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             using var dllImage = new PEReader(dllStream);
             var dir = dllImage.PEHeaders.PEHeader.ExportTableDirectory;
             var offset = PEHelper.RvaToOffset(Convert.ToInt32(dir.RelativeVirtualAddress), dllImage.PEHeaders.SectionHeaders);
-            using var mmf = MemoryMappedFile.CreateFromFile(dllStream, null, 0, MemoryMappedFileAccess.Read, null, HandleInheritability.None, false);
+            using var mmf = MemoryMappedFile.CreateFromFile(dllStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, false);
             using var mmfAccessor = mmf.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
             mmfAccessor.Read(offset, out ImageExportDirectory exportDirectory);
             var count = exportDirectory.NumberOfFunctions;
