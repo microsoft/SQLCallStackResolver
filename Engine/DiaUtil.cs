@@ -2,6 +2,7 @@
 // Licensed under the MIT License - see LICENSE file in this repo.
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     /// Wrapper class around DIA
+    [SupportedOSPlatform("windows")]
     internal class DiaUtil {
         internal readonly IDiaDataSource _IDiaDataSource;
         internal readonly IDiaSession _IDiaSession;
@@ -127,7 +128,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     sbInline.Append(DiaUtil.GetSymbolizedFrame(moduleName, inlineFrame, useUndecorateLogic, includeOffset, inlineeOffset, true));
                     if (includeSourceInfo) {
                         inlineFrame.findInlineeLinesByRVA(inlineRVA, 0, out IDiaEnumLineNumbers enumLineNums);
-                        sbInline.Append("\t");
+                        sbInline.Append('\t');
                         sbInline.Append(DiaUtil.GetSourceInfo(enumLineNums, pdbHasSourceInfo));
                         Marshal.FinalReleaseComObject(enumLineNums);
                     }

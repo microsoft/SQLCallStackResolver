@@ -13,31 +13,30 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     [TestClass]
     public class Tests {
         [TestMethod][TestCategory("Unit")] public void SingleLineDetection() {
-            using var csr = new StackResolver();
             var PatternsToTreatAsMultiline = "BEGIN STACK DUMP|Short Stack Dump";
-            Assert.IsTrue(csr.IsInputSingleLine(@"callstack	          0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  0x00007FFEAC1EE447  0x00007FFEAC1EE6F5  0x00007FFEAC1D48B0  0x00007FFEAC71475A  0x00007FFEA9A708F1  0x00007FFEA9991FB9  0x00007FFEA9993D21  0x00007FFEA99B59F1  0x00007FFEA99B5055  0x00007FFEA99B2B8F  0x00007FFEA9675AD1  0x00007FFEA9671EFB  0x00007FFEAA37D83D  0x00007FFEAA37D241  0x00007FFEAA379F98  0x00007FFEA96719CA  0x00007FFEA9672933  0x00007FFEA9672041  0x00007FFEA967A82B  0x00007FFEA9681542  ", PatternsToTreatAsMultiline));
-            Assert.IsTrue(csr.IsInputSingleLine(@"callstack	          0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  0x00007FFEAC1EE447  0x00007FFEAC1EE6F5  0x00007FFEAC1D48B0  0x00007FFEAC71475A  0x00007FFEA9A708F1  0x00007FFEA9991FB9  0x00007FFEA9993D21\r\n0x00007FFEA99B59F1  0x00007FFEA99B5055  0x00007FFEA99B2B8F  0x00007FFEA9675AD1  0x00007FFEA9671EFB  0x00007FFEAA37D83D  0x00007FFEAA37D241  0x00007FFEAA379F98  0x00007FFEA96719CA  0x00007FFEA9672933  0x00007FFEA9672041  0x00007FFEA967A82B\r\n0x00007FFEA9681542  ", PatternsToTreatAsMultiline));
-            Assert.IsTrue(csr.IsInputSingleLine(@"\r\n    sqldk+0x40609 sqldk+40609\r\n", PatternsToTreatAsMultiline));
-            Assert.IsTrue(csr.IsInputSingleLine(@"\r\n    sqldk+0x40609 sqldk+40609\r\nsqldk+0x40609 sqldk+40609", PatternsToTreatAsMultiline));
-            Assert.IsTrue(csr.IsInputSingleLine(@"\r\ncallstack	          0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  0x00007FFEAC1EE447  0x00007FFEAC1EE6F5  0x00007FFEAC1D48B0  0x00007FFEAC71475A  0x00007FFEA9A708F1  0x00007FFEA9991FB9  0x00007FFEA9993D21  0x00007FFEA99B59F1  0x00007FFEA99B5055  0x00007FFEA99B2B8F  0x00007FFEA9675AD1  0x00007FFEA9671EFB  0x00007FFEAA37D83D  0x00007FFEAA37D241  0x00007FFEAA379F98  0x00007FFEA96719CA  0x00007FFEA9672933  0x00007FFEA9672041  0x00007FFEA967A82B  0x00007FFEA9681542    \r\n\r\n", PatternsToTreatAsMultiline));
-            Assert.IsTrue(csr.IsInputSingleLine("<HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value>0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  0x00007FFEAC1EE447  0x00007FFEAC1EE6F5  0x00007FFEAC1D48B0  0x00007FFEAC71475A  0x00007FFEA9A708F1  0x00007FFEA9991FB9  0x00007FFEA9993D21  0x00007FFEA99B59F1  0x00007FFEA99B5055  0x00007FFEA99B2B8F  0x00007FFEA9675AD1  0x00007FFEA9671EFB  0x00007FFEAA37D83D  0x00007FFEAA37D241  0x00007FFEAA379F98  0x00007FFEA96719CA  0x00007FFEA9672933  0x00007FFEA9672041  0x00007FFEA967A82B  0x00007FFEA9681542</value></Slot></HistogramTarget>", PatternsToTreatAsMultiline));
-            Assert.IsTrue(csr.IsInputSingleLine("annotation for histogram #1 0 <HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value>0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  0x00007FFEAC1EE447  0x00007FFEAC1EE6F5  0x00007FFEAC1D48B0  0x00007FFEAC71475A  0x00007FFEA9A708F1  0x00007FFEA9991FB9  0x00007FFEA9993D21  0x00007FFEA99B59F1  0x00007FFEA99B5055  0x00007FFEA99B2B8F  0x00007FFEA9675AD1  0x00007FFEA9671EFB  0x00007FFEAA37D83D  0x00007FFEAA37D241  0x00007FFEAA379F98  0x00007FFEA96719CA  0x00007FFEA9672933  0x00007FFEA9672041  0x00007FFEA967A82B  0x00007FFEA9681542</value></Slot></HistogramTarget>\r\n" +
+            Assert.IsTrue(StackResolver.IsInputSingleLine(@"callstack	          0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  0x00007FFEAC1EE447  0x00007FFEAC1EE6F5  0x00007FFEAC1D48B0  0x00007FFEAC71475A  0x00007FFEA9A708F1  0x00007FFEA9991FB9  0x00007FFEA9993D21  0x00007FFEA99B59F1  0x00007FFEA99B5055  0x00007FFEA99B2B8F  0x00007FFEA9675AD1  0x00007FFEA9671EFB  0x00007FFEAA37D83D  0x00007FFEAA37D241  0x00007FFEAA379F98  0x00007FFEA96719CA  0x00007FFEA9672933  0x00007FFEA9672041  0x00007FFEA967A82B  0x00007FFEA9681542  ", PatternsToTreatAsMultiline));
+            Assert.IsTrue(StackResolver.IsInputSingleLine(@"callstack	          0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  0x00007FFEAC1EE447  0x00007FFEAC1EE6F5  0x00007FFEAC1D48B0  0x00007FFEAC71475A  0x00007FFEA9A708F1  0x00007FFEA9991FB9  0x00007FFEA9993D21\r\n0x00007FFEA99B59F1  0x00007FFEA99B5055  0x00007FFEA99B2B8F  0x00007FFEA9675AD1  0x00007FFEA9671EFB  0x00007FFEAA37D83D  0x00007FFEAA37D241  0x00007FFEAA379F98  0x00007FFEA96719CA  0x00007FFEA9672933  0x00007FFEA9672041  0x00007FFEA967A82B\r\n0x00007FFEA9681542  ", PatternsToTreatAsMultiline));
+            Assert.IsTrue(StackResolver.IsInputSingleLine(@"\r\n    sqldk+0x40609 sqldk+40609\r\n", PatternsToTreatAsMultiline));
+            Assert.IsTrue(StackResolver.IsInputSingleLine(@"\r\n    sqldk+0x40609 sqldk+40609\r\nsqldk+0x40609 sqldk+40609", PatternsToTreatAsMultiline));
+            Assert.IsTrue(StackResolver.IsInputSingleLine(@"\r\ncallstack	          0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  0x00007FFEAC1EE447  0x00007FFEAC1EE6F5  0x00007FFEAC1D48B0  0x00007FFEAC71475A  0x00007FFEA9A708F1  0x00007FFEA9991FB9  0x00007FFEA9993D21  0x00007FFEA99B59F1  0x00007FFEA99B5055  0x00007FFEA99B2B8F  0x00007FFEA9675AD1  0x00007FFEA9671EFB  0x00007FFEAA37D83D  0x00007FFEAA37D241  0x00007FFEAA379F98  0x00007FFEA96719CA  0x00007FFEA9672933  0x00007FFEA9672041  0x00007FFEA967A82B  0x00007FFEA9681542    \r\n\r\n", PatternsToTreatAsMultiline));
+            Assert.IsTrue(StackResolver.IsInputSingleLine("<HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value>0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  0x00007FFEAC1EE447  0x00007FFEAC1EE6F5  0x00007FFEAC1D48B0  0x00007FFEAC71475A  0x00007FFEA9A708F1  0x00007FFEA9991FB9  0x00007FFEA9993D21  0x00007FFEA99B59F1  0x00007FFEA99B5055  0x00007FFEA99B2B8F  0x00007FFEA9675AD1  0x00007FFEA9671EFB  0x00007FFEAA37D83D  0x00007FFEAA37D241  0x00007FFEAA379F98  0x00007FFEA96719CA  0x00007FFEA9672933  0x00007FFEA9672041  0x00007FFEA967A82B  0x00007FFEA9681542</value></Slot></HistogramTarget>", PatternsToTreatAsMultiline));
+            Assert.IsTrue(StackResolver.IsInputSingleLine("annotation for histogram #1 0 <HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value>0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  0x00007FFEAC1EE447  0x00007FFEAC1EE6F5  0x00007FFEAC1D48B0  0x00007FFEAC71475A  0x00007FFEA9A708F1  0x00007FFEA9991FB9  0x00007FFEA9993D21  0x00007FFEA99B59F1  0x00007FFEA99B5055  0x00007FFEA99B2B8F  0x00007FFEA9675AD1  0x00007FFEA9671EFB  0x00007FFEAA37D83D  0x00007FFEAA37D241  0x00007FFEAA379F98  0x00007FFEA96719CA  0x00007FFEA9672933  0x00007FFEA9672041  0x00007FFEA967A82B  0x00007FFEA9681542</value></Slot></HistogramTarget>\r\n" +
                 "annotation for histogram #2 1 <HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value>0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  0x00007FFEAC1EE447  0x00007FFEAC1EE6F5  0x00007FFEAC1D48B0  0x00007FFEAC71475A  0x00007FFEA9A708F1  0x00007FFEA9991FB9  0x00007FFEA9993D21  0x00007FFEA99B59F1  0x00007FFEA99B5055  0x00007FFEA99B2B8F  0x00007FFEA9675AD1  0x00007FFEA9671EFB  0x00007FFEAA37D83D  0x00007FFEAA37D241  0x00007FFEAA379F98  0x00007FFEA96719CA  0x00007FFEA9672933  0x00007FFEA9672041  0x00007FFEA967A82B  0x00007FFEA9681542</value></Slot></HistogramTarget>\r\n", PatternsToTreatAsMultiline));
-            Assert.IsFalse(csr.IsInputSingleLine("<HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value><![CDATA[<frame id=\"00\" pdb=\"ntdll.pdb\" age=\"1\" guid=\"C374E059-5793-9B92-6525-386A66A2D3F5\" module=\"ntdll.dll\" rva=\"0x9F7E4\" />" +
+            Assert.IsFalse(StackResolver.IsInputSingleLine("<HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value><![CDATA[<frame id=\"00\" pdb=\"ntdll.pdb\" age=\"1\" guid=\"C374E059-5793-9B92-6525-386A66A2D3F5\" module=\"ntdll.dll\" rva=\"0x9F7E4\" />" +
 "<frame id=\"01\" pdb=\"kernelbase.pdb\" age=\"1\" guid=\"E77E26E7-D1C4-72BB-2C05-DD17624A9E58\" module=\"KERNELBASE.dll\" rva=\"0x38973\" />" +
 "<frame id=\"02\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x40609\" />" +
 "]]></value></Slot><Slot count=\"3\"><value><![CDATA[<frame id=\"00\" pdb=\"vcruntime140.amd64.pdb\" age=\"1\" guid=\"AF138C3F-2933-4097-8883-C1071B13375E\" module=\"VCRUNTIME140.dll\" rva=\"0xB8F0\" />" +
 "<frame id=\"01\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x2249f\" />" +
 "]]></value></Slot></HistogramTarget>", PatternsToTreatAsMultiline));
-            Assert.IsFalse(csr.IsInputSingleLine("<HistogramTarget truncated=\"0\" buckets=\"256\">\r\n<Slot count=\"5\">\r\n<value>&lt;frame id=\"00\" address=\"0xf00\" pdb=\"ntdll.pdb\" age=\"1\" guid=\"C374E059-5793-9B92-6525-386A66A2D3F5\" module=\"ntdll.dll\" rva=\"0x9F7E4\" /&gt;&lt;" +
+            Assert.IsFalse(StackResolver.IsInputSingleLine("<HistogramTarget truncated=\"0\" buckets=\"256\">\r\n<Slot count=\"5\">\r\n<value>&lt;frame id=\"00\" address=\"0xf00\" pdb=\"ntdll.pdb\" age=\"1\" guid=\"C374E059-5793-9B92-6525-386A66A2D3F5\" module=\"ntdll.dll\" rva=\"0x9F7E4\" /&gt;&lt;" +
 "frame id=\"01\" address=\"0xf00\" pdb=\"kernelbase.pdb\" age=\"1\" guid=\"E77E26E7-D1C4-72BB-2C05-DD17624A9E58\" module=\"KERNELBASE.dll\" rva=\"0x38973\" /&gt;&lt;" +
 "frame id=\"02\" address=\"0xf00\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x40609\" /&gt;" +
 "</value>\r\n</Slot>\r\n<Slot count=\"3\">\r\n<value><frame id=\"00\" address=\"0xf00\" pdb=\"vcruntime140.amd64.pdb\" age=\"1\" guid=\"AF138C3F-2933-4097-8883-C1071B13375E\" module=\"VCRUNTIME140.dll\" rva=\"0xB8F0\" /&gt;&lt;" +
 "frame id=\"01\" address=\"0xf00\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x2249f\" /&gt;" +
 "</value>\r\n</Slot>\r\n</HistogramTarget>", PatternsToTreatAsMultiline));
-            Assert.IsFalse(csr.IsInputSingleLine("\r\nThis file is generated by Microsoft SQL Server                                                                   \r\n\r\n* BEGIN STACK DUMP:                                                                                              \r\n\r\na = 0x0000000000000000                            a1 = 0x0000000000000000    \r\nb = 0x0000000000000000                                                                       \r\nc = 0x0000000000000000                           d = 0x0000000000000000 \r\n", PatternsToTreatAsMultiline));
-            Assert.IsTrue(csr.IsInputSingleLine("Histogram 0x1 0x1", PatternsToTreatAsMultiline));
-            Assert.IsFalse(csr.IsInputSingleLine("Histogram 0x1\r\n0x1", PatternsToTreatAsMultiline));
+            Assert.IsFalse(StackResolver.IsInputSingleLine("\r\nThis file is generated by Microsoft SQL Server                                                                   \r\n\r\n* BEGIN STACK DUMP:                                                                                              \r\n\r\na = 0x0000000000000000                            a1 = 0x0000000000000000    \r\nb = 0x0000000000000000                                                                       \r\nc = 0x0000000000000000                           d = 0x0000000000000000 \r\n", PatternsToTreatAsMultiline));
+            Assert.IsTrue(StackResolver.IsInputSingleLine("Histogram 0x1 0x1", PatternsToTreatAsMultiline));
+            Assert.IsFalse(StackResolver.IsInputSingleLine("Histogram 0x1\r\n0x1", PatternsToTreatAsMultiline));
         }
 
         /// Validate that "block symbols" in a PDB are resolved correctly.
@@ -97,10 +96,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             timer.Start();
             var input = PrepareLargeXEventInput();
             var outputFilename = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            var res = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(input, false, cts), @"..\..\..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, true, false, false, outputFilename, cts);
+            await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(input, false, cts), @"..\..\..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, true, false, false, outputFilename, cts);
             timer.Stop();
             Assert.IsTrue(timer.Elapsed.TotalSeconds < 45 * 60);  // 45 minutes max on GitHub hosted DSv2 runner (2 vCPU, 7 GiB RAM).
-            Assert.IsTrue((await File.ReadAllTextAsync(outputFilename)).Length > input.Length);
+            Assert.IsTrue((await File.ReadAllTextAsync(outputFilename)).Length > input.Length); // resolved stacks will be larger in size
         }
 
         private static string PrepareLargeXEventInput() {
@@ -272,7 +271,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
             Assert.IsTrue(isXMLdoc);
             var slotNodes = xmldoc.SelectNodes("/HistogramTarget/Slot");
-            Assert.AreEqual(4, slotNodes?.Count);
+            Assert.AreEqual(4, slotNodes.Count);
             int eventCountFromXML = 0;
             foreach (XmlNode slot in slotNodes) {
                 eventCountFromXML += int.Parse(slot.Attributes["count"].Value, CultureInfo.CurrentCulture);
@@ -300,7 +299,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task XELActionsAndFieldsAsync() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var ret = await csr.GetDistinctXELFieldsAsync(new[] { @"..\..\..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, 1000, cts);
+            var ret = await StackResolver.GetDistinctXELFieldsAsync(new[] { @"..\..\..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, 1000, cts);
             Assert.AreEqual(1, ret.Item1.Count);   // just the callstack action
             Assert.AreEqual("callstack", ret.Item1.First());    // verify the name
             Assert.AreEqual(5, ret.Item2.Count);   // 5 fields
@@ -311,7 +310,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task XELActionsAndFieldsAsyncMultipleFiles() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
-            var ret = await csr.GetDistinctXELFieldsAsync(new[] { @"..\..\..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel", @"..\..\..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, 1000, cts);
+            var ret = await StackResolver.GetDistinctXELFieldsAsync(new[] { @"..\..\..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel", @"..\..\..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, 1000, cts);
             Assert.AreEqual(1, ret.Item1.Count);   // just the callstack action
             Assert.AreEqual("callstack", ret.Item1.First());    // verify the name
             Assert.AreEqual(9, ret.Item2.Count);   // 9 fields in total across the 2 XEL files
@@ -384,7 +383,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 "\"VCRUNTIME140.dll\",\"14.16.27033.0\",86016,1563486943,105788,\"vcruntime140.amd64.pdb\",\"{AF138C3F-2933-4097-8883-C1071B13375E}\",0,1\r\n\r\nsqlservr.exe,7ef4ea08-777a-43b7-8bce-4da6f0fa43c7,2\r\n\"KERNELBASE.dll\",\"10.0.19041.662\",2920448,3965251605,2936791,\"kernelbase.pdb\",\"{1FBE0B2B-89D1-37F0-1510-431FFFBA123E}\",0,1\n" +
 "\"kernel32.dll\",\"10.0.19041.662\",774144,1262097423,770204,\"kernel32.pdb\",\"{54448D8E-EFC5-AB3C-7193-D2C7A6DF9008}\",0,1\r\n", false) }, cts);
 
-            Assert.AreEqual(5, ret.Count());
+            Assert.AreEqual(5, ret.Count);
             Assert.AreEqual("ntdll.pdb", ret["ntdll"].PDBName);
             Assert.AreEqual("1EB9FACB04C73C5DEA7160764CD333D0", ret["ntdll"].PDBGuid, ignoreCase: true);
             Assert.AreEqual(1, ret["ntdll"].PDBAge);
@@ -407,7 +406,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var result = await ModuleInfoHelper.ParseModuleInfoXMLAsync(new List<StackDetails> { sample }, cts);
 
             var syms = result.Item1;
-            Assert.AreEqual(4, syms.Count());
+            Assert.AreEqual(4, syms.Count);
             Assert.AreEqual("ntdll.pdb", syms["ntdll"].PDBName);
             Assert.AreEqual("C374E05957939B926525386A66A2D3F5", syms["ntdll"].PDBGuid, ignoreCase: true);
             Assert.AreEqual(1, syms["ntdll"].PDBAge);
@@ -440,7 +439,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public async Task ExtractModuleInfoEmptyString() {
             using var cts = new CancellationTokenSource();
             var ret = await ModuleInfoHelper.ParseModuleInfoAsync(new List<StackDetails>() { new StackDetails(string.Empty, false) }, cts);
-            Assert.AreEqual(ret.Count(), 0);
+            Assert.AreEqual(ret.Count, 0);
         }
 
         /// Test obtaining a local path for symbols downloaded from a symbol server.
@@ -685,7 +684,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             Assert.AreEqual(StackResolver.OperationCanceled, xelTask.Result.Item2);
 
             using var cts2 = new CancellationTokenSource();
-            var xelFieldsTask = csr.GetDistinctXELFieldsAsync(new[] { @"..\..\..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, int.MaxValue, cts2);
+            var xelFieldsTask = StackResolver.GetDistinctXELFieldsAsync(new[] { @"..\..\..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, int.MaxValue, cts2);
             while (true) {
                 if (xelFieldsTask.Wait(StackResolver.OperationWaitIntervalMilliseconds)) break;
                 cts2.Cancel();

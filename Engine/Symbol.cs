@@ -1,7 +1,5 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
-using System.Net.Http;
-
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     public class Symbol {
         [JsonInclude] public string PDBName;
@@ -15,8 +13,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         public static async Task<bool> IsURLValid(Uri url) {
             try {
-                var client = new HttpClient(new HttpClientHandler());
-                var res = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
+                using var client = new HttpClient();
+                using var req = new HttpRequestMessage(HttpMethod.Head, url);
+                var res = await client.SendAsync(req);
                 if (null != res.EnsureSuccessStatusCode()) return true;
             } catch (HttpRequestException) { /* this will fall through to the return false so it is okay to leave blank */ } 
             catch (NotSupportedException) { /* this will fall through to the return false so it is okay to leave blank */ }

@@ -1,9 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
-
-using Microsoft.Extensions.Configuration;
-
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
+    [SupportedOSPlatform("windows")]
     public partial class MainForm : Form {
         public MainForm() {
             MessageBox.Show("Copyright (c) 2022 Microsoft Corporation. All rights reserved.\r\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.", "SQLCallStackResolver - Legal Notice", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -33,7 +31,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 return;
             }
 
-            bool isSingleLineInput = this._resolver.IsInputSingleLine(callStackInput.Text, cfg["PatternsToTreatAsMultiline"]);
+            bool isSingleLineInput = StackResolver.IsInputSingleLine(callStackInput.Text, cfg["PatternsToTreatAsMultiline"]);
             if (isSingleLineInput && !FramesOnSingleLine.Checked && DialogResult.Yes == MessageBox.Show(this,
                     "Maybe this is intentional, but your input seems to have all the frames on a single line, but the 'Callstack frames are in single line' checkbox is unchecked. " +
                     "This may cause problems resolving symbols. Would you like to enable this?", "Enable the 'frames on single line' option?", MessageBoxButtons.YesNo)) {
@@ -207,7 +205,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             using var fieldsListDialog = new FieldSelection();
             using var cts = new CancellationTokenSource();
             fieldsListDialog.Text = "Select relevant XEvent fields";
-            var xeEventItems = await this._resolver.GetDistinctXELFieldsAsync(fileNames, 1000, cts);
+            var xeEventItems = await StackResolver.GetDistinctXELFieldsAsync(fileNames, 1000, cts);
             if (xeEventItems.Item1.Count + xeEventItems.Item2.Count == 0) return new List<string>();
             fieldsListDialog.AllActions = xeEventItems.Item1;
             fieldsListDialog.AllFields = xeEventItems.Item2;

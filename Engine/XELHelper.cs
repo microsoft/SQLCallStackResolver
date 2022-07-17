@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
+    [SupportedOSPlatform("windows")]
     internal class XELHelper {
         /// Read a XEL file, consume all callstacks, optionally bucketize them, and in all cases, return the information as equivalent XML
         internal async static Task<Tuple<int, string>> ExtractFromXELAsync(StackResolver parent, string[] xelFiles, bool groupEvents, List<string> fieldsToGroupOn, CancellationTokenSource cts) {
