@@ -1,7 +1,5 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
-using System.Net.Http;
-
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     public class Symbol {
         [JsonInclude] public string PDBName;

@@ -98,3 +98,5 @@ Engine/woa
 Engine/arm64
 Engine/x86
 .nuget
+.dotnet
+global.json

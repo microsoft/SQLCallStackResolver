@@ -3,7 +3,6 @@
 		<TargetFramework>net6.0-windows</TargetFramework>
 		<OutputType>Library</OutputType>
 		<RootNamespace>Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver</RootNamespace>
-		<ImplicitUsings>enable</ImplicitUsings>
 		<Platforms>x64</Platforms>
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 		<SelfContained>false</SelfContained>

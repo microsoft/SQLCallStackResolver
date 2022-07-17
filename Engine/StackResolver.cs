@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
+    [SupportedOSPlatform("windows")]
     public class StackResolver : IDisposable {
         public const string OperationCanceled = "Operation cancelled.";
         public const int OperationWaitIntervalMilliseconds = 300;
@@ -21,14 +22,13 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         public int PercentComplete { get; set; }
         /// Internal counter used to implement progress reporting
         internal int globalCounter = 0;
-
         private static readonly RegexOptions rgxOptions = RegexOptions.ExplicitCapture | RegexOptions.Compiled;
         private static readonly Regex rgxModuleName = new(@"((?<framenum>[0-9a-fA-F]+)\s+)*(?<module>\w+)(\.(dll|exe))*\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*", rgxOptions);
         private static readonly Regex rgxVAOnly = new (@"^\s*0[xX](?<vaddress>[0-9a-fA-F]+)\s*$", rgxOptions);
         private static readonly Regex rgxAlreadySymbolizedFrame = new (@"((?<framenum>\d+)\s+)*(?<module>\w+)(\.(dll|exe))*!(?<symbolizedfunc>.+?)\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*", rgxOptions);
         private static readonly Regex rgxmoduleaddress = new (@"^\s*(?<filepath>.+)(\t+| +)(?<baseaddress>(0x)?[0-9a-fA-F`]+)\s*$", RegexOptions.Multiline);
 
-        public Task<Tuple<List<string>, List<string>>> GetDistinctXELFieldsAsync(string[] xelFiles, int eventsToSample, CancellationTokenSource cts) {
+        public static Task<Tuple<List<string>, List<string>>> GetDistinctXELFieldsAsync(string[] xelFiles, int eventsToSample, CancellationTokenSource cts) {
             return XELHelper.GetDistinctXELActionsFieldsAsync(xelFiles, eventsToSample, cts);
         }
 
@@ -58,7 +58,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             return retval;
         }
 
-        public bool IsInputSingleLine(string text, string patternsToTreatAsMultiline) {
+        public static bool IsInputSingleLine(string text, string patternsToTreatAsMultiline) {
             if (Regex.Match(text, patternsToTreatAsMultiline).Success) return false;
             text = System.Net.WebUtility.HtmlDecode(text);  // decode XML markup if present
             if (!Regex.Match(text, "Histogram").Success && !text.Replace("\r", string.Empty).Trim().Contains('\n')) return true; // not a histogram and does not have any newlines, so is single-line
@@ -321,7 +321,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 var syms = await ModuleInfoHelper.ParseModuleInfoAsync(listOfCallStacks, cts);
                 if (cts.IsCancellationRequested) { StatusMessage = OperationCanceled; PercentComplete = 0; return OperationCanceled; }
 
-                if (syms.Count() > 0) {
+                if (syms.Count > 0) {
                     this.StatusMessage = "Downloading symbols as needed...";
                     // if the user has provided such a list of module info, proceed to actually use dbghelp.dll / symsrv.dll to download those PDBs and get local paths for them
                     var paths = SymSrvHelpers.GetFolderPathsForPDBs(this, symPath, syms.Values.ToList());
@@ -332,7 +332,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     // attempt to check if there are XML-formatted frames each with the related PDB attributes and if so replace those lines with the normalized versions
                     (syms, listOfCallStacks) = await ModuleInfoHelper.ParseModuleInfoXMLAsync(listOfCallStacks, cts);
                     if (cts.IsCancellationRequested) { StatusMessage = OperationCanceled; PercentComplete = 0; return OperationCanceled; }
-                    if (syms.Count() > 0) {
+                    if (syms.Count > 0) {
                         // if the user has provided such a list of module info, proceed to actually use dbghelp.dll / symsrv.dll to download thos PDBs and get local paths for them
                         var paths = SymSrvHelpers.GetFolderPathsForPDBs(this, symPath, syms.Values.ToList());
                         // we then "inject" those local PDB paths as higher priority than any possible user provided paths

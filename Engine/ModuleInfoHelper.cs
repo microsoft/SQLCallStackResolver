@@ -10,7 +10,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// </summary>
         public async static Task<Dictionary<string, Symbol>> ParseModuleInfoAsync(List<StackDetails> listOfCallStacks, CancellationTokenSource cts) {
             var retval = new Dictionary<string, Symbol>();
-            await Task.Run(() => Parallel.ForEach(listOfCallStacks.Where(c => c.Callstack.Contains(",")).Select(c => c.CallstackFrames), lines => {
+            await Task.Run(() => Parallel.ForEach(listOfCallStacks.Where(c => c.Callstack.Contains(',')).Select(c => c.CallstackFrames), lines => {
                 if (cts.IsCancellationRequested) return;
                 Contract.Requires(lines.Length > 0);
                 foreach (var line in lines) {
@@ -36,7 +36,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                             }
                         }
 
-                        _ = int.TryParse(fields[fields.Length - 1], out int pdbAge);    // assumption is that last field is pdbAge
+                        _ = int.TryParse(fields[^1], out int pdbAge);    // assumption is that last field is pdbAge
                         pdbName = string.IsNullOrEmpty(pdbName) ? moduleName : pdbName; // fall back to module name as PDB name
 
                         // check if we have all 3 details

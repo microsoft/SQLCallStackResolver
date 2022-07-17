@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
+    [SupportedOSPlatform("windows")]
     public partial class SQLBuildsForm : Form {
         public string pathToPDBs = string.Empty;
         public string lastDownloadedSymFolder = string.Empty;

@@ -1,8 +1,9 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
+    [SupportedOSPlatform("windows")]
     public static class SymSrvHelpers {
-        static readonly int processId = Process.GetCurrentProcess().Id;
+        static readonly int processId = Environment.ProcessId;
 
         /// Wrapper around the symsrv.dll functionality to initialize the symbol load handler for this process.
         private static bool InitSymSrv(string symPath) {
