@@ -2,8 +2,8 @@
 // Licensed under the MIT License - see LICENSE file in this repo.
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     public static class ModuleInfoHelper {
-        private static readonly Regex rgxPDBName = new(@"^(?<pdb>.+)(\.pdb)$", RegexOptions.IgnoreCase);
-        private static readonly Regex rgxFileName = new(@"^(?<module>.+)\.(dll|exe)$", RegexOptions.IgnoreCase);
+        private static readonly Regex rgxPDBName = new(@"^(?<pdb>.+)(\.pdb)$", RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase);
+        private static readonly Regex rgxFileName = new(@"^(?<module>.+)\.(dll|exe)$", RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase);
 
         /// <summary>
         /// Parse the input and return a set of resolved Symbol objects

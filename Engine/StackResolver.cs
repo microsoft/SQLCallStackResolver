@@ -13,7 +13,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// A cache of already resolved addresses
         private readonly Dictionary<string, string> cachedSymbols = new();
         /// R/W lock to protect the above cached symbols dictionary
-        private readonly ReaderWriterLockSlim rwLockCachedSymbols = new();
+        private readonly ReaderWriterLock rwLockCachedSymbols = new();
         private readonly DLLOrdinalHelper dllMapHelper = new();
         /// Status message - populated during associated long-running operations
         public string StatusMessage { get; set; }
@@ -21,6 +21,12 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         public int PercentComplete { get; set; }
         /// Internal counter used to implement progress reporting
         internal int globalCounter = 0;
+
+        private static readonly RegexOptions rgxOptions = RegexOptions.ExplicitCapture | RegexOptions.Compiled;
+        private static readonly Regex rgxModuleName = new(@"((?<framenum>[0-9a-fA-F]+)\s+)*(?<module>\w+)(\.(dll|exe))*\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*", rgxOptions);
+        private static readonly Regex rgxVAOnly = new (@"^\s*0[xX](?<vaddress>[0-9a-fA-F]+)\s*$", rgxOptions);
+        private static readonly Regex rgxAlreadySymbolizedFrame = new (@"((?<framenum>\d+)\s+)*(?<module>\w+)(\.(dll|exe))*!(?<symbolizedfunc>.+?)\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*", rgxOptions);
+        private static readonly Regex rgxmoduleaddress = new (@"^\s*(?<filepath>.+)(\t+| +)(?<baseaddress>(0x)?[0-9a-fA-F`]+)\s*$", RegexOptions.Multiline);
 
         public Task<Tuple<List<string>, List<string>>> GetDistinctXELFieldsAsync(string[] xelFiles, int eventsToSample, CancellationTokenSource cts) {
             return XELHelper.GetDistinctXELActionsFieldsAsync(xelFiles, eventsToSample, cts);
@@ -32,7 +38,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Convert virtual-address only type frames to their module+offset format
-        private string[] PreProcessVAs(string[] callStackLines, Regex rgxVAOnly, CancellationTokenSource cts) {
+        private string[] PreProcessVAs(string[] callStackLines, CancellationTokenSource cts) {
             if (!this.LoadedModules.Any()) return callStackLines;// only makes sense doing the rest of the work in this function if have loaded module information
 
             string[] retval = new string[callStackLines.Length];
@@ -66,7 +72,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Runs through each of the frames in a call stack and looks up symbols for each
-        private string ResolveSymbols(Dictionary<string, DiaUtil> _diautils, string[] callStackLines, string symPath, bool searchPDBsRecursively, bool cachePDB, bool includeSourceInfo, bool relookupSource, bool includeOffsets, bool showInlineFrames, Regex rgxAlreadySymbolizedFrame, Regex rgxModuleName, List<string> modulesToIgnore, CancellationTokenSource cts) {
+        private string ResolveSymbols(Dictionary<string, DiaUtil> _diautils, string[] callStackLines, string symPath, bool searchPDBsRecursively, bool cachePDB, bool includeSourceInfo, bool relookupSource, bool includeOffsets, bool showInlineFrames, List<string> modulesToIgnore, CancellationTokenSource cts) {
             var finalCallstack = new StringBuilder();
             int frameNum = int.MinValue;
             foreach (var iterFrame in callStackLines) {
@@ -164,9 +170,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             // the offsets in the XE output are in hex, so we convert to base-10 accordingly
             var rva = Convert.ToUInt32(offset, 16);
             var symKey = moduleName + rva.ToString(CultureInfo.CurrentCulture);
-            this.rwLockCachedSymbols.EnterReadLock();
+            this.rwLockCachedSymbols.AcquireReaderLock(-1);
             bool resWasCached = this.cachedSymbols.TryGetValue(symKey, out string result);
-            this.rwLockCachedSymbols.ExitReadLock();
+            this.rwLockCachedSymbols.ReleaseReaderLock();
             if (!resWasCached) {
                 // process the function name (symbol); initially we look for 'block' symbols, which have a parent function; typically this is seen in kernelbase.dll 
                 // (not very important for XE callstacks but important if you have an assert or non-yielding stack in SQLDUMPnnnn.txt files...)
@@ -220,11 +226,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 Marshal.FinalReleaseComObject(mysym);
                 result = (inlineFrameAndSourceInfo + symbolizedFrame + "\t" + sourceInfo).Trim();
                 if (!resWasCached) {    // we only need to add to cache if it was not already cached.
-                    this.rwLockCachedSymbols.EnterWriteLock();
+                    this.rwLockCachedSymbols.AcquireWriterLock(-1);
                     if (!this.cachedSymbols.ContainsKey(symKey)) {
                         this.cachedSymbols.Add(symKey, result);
                     }
-                    this.rwLockCachedSymbols.ExitWriteLock();
+                    this.rwLockCachedSymbols.ReleaseWriterLock();
                 }
             }
 
@@ -250,7 +256,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 return true;
             }
             LoadedModules.Clear();
-            var rgxmoduleaddress = new Regex(@"^\s*(?<filepath>.+)(\t+| +)(?<baseaddress>(0x)?[0-9a-fA-F`]+)\s*$", RegexOptions.Multiline);
             var mcmodules = rgxmoduleaddress.Matches(baseAddressesString);
             if (mcmodules.Count == 0) {
                 // it is likely that we have malformed input, cannot ignore this so return false.
@@ -523,11 +528,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             await Task.Run(() => {
                 SafeNativeMethods.EstablishActivationContext();
                 var _diautils = new Dictionary<string, DiaUtil>();
-                var rgxOptions = listOfCallStacks.Count > 10 ? RegexOptions.Compiled : RegexOptions.None;
-                var rgxModuleName = new Regex(@"((?<framenum>[0-9a-fA-F]+)\s+)*(?<module>\w+)(\.(dll|exe))*\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*", rgxOptions);
-                var rgxVAOnly = new Regex(@"^\s*0[xX](?<vaddress>[0-9a-fA-F]+)\s*$", rgxOptions);
-                var rgxAlreadySymbolizedFrame = new Regex(@"((?<framenum>\d+)\s+)*(?<module>\w+)(\.(dll|exe))*!(?<symbolizedfunc>.+?)\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*", rgxOptions);
                 var modulesToIgnore = new List<string>();
+                var loadedModulesCount = this.LoadedModules.Count;
 
                 for (int tmpStackIndex = 0; tmpStackIndex < listOfCallStacks.Count; tmpStackIndex++) {
                     if (cts.IsCancellationRequested) break;
@@ -536,11 +538,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     var currstack = listOfCallStacks[tmpStackIndex];
                     var ordinalResolvedFrames = this.dllMapHelper.LoadDllsIfApplicable(currstack.CallstackFrames, searchDLLRecursively, dllPaths);
                     // process any frames which are purely virtual address (in such cases, the caller should have specified base addresses)
-                    var callStackLines = PreProcessVAs(ordinalResolvedFrames, rgxVAOnly, cts);
+                    var callStackLines = loadedModulesCount > 0 ? PreProcessVAs(ordinalResolvedFrames, cts) : ordinalResolvedFrames;
                     if (cts.IsCancellationRequested) return;
 
                     // resolve symbols by using DIA
-                    currstack.Resolvedstack = ResolveSymbols(_diautils, callStackLines, symPath, searchPDBsRecursively, cachePDB,  includeSourceInfo, relookupSource, includeOffsets, showInlineFrames, rgxAlreadySymbolizedFrame, rgxModuleName, modulesToIgnore, cts);
+                    currstack.Resolvedstack = ResolveSymbols(_diautils, callStackLines, symPath, searchPDBsRecursively, cachePDB,  includeSourceInfo, relookupSource, includeOffsets, showInlineFrames, modulesToIgnore, cts);
                     if (cts.IsCancellationRequested) return;
 
                     var localCounter = Interlocked.Increment(ref this.globalCounter);
@@ -601,10 +603,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         private bool disposedValue = false;
 
         protected virtual void Dispose(bool disposing) {
-            if (!disposedValue) {
-                if (disposing) rwLockCachedSymbols.Dispose();
-                disposedValue = true;
-            }
+            if (!disposedValue) disposedValue = true;
         }
 
         public void Dispose() {
