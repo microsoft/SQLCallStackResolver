@@ -28,7 +28,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 // 00007FF81840226A Module(sqlmin+000000000155226A) (Ordinal1261 + 00000000000071EA)
                 // 00007FF81555A663 Module(sqllang+0000000000C6A663) (Ordinal1203 + 0000000000005E33)
                 // define a regex to identify such ordinal based frames
-                var rgxOrdinalNotation = new Regex(@"(?<module>\w+)(\.dll)*!Ordinal(?<ordinal>[0-9]+)\s*\+\s*(0[xX])*");
+                var rgxOrdinalNotation = new Regex(@"(?<module>\w+)(\.dll)*!Ordinal(?<ordinal>[0-9]+)\s*\+\s*(0[xX])*", RegexOptions.ExplicitCapture);
                 var matchednotations = rgxOrdinalNotation.Matches(callstack);
                 var moduleNames = new List<string>();
                 moduleNames.AddRange(from Match match in matchednotations let currmodule = match.Groups["module"].Value where !moduleNames.Contains(currmodule) select currmodule);
@@ -46,7 +46,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                 // finally do a pattern based replace the replace method calls a delegate (ReplaceOrdinalWithRealOffset) which figures
                 // out the start address of the ordinal and then computes the actual offset
-                var fullpattern = new Regex(@"(?<module>\w+)(\.dll)*!Ordinal(?<ordinal>[0-9]+)\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*");
+                var fullpattern = new Regex(@"(?<module>\w+)(\.dll)*!Ordinal(?<ordinal>[0-9]+)\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*", RegexOptions.ExplicitCapture);
                 processedFrames[idx] = fullpattern.Replace(callstack, ReplaceOrdinalWithRealOffset);
             }
             return processedFrames;
