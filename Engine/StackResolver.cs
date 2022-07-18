@@ -39,8 +39,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         /// Convert virtual-address only type frames to their module+offset format
         private string[] PreProcessVAs(string[] callStackLines, CancellationTokenSource cts) {
-            if (!this.LoadedModules.Any()) return callStackLines;// only makes sense doing the rest of the work in this function if have loaded module information
-
             string[] retval = new string[callStackLines.Length];
             int frameNum = 0;
             foreach (var currentFrame in callStackLines) {
