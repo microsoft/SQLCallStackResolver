@@ -254,24 +254,24 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         private IConfigurationRoot cfg;
 
-        private void MainForm_Load(object sender, EventArgs e) {
+        private async void MainForm_Load(object sender, EventArgs e) {
             DateTime latestReleaseDateTimeServer;
             DateTime latestReleaseDateTimeLocal = DateTime.MinValue;
             cfg = new ConfigurationBuilder().AddJsonFile("appsettings.json", optional: false, reloadOnChange: true).Build();
             var latestReleaseURLs = cfg["LatestReleaseURLs"].Split(';');
             // get the timestamp contained within the first valid file within latestReleaseURLs
             foreach (var url in latestReleaseURLs) {
-                string latestReleaseDateStringServer = Utils.GetFileContentsFromUrl(url);
-                if (!string.IsNullOrWhiteSpace(latestReleaseDateStringServer)) {
-                    latestReleaseDateTimeServer = DateTime.ParseExact(latestReleaseDateStringServer,
-                        LatestReleaseTimestampFormat, new CultureInfo(LatestReleaseTimestampCulture));
+                using var latestReleaseDateStringServerStream = (await Utils.GetStreamFromUrl(url))?.Item1;
+                if (null != latestReleaseDateStringServerStream) {
+                    using var sr = new StreamReader(latestReleaseDateStringServerStream);
+                    latestReleaseDateTimeServer = DateTime.ParseExact((await sr.ReadToEndAsync()).Trim(), LatestReleaseTimestampFormat, new CultureInfo(LatestReleaseTimestampCulture));
                 } else continue;
 
                 string latestReleaseDateStringLocal = "Unknown";
                 // get content of local latestrelease.txt (if it exists)
                 if (File.Exists(LatestReleaseTimestampFileName)) {
-                    using var strm = new StreamReader(LatestReleaseTimestampFileName);
-                    latestReleaseDateStringLocal = strm.ReadToEnd().Trim();
+                    using var sr = new StreamReader(LatestReleaseTimestampFileName);
+                    latestReleaseDateStringLocal = (await sr.ReadToEndAsync()).Trim();
                     this.Text += $" (release: {latestReleaseDateStringLocal})"; // update form title bar
                     latestReleaseDateTimeLocal = DateTime.ParseExact(latestReleaseDateStringLocal,
                         LatestReleaseTimestampFormat, new CultureInfo(LatestReleaseTimestampCulture));
@@ -280,7 +280,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 if (latestReleaseDateTimeServer > latestReleaseDateTimeLocal) {
                     // if the server timestamp > local timestamp, prompt to download
                     MessageBox.Show(this,
-                        $"You are currently on release: {latestReleaseDateStringLocal} of SQLCallStackResolver. There is a newer release ({latestReleaseDateStringServer}) available." + Environment.NewLine + "You should exit, then download the latest release from https://aka.ms/SQLStack/releases. Then, extract the files from the release ZIP, overwriting and updating your older copy.",
+                        $"You are currently on release: {latestReleaseDateStringLocal} of SQLCallStackResolver. There is a newer release ({latestReleaseDateTimeServer.ToString(LatestReleaseTimestampFormat)}) available." + Environment.NewLine + "You should exit, then download the latest release from https://aka.ms/SQLStack/releases. Then, extract the files from the release ZIP, overwriting and updating your older copy.",
                         "New release available.", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
@@ -291,16 +291,17 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var sqlBuildInfoURLs = cfg["SQLBuildInfoURLs"].Split(';');
 
             // get the timestamp contained within the first valid file within SQLBuildInfoURLs
-            foreach (var lastUpd in sqlBuildInfoUpdateURLs.Select(b => Utils.GetFileContentsFromUrl(b))) {
-                if (!string.IsNullOrWhiteSpace(lastUpd)) {
-                    lastUpdDateTimeServer = DateTime.ParseExact(lastUpd,
-                    LastUpdatedTimestampFormat, new CultureInfo(LastUpdatedTimestampCulture));
+            foreach (var b in sqlBuildInfoUpdateURLs) {
+                using var lastUpdStream = (await Utils.GetStreamFromUrl(b))?.Item1;
+                if (null != lastUpdStream) {
+                    using var sr = new StreamReader(lastUpdStream);
+                    lastUpdDateTimeServer = DateTime.ParseExact((await sr.ReadToEndAsync()).Trim(), LastUpdatedTimestampFormat, new CultureInfo(LastUpdatedTimestampCulture));
                 } else continue;
 
                 // get content of local lastupdated.txt (if it exists)
                 if (File.Exists(LastUpdatedTimestampFileName)) {
-                    using var strm = new StreamReader(LastUpdatedTimestampFileName);
-                    var lastUpdLocal = strm.ReadToEnd().Trim();
+                    using var sr = new StreamReader(LastUpdatedTimestampFileName);
+                    var lastUpdLocal = (await sr.ReadToEndAsync()).Trim();
                     lastUpdDateTimeLocal = DateTime.ParseExact(lastUpdLocal,
                         LastUpdatedTimestampFormat, new CultureInfo(LastUpdatedTimestampCulture));
                 } else lastUpdDateTimeLocal = DateTime.MinValue;
@@ -314,10 +315,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     if (DialogResult.Yes == res) {
                         string jsonContent = null;
                         foreach (var jsonURL in sqlBuildInfoURLs) {
-                            jsonContent = Utils.GetFileContentsFromUrl(jsonURL);
-                            if (!string.IsNullOrWhiteSpace(jsonContent)) { // update local copy of build info file
+                            using var jsonContentStream = (await Utils.GetStreamFromUrl(jsonURL))?.Item1;
+                            if (null != jsonContentStream) { // update local copy of build info file
+                                using var sr = new StreamReader(jsonContentStream);
                                 using var writer = new StreamWriter(SqlBuildInfoFileName);
-                                writer.Write(jsonContent);
+                                writer.Write(await sr.ReadToEndAsync());
                                 writer.Flush();
                                 writer.Close();
                                 using var wr = new StreamWriter(LastUpdatedTimestampFileName, false);  // update local last updated timestamp

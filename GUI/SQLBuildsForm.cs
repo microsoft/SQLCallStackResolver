@@ -1,11 +1,12 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
+using System;
+
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     [SupportedOSPlatform("windows")]
     public partial class SQLBuildsForm : Form {
         public string pathToPDBs = string.Empty;
         public string lastDownloadedSymFolder = string.Empty;
-        private bool activeDownload = false;
 
         public SQLBuildsForm() {
             InitializeComponent();
@@ -36,38 +37,36 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 dnldButton.Enabled = false;
                 lastDownloadedSymFolder = $@"{pathToPDBs}\{bld.BuildNumber}.{bld.MachineType}";
                 Directory.CreateDirectory(lastDownloadedSymFolder);
-                using var client = new WebClient();
-                client.DownloadProgressChanged += new DownloadProgressChangedEventHandler(Client_DownloadProgressChanged);
-                client.DownloadFileCompleted += new AsyncCompletedEventHandler(Client_DownloadFileCompleted);
                 var urls = bld.SymbolDetails.Select(s => s.DownloadURL);
                 foreach (var (url, filename) in from url in urls where !string.IsNullOrEmpty(url) let uri = new Uri(url) let filename = Path.GetFileName(uri.LocalPath) select (url, filename)) {
                     if (File.Exists($@"{lastDownloadedSymFolder}\{filename}")) continue;
+                    int totalBytesRead = 0;
+                    double expectedTotalBytes = 0;
                     downloadStatus.Text = filename;
-                    activeDownload = true;
-                    client.DownloadFileAsync(new Uri(url), $@"{lastDownloadedSymFolder}\{filename}");
-                    while (activeDownload) {
-                        Thread.Sleep(300);
-                        Application.DoEvents();
-                    }
+                    var dnldTask = Task.Run(async () => {
+                        var httpStreamDetails = await Utils.GetStreamFromUrl(url);
+                        if (null != httpStreamDetails) {
+                            using var httpStream = httpStreamDetails.Item1;
+                            expectedTotalBytes = httpStreamDetails.Item2;
+                            using var outFS = new FileStream($@"{lastDownloadedSymFolder}\{filename}", FileMode.OpenOrCreate);
+                            outFS.SetLength(0);
+                            var buffer = new byte[4096];
+                            while (true) {
+                                var bytesRead = await httpStream.ReadAsync(buffer);
+                                if (bytesRead == 0) break;
+                                outFS.Write(buffer, 0, bytesRead);
+                                totalBytesRead += bytesRead;
+                            }
+                            await outFS.FlushAsync();
+                        }
+                    });
+
+                    while (!dnldTask.Wait(StackResolver.OperationWaitIntervalMilliseconds)) downloadProgress.ProgressBar.Value = expectedTotalBytes > 0 ? (int)((double)totalBytesRead / (double)expectedTotalBytes * 100.0) : 0;
                 }
 
                 downloadStatus.Text = "Done.";
                 dnldButton.Enabled = true;
             }
-        }
-
-        void Client_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e) {
-            double bytesIn = e.BytesReceived;
-            double totalBytes = e.TotalBytesToReceive;
-            double percentage = bytesIn / totalBytes * 100;
-            downloadProgress.ProgressBar.Value = (int)percentage;
-            statusStrip1.Refresh();
-        }
-
-        void Client_DownloadFileCompleted(object sender, AsyncCompletedEventArgs e) {
-            downloadProgress.ProgressBar.Value = 0;
-            statusStrip1.Refresh();
-            activeDownload = false;
         }
 
         private async void CheckPDBAvail_Click(object sender, EventArgs e) {
