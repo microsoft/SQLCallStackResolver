@@ -2,13 +2,13 @@
 // Licensed under the MIT License - see LICENSE file in this repo.
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     public class SQLBuildInfo {
-        [JsonInclude] public string ProductMajorVersion = "<<ProductMajorVersion>>";
-        [JsonInclude] public string ProductLevel = "<<ProductLevel>>";
-        [JsonInclude] public string Label = "<<BuildName>>";
-        [JsonInclude] public string BuildNumber = "<<BuildNumber>>";
-        [JsonInclude] public string KBInfo = "<<KBArticle>>";
-        [JsonInclude] public List<Symbol> SymbolDetails;
-        [JsonInclude] public string MachineType = "<<x64|x86>>";
+        [JsonInclude][JsonPropertyOrder(0)] public string ProductMajorVersion = "<<ProductMajorVersion>>";
+        [JsonInclude][JsonPropertyOrder(1)] public string ProductLevel = "<<ProductLevel>>";
+        [JsonInclude][JsonPropertyOrder(2)] public string Label = "<<BuildName>>";
+        [JsonInclude][JsonPropertyOrder(3)] public string BuildNumber = "<<BuildNumber>>";
+        [JsonInclude][JsonPropertyOrder(4)] public string KBInfo = "<<KBArticle>>";
+        [JsonInclude][JsonPropertyOrder(5)] public List<Symbol> SymbolDetails;
+        [JsonInclude][JsonPropertyOrder(6)] public string MachineType = "<<x64|x86>>";
 
         public override string ToString() {
             return string.Format(CultureInfo.CurrentCulture,
