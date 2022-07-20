@@ -7,6 +7,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     public partial class SQLBuildsForm : Form {
         public string pathToPDBs = string.Empty;
         public string lastDownloadedSymFolder = string.Empty;
+        private Task _dnldTask = null;
+        private bool _cancelRequested = false;
 
         public SQLBuildsForm() {
             InitializeComponent();
@@ -29,21 +31,24 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         private void DownloadPDBs(object sender, EventArgs e) {
-            if (treeviewSyms.SelectedNode is null) {
+            if (treeviewSyms.SelectedNode is null) return;
+            if (_dnldTask != null) {
+                _cancelRequested = true;
                 return;
             }
 
             if (treeviewSyms.SelectedNode.Tag is SQLBuildInfo bld && bld.SymbolDetails.Count > 0) {
-                dnldButton.Enabled = false;
+                dnldButton.Text = "Cancel download";
                 lastDownloadedSymFolder = $@"{pathToPDBs}\{bld.BuildNumber}.{bld.MachineType}";
                 Directory.CreateDirectory(lastDownloadedSymFolder);
                 var urls = bld.SymbolDetails.Select(s => s.DownloadURL);
                 foreach (var (url, filename) in from url in urls where !string.IsNullOrEmpty(url) let uri = new Uri(url) let filename = Path.GetFileName(uri.LocalPath) select (url, filename)) {
+                    if (_cancelRequested) return;
                     if (File.Exists($@"{lastDownloadedSymFolder}\{filename}")) continue;
                     int totalBytesRead = 0;
                     double expectedTotalBytes = 0;
                     downloadStatus.Text = filename;
-                    var dnldTask = Task.Run(async () => {
+                    _dnldTask = Task.Run(async () => {
                         var httpStreamDetails = await Utils.GetStreamFromUrl(url);
                         if (null != httpStreamDetails) {
                             using var httpStream = httpStreamDetails.Item1;
@@ -52,6 +57,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                             outFS.SetLength(0);
                             var buffer = new byte[4096];
                             while (true) {
+                                if (_cancelRequested) return;
                                 var bytesRead = await httpStream.ReadAsync(buffer);
                                 if (bytesRead == 0) break;
                                 outFS.Write(buffer, 0, bytesRead);
@@ -61,11 +67,15 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         }
                     });
 
-                    while (!dnldTask.Wait(StackResolver.OperationWaitIntervalMilliseconds)) downloadProgress.ProgressBar.Value = expectedTotalBytes > 0 ? (int)((double)totalBytesRead / (double)expectedTotalBytes * 100.0) : 0;
+                    while (!_dnldTask.Wait(StackResolver.OperationWaitIntervalMilliseconds)) {
+                        downloadProgress.ProgressBar.Value = expectedTotalBytes > 0 ? (int)((double)totalBytesRead / (double)expectedTotalBytes * 100.0) : 0;
+                        Application.DoEvents();
+                    }
+                    _dnldTask.Dispose();
+                    _dnldTask = null;
                 }
 
-                downloadStatus.Text = "Done.";
-                dnldButton.Enabled = true;
+                this.Close();
             }
         }
 

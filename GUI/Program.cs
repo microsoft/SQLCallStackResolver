@@ -7,6 +7,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         static void Main() {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
 
             using var mainForm = new MainForm();
             Application.Run(mainForm);
