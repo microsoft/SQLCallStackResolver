@@ -30,73 +30,49 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.splitContainer2.Panel2.SuspendLayout();
             this.splitContainer2.SuspendLayout();
             this.SuspendLayout();
-            this.buildsFormStatusStrip.ImageScalingSize = new System.Drawing.Size(20, 20);
-            this.buildsFormStatusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.buildFormStatusStrip.ImageScalingSize = new System.Drawing.Size(20, 20);
+            this.buildFormStatusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.downloadStatus,
             this.downloadProgress});
-            this.buildsFormStatusStrip.Location = new System.Drawing.Point(0, 522);
-            this.buildsFormStatusStrip.Name = "buildsFormStatusStrip";
-            this.buildsFormStatusStrip.Padding = new System.Windows.Forms.Padding(1, 0, 10, 0);
-            this.buildsFormStatusStrip.Size = new System.Drawing.Size(411, 22);
-            this.buildsFormStatusStrip.TabIndex = 2;
-            this.buildsFormStatusStrip.Text = "buildsFormStatusStrip";
+            this.buildFormStatusStrip.Location = new System.Drawing.Point(0, 807);
+            this.buildFormStatusStrip.Name = "buildFormStatusStrip";
+            this.buildFormStatusStrip.Padding = new System.Windows.Forms.Padding(1, 0, 13, 0);
+            this.buildFormStatusStrip.Size = new System.Drawing.Size(548, 30);
+            this.buildFormStatusStrip.TabIndex = 2;
+            this.buildFormStatusStrip.Text = "statusStrip1";
             this.downloadStatus.Name = "downloadStatus";
             this.downloadStatus.Size = new System.Drawing.Size(0, 24);
-            // 
-            // downloadProgress
-            // 
             this.downloadProgress.AccessibleDescription = "Progress of download";
             this.downloadProgress.AccessibleName = "downloadProgress";
             this.downloadProgress.Name = "downloadProgress";
             this.downloadProgress.Size = new System.Drawing.Size(100, 22);
-            // 
-            // splitContainer1
-            // 
             this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainer1.FixedPanel = System.Windows.Forms.FixedPanel.Panel2;
             this.splitContainer1.IsSplitterFixed = true;
             this.splitContainer1.Location = new System.Drawing.Point(0, 0);
             this.splitContainer1.Name = "splitContainer1";
             this.splitContainer1.Orientation = System.Windows.Forms.Orientation.Horizontal;
-            // 
-            // splitContainer1.Panel1
-            // 
             this.splitContainer1.Panel1.Controls.Add(this.splitContainer2);
-            // 
-            // splitContainer1.Panel2
-            // 
             this.splitContainer1.Panel2.Controls.Add(this.checkPDBAvail);
             this.splitContainer1.Panel2.Controls.Add(this.dnldButton);
             this.splitContainer1.Size = new System.Drawing.Size(548, 837);
             this.splitContainer1.SplitterDistance = 767;
             this.splitContainer1.SplitterWidth = 5;
             this.splitContainer1.TabIndex = 3;
-            // 
-            // splitContainer2
-            // 
             this.splitContainer2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainer2.FixedPanel = System.Windows.Forms.FixedPanel.Panel1;
             this.splitContainer2.IsSplitterFixed = true;
             this.splitContainer2.Location = new System.Drawing.Point(0, 0);
             this.splitContainer2.Name = "splitContainer2";
             this.splitContainer2.Orientation = System.Windows.Forms.Orientation.Horizontal;
-            // 
-            // splitContainer2.Panel1
-            // 
             this.splitContainer2.Panel1.Controls.Add(this.findNext);
             this.splitContainer2.Panel1.Controls.Add(this.searchText);
             this.splitContainer2.Panel1.Controls.Add(this.searchLabel);
-            // 
-            // splitContainer2.Panel2
-            // 
             this.splitContainer2.Panel2.Controls.Add(this.treeviewSyms);
             this.splitContainer2.Size = new System.Drawing.Size(548, 767);
             this.splitContainer2.SplitterDistance = 35;
             this.splitContainer2.SplitterWidth = 5;
             this.splitContainer2.TabIndex = 0;
-            // 
-            // findNext
-            // 
             this.findNext.AccessibleDescription = "Find";
             this.findNext.AccessibleName = "findNext";
             this.findNext.Location = new System.Drawing.Point(468, 11);
@@ -106,27 +82,18 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.findNext.Text = "Find";
             this.findNext.UseVisualStyleBackColor = true;
             this.findNext.Click += new System.EventHandler(this.FindNext_Click);
-            // 
-            // searchText
-            // 
             this.searchText.AccessibleDescription = "Search term goes here";
             this.searchText.AccessibleName = "searchText";
             this.searchText.Location = new System.Drawing.Point(165, 11);
             this.searchText.Name = "searchText";
             this.searchText.Size = new System.Drawing.Size(296, 27);
             this.searchText.TabIndex = 1;
-            // 
-            // searchLabel
-            // 
             this.searchLabel.AutoSize = true;
             this.searchLabel.Location = new System.Drawing.Point(11, 15);
             this.searchLabel.Name = "searchLabel";
             this.searchLabel.Size = new System.Drawing.Size(156, 20);
             this.searchLabel.TabIndex = 0;
             this.searchLabel.Text = "SQL version / keyword";
-            // 
-            // treeviewSyms
-            // 
             this.treeviewSyms.AccessibleDescription = "SQL Server versions and builds";
             this.treeviewSyms.AccessibleName = "treeviewSyms";
             this.treeviewSyms.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -135,9 +102,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.treeviewSyms.Name = "treeviewSyms";
             this.treeviewSyms.Size = new System.Drawing.Size(548, 727);
             this.treeviewSyms.TabIndex = 1;
-            // 
-            // checkPDBAvail
-            // 
             this.checkPDBAvail.AccessibleDescription = "Check if public PDBs for this build are available";
             this.checkPDBAvail.AccessibleName = "checkPDBAvail";
             this.checkPDBAvail.Anchor = System.Windows.Forms.AnchorStyles.None;
@@ -148,9 +112,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.checkPDBAvail.Text = "Check PDB availability";
             this.checkPDBAvail.UseVisualStyleBackColor = true;
             this.checkPDBAvail.Click += new System.EventHandler(this.CheckPDBAvail_Click);
-            // 
-            // dnldButton
-            // 
             this.dnldButton.AccessibleDescription = "Download public PDBs";
             this.dnldButton.AccessibleName = "dnldButton";
             this.dnldButton.Anchor = System.Windows.Forms.AnchorStyles.None;
@@ -162,7 +123,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.dnldButton.Text = "Download PDBs";
             this.dnldButton.UseVisualStyleBackColor = true;
             this.dnldButton.Click += new System.EventHandler(this.DownloadPDBs);
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(411, 544);
             this.Controls.Add(this.buildsFormStatusStrip);

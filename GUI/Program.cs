@@ -7,9 +7,12 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         static void Main() {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+            Application.SetHighDpiMode(HighDpiMode.SystemAware);
 
             using var mainForm = new MainForm();
+            var screen = Screen.FromPoint(Cursor.Position);
+            mainForm.StartPosition = FormStartPosition.Manual;
+            mainForm.Location = Screen.FromPoint(Cursor.Position).WorkingArea.Location;
             Application.Run(mainForm);
         }
     }
