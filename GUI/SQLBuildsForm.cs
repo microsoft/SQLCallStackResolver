@@ -1,7 +1,5 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
-using System;
-
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     [SupportedOSPlatform("windows")]
     public partial class SQLBuildsForm : Form {

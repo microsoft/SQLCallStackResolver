@@ -35,7 +35,7 @@ jobs:
       shell: powershell
     - name: Run tests
       run: |
-        ../../../utils/import-vsenv.ps1
+        ../../../../../utils/import-vsenv.ps1
         & "$env:VSINSTALLDIR/Common7/IDE/Extensions/TestPlatform/vstest.console.exe" .\SQLCalLStackResolver.Tests.dll /Parallel /logger:"console;verbosity=normal" /TestCaseFilter:"${{ github.event.inputs.testsfilter || 'TestCategory=Unit' }}"
-      working-directory: Target\Release\Tests\x64\Release\net6.0-windows7.0
+      working-directory: Target\Release\Tests\net6.0-windows\win-x64
       shell: powershell
