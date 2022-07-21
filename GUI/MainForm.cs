@@ -20,6 +20,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         internal static readonly string LatestReleaseTimestampFormat = "yyyy-MM-dd HH:mm";
         internal static readonly string LatestReleaseTimestampCulture = "en-US";
 
+        private Dictionary<string, string> _cfgItems;
+
         private void ResolveCallstacks_Click(object sender, EventArgs e) {
             List<string> dllPaths = null;
             if (!string.IsNullOrEmpty(binaryPaths.Text)) dllPaths = binaryPaths.Text.Split(';').ToList();
@@ -30,7 +32,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 return;
             }
 
-            bool isSingleLineInput = StackResolver.IsInputSingleLine(callStackInput.Text, cfg["PatternsToTreatAsMultiline"]);
+            bool isSingleLineInput = StackResolver.IsInputSingleLine(callStackInput.Text, this._cfgItems["PatternsToTreatAsMultiline"]);
             if (isSingleLineInput && !FramesOnSingleLine.Checked && DialogResult.Yes == MessageBox.Show(this,
                     "Maybe this is intentional, but your input seems to have all the frames on a single line, but the 'Callstack frames are in single line' checkbox is unchecked. " +
                     "This may cause problems resolving symbols. Would you like to enable this?", "Enable the 'frames on single line' option?", MessageBoxButtons.YesNo)) {
@@ -239,26 +241,25 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         private void SelectSQLPDB_Click(object sender, EventArgs e) {
             if (!File.Exists(MainForm.SqlBuildInfoFileName)) {
                 MessageBox.Show(this,
-                    $"Could not find the SQL build info JSON file: {MainForm.SqlBuildInfoFileName}. You might need to manually obtain it from one of these locations: {cfg["SQLBuildInfoURLs"]}",
+                    $"Could not find the SQL build info JSON file: {MainForm.SqlBuildInfoFileName}. You might need to manually obtain it from one of these locations: {this._cfgItems["SQLBuildInfoURLs"]}",
                     "SQL build info missing", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
             using var sqlbuildsForm = new SQLBuildsForm {
-                pathToPDBs = cfg["PDBDownloadFolder"]
+                pathToPDBs = this._cfgItems["PDBDownloadFolder"]
             };
             sqlbuildsForm.StartPosition = FormStartPosition.CenterParent;
             sqlbuildsForm.ShowDialog(this);
             this.pdbPaths.AppendText((pdbPaths.TextLength == 0 ? string.Empty : ";") + sqlbuildsForm.lastDownloadedSymFolder);
         }
 
-        private IConfigurationRoot cfg;
-
         private async void MainForm_Load(object sender, EventArgs e) {
             MessageBox.Show(this, "Copyright (c) 2022 Microsoft Corporation. All rights reserved.\r\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.", "SQLCallStackResolver - Legal Notice", MessageBoxButtons.OK, MessageBoxIcon.Information);
             DateTime latestReleaseDateTimeServer;
             DateTime latestReleaseDateTimeLocal = DateTime.MinValue;
-            cfg = new ConfigurationBuilder().AddJsonFile("appsettings.json", optional: false, reloadOnChange: true).Build();
-            var latestReleaseURLs = cfg["LatestReleaseURLs"].Split(';');
+            using var configFS = new FileStream("settings.json", FileMode.Open, FileAccess.Read);
+            _cfgItems = JsonSerializer.Deserialize<Dictionary<string,string>>(configFS);
+            var latestReleaseURLs = this._cfgItems["LatestReleaseURLs"].Split(';');
             // get the timestamp contained within the first valid file within latestReleaseURLs
             foreach (var url in latestReleaseURLs) {
                 using var latestReleaseDateStringServerStream = (await Utils.GetStreamFromUrl(url))?.Item1;
@@ -287,8 +288,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
             DateTime lastUpdDateTimeServer = DateTime.MinValue;
             DateTime lastUpdDateTimeLocal = DateTime.MinValue;
-            var sqlBuildInfoUpdateURLs = cfg["SQLBuildInfoUpdateURLs"].Split(';');
-            var sqlBuildInfoURLs = cfg["SQLBuildInfoURLs"].Split(';');
+            var sqlBuildInfoUpdateURLs = this._cfgItems["SQLBuildInfoUpdateURLs"].Split(';');
+            var sqlBuildInfoURLs = this._cfgItems["SQLBuildInfoURLs"].Split(';');
 
             // get the timestamp contained within the first valid file within SQLBuildInfoURLs
             foreach (var b in sqlBuildInfoUpdateURLs) {
