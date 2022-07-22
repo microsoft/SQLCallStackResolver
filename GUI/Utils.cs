@@ -1,19 +1,18 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
+using System.Net.Http;
+
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     internal class Utils {
-        internal static string GetFileContentsFromUrl(string url) {
+        internal static async Task<Tuple<Stream, long>> GetStreamFromUrl(string url) {
             if (string.IsNullOrEmpty(url)) return null;
-            var httpReq = (HttpWebRequest)WebRequest.Create(new Uri(url));
-
             try {
-                HttpWebResponse httpResp = (HttpWebResponse)httpReq.GetResponse();
-                if (httpResp != null && httpResp.StatusCode == HttpStatusCode.OK) {
-                    using var strm = new StreamReader(httpResp.GetResponseStream());
-                    return strm.ReadToEnd().Trim();
-                }
-            } catch (WebException) { /* by design this is empty to handle the case where the URL is invalid */ }
-
+                var client = new HttpClient();
+                using var req = new HttpRequestMessage(HttpMethod.Get, url);
+                var res = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+                res.EnsureSuccessStatusCode();
+                return new Tuple<Stream, long>(await res.Content.ReadAsStreamAsync(), (long)res.Content.Headers.ContentLength);
+            } catch (HttpRequestException) { /* this will fall through to the return false so it is okay to leave blank */ } catch (NotSupportedException) { /* this will fall through to the return false so it is okay to leave blank */ }
             return null;
         }
     }

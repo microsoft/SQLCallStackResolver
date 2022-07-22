@@ -4,7 +4,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     public partial class SQLBuildsForm : Form {
         public string pathToPDBs = string.Empty;
         public string lastDownloadedSymFolder = string.Empty;
-        private bool activeDownload = false;
+        private Task _dnldTask = null;
+        private bool _cancelRequested = false;
 
         public SQLBuildsForm() {
             InitializeComponent();
@@ -27,56 +28,76 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         private void DownloadPDBs(object sender, EventArgs e) {
-            if (treeviewSyms.SelectedNode is null) {
+            if (treeviewSyms.SelectedNode is null) return;
+            if (_dnldTask != null) {
+                _cancelRequested = true;
                 return;
             }
 
+            _cancelRequested = false;
+
             if (treeviewSyms.SelectedNode.Tag is SQLBuildInfo bld && bld.SymbolDetails.Count > 0) {
-                dnldButton.Enabled = false;
+                var statusMsg = new StringBuilder();
+                dnldButton.Text = "Cancel download";
                 lastDownloadedSymFolder = $@"{pathToPDBs}\{bld.BuildNumber}.{bld.MachineType}";
                 Directory.CreateDirectory(lastDownloadedSymFolder);
-                using var client = new WebClient();
-                client.DownloadProgressChanged += new DownloadProgressChangedEventHandler(Client_DownloadProgressChanged);
-                client.DownloadFileCompleted += new AsyncCompletedEventHandler(Client_DownloadFileCompleted);
                 var urls = bld.SymbolDetails.Select(s => s.DownloadURL);
                 foreach (var (url, filename) in from url in urls where !string.IsNullOrEmpty(url) let uri = new Uri(url) let filename = Path.GetFileName(uri.LocalPath) select (url, filename)) {
+                    if (_cancelRequested) break;
                     if (File.Exists($@"{lastDownloadedSymFolder}\{filename}")) continue;
+                    int totalBytesRead = 0;
+                    double expectedTotalBytes = 0;
                     downloadStatus.Text = filename;
-                    activeDownload = true;
-                    client.DownloadFileAsync(new Uri(url), $@"{lastDownloadedSymFolder}\{filename}");
-                    while (activeDownload) {
-                        Thread.Sleep(300);
+                    _dnldTask = Task.Run(async () => {
+                        try {
+                            var httpStreamDetails = await Utils.GetStreamFromUrl(url);
+                            if (null != httpStreamDetails) {
+                                using var httpStream = httpStreamDetails.Item1;
+                                expectedTotalBytes = httpStreamDetails.Item2;
+                                if (httpStream is not null && expectedTotalBytes > 0) {
+                                    using var outFS = new FileStream($@"{lastDownloadedSymFolder}\{filename}", FileMode.OpenOrCreate);
+                                    outFS.SetLength(0);
+                                    var buffer = new byte[4096];
+                                    while (true) {
+                                        if (_cancelRequested) break;
+                                        var bytesRead = await httpStream.ReadAsync(buffer, 0, buffer.Length);
+                                        if (bytesRead == 0) break;
+                                        outFS.Write(buffer, 0, bytesRead);
+                                        totalBytesRead += bytesRead;
+                                    }
+                                    await outFS.FlushAsync();
+                                }
+                            } else statusMsg.AppendLine($"Failed to download {url}");
+                        } catch (IOException) { statusMsg.AppendLine($"Failed to download {url}"); }
+                    });
+
+                    while (!_dnldTask.Wait(StackResolver.OperationWaitIntervalMilliseconds)) {
+                        downloadProgress.ProgressBar.Value = expectedTotalBytes > 0 ? (int)(totalBytesRead / expectedTotalBytes * 100.0) : 0;
                         Application.DoEvents();
                     }
+                    _dnldTask = null;
                 }
 
-                downloadStatus.Text = "Done.";
-                dnldButton.Enabled = true;
+                dnldButton.Text = "Download PDBs";
+                downloadProgress.ProgressBar.Value = 0;
+                downloadStatus.Text = String.Empty;
+
+                if (statusMsg.Length > 0 && DialogResult.Yes == MessageBox.Show(this, "One or more files could not be downloaded. Press Yes to go back (and try again), or No to close. Error details:" + Environment.NewLine + Environment.NewLine + statusMsg, "Error(s) downloading PDB symbols", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)) {
+                    return;
+                }
+
+                if (!_cancelRequested) this.Close();
             }
         }
 
-        void Client_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e) {
-            double bytesIn = e.BytesReceived;
-            double totalBytes = e.TotalBytesToReceive;
-            double percentage = bytesIn / totalBytes * 100;
-            downloadProgress.ProgressBar.Value = (int)percentage;
-            statusStrip1.Refresh();
-        }
-
-        void Client_DownloadFileCompleted(object sender, AsyncCompletedEventArgs e) {
-            downloadProgress.ProgressBar.Value = 0;
-            statusStrip1.Refresh();
-            activeDownload = false;
-        }
-
-        private void CheckPDBAvail_Click(object sender, EventArgs e) {
+        private async void CheckPDBAvail_Click(object sender, EventArgs e) {
             if (treeviewSyms.SelectedNode is null) return;
             if (treeviewSyms.SelectedNode.Tag is SQLBuildInfo bld && bld.SymbolDetails.Count > 0) {
                 List<string> failedUrls = new();
                 var urls = bld.SymbolDetails.Select(s => s.DownloadURL);
                 foreach (var url in urls) {
                     downloadStatus.Text = url;
-                    if (!Symbol.IsURLValid(new Uri(url))) failedUrls.Add(url);
+                    if (!(await Symbol.IsURLValid(new Uri(url)))) failedUrls.Add(url);
                 }
 
                 if (failedUrls.Count > 0) MessageBox.Show(string.Join(",", failedUrls));
