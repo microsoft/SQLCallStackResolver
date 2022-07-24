@@ -203,9 +203,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Check whether symbol details for a given binary are correct.
-        [TestMethod][TestCategory("Unit")] public void GetSymDetails() {
+        [TestMethod][TestCategory("Unit")] public async Task GetSymDetails() {
             var dllPaths = new List<string> { @"..\..\..\Tests\TestCases\TestOrdinal" };
-            var ret = StackResolver.GetSymbolDetailsForBinaries(dllPaths, true);
+            var ret = await StackResolver.GetSymbolDetailsForBinaries(dllPaths, true);
             Assert.AreEqual(1, ret.Count);
             Assert.AreEqual("https://msdl.microsoft.com/download/symbols/sqldk.pdb/6a1934433512464b8b8ed905ad930ee62/sqldk.pdb", ret[0].DownloadURL);
             Assert.IsTrue(ret[0].DownloadVerified);
@@ -654,11 +654,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             Assert.AreEqual((uint)1447120, ret[1161].Address);
         }
 
-        [TestMethod][TestCategory("Unit")] public void IsUrlValid() {
-            Assert.IsFalse(Symbol.IsURLValid(new Uri("https://msdl.microsoft.com/download/symbols/sqldk.pdb/6a1934433512464b8b8ed905ad930ee62/someother.pdb")));
-            Assert.IsFalse(Symbol.IsURLValid(new Uri("file:///C:/Windows/System32/Kernel32.dll")));
-            Assert.ThrowsException<NotSupportedException>(() => Symbol.IsURLValid(new Uri("LDAP://server/distinguishedName")));
-            Assert.IsTrue(Symbol.IsURLValid(new Uri("https://msdl.microsoft.com/download/symbols/sqldk.pdb/6a1934433512464b8b8ed905ad930ee62/sqldk.pdb")));
+        [TestMethod][TestCategory("Unit")] public async Task IsUrlValid() {
+            Assert.IsFalse(await Symbol.IsURLValid(new Uri("https://msdl.microsoft.com/download/symbols/sqldk.pdb/6a1934433512464b8b8ed905ad930ee62/someother.pdb")));
+            Assert.IsFalse(await Symbol.IsURLValid(new Uri("file:///C:/Windows/System32/Kernel32.dll")));
+            Assert.IsFalse(await Symbol.IsURLValid(new Uri("LDAP://server/distinguishedName")));
+            Assert.IsTrue(await Symbol.IsURLValid(new Uri("https://msdl.microsoft.com/download/symbols/sqldk.pdb/6a1934433512464b8b8ed905ad930ee62/sqldk.pdb")));
         }
 
         [TestMethod][TestCategory("Unit")] public void GetBuildInfo() {

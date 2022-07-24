@@ -564,7 +564,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// <summary>
         /// This method generates a PowerShell script to automate download of matched PDBs from the public symbol server.
         /// </summary>
-        public static List<Symbol> GetSymbolDetailsForBinaries(List<string> dllPaths, bool recurse, List<Symbol> existingSymbols = null) {
+        public static async Task<List<Symbol>> GetSymbolDetailsForBinaries(List<string> dllPaths, bool recurse, List<Symbol> existingSymbols = null) {
             if (dllPaths == null || dllPaths.Count == 0) return new List<Symbol>();
 
             var symbolsFound = new List<Symbol>();
@@ -592,7 +592,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         DownloadURL = string.Format(CultureInfo.CurrentCulture, @"https://msdl.microsoft.com/download/symbols/{0}.pdb/{1}/{0}.pdb",
                             usablePDBName, pdbGuid.ToString("N", CultureInfo.CurrentCulture) + pdbAge.ToString(CultureInfo.CurrentCulture)), FileVersion = fileVer
                     };
-                    newSymbol.DownloadVerified = Symbol.IsURLValid(new Uri(newSymbol.DownloadURL));
+                    newSymbol.DownloadVerified = await Symbol.IsURLValid(new Uri(newSymbol.DownloadURL));
                     symbolsFound.Add(newSymbol);
                 }
             }

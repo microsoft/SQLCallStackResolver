@@ -9,7 +9,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
         #region Windows Form Designer generated code
         private void InitializeComponent() {
-            this.statusStrip1 = new System.Windows.Forms.StatusStrip();
+            this.buildsFormStatusStrip = new System.Windows.Forms.StatusStrip();
             this.downloadStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.downloadProgress = new System.Windows.Forms.ToolStripProgressBar();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
@@ -20,7 +20,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.treeviewSyms = new System.Windows.Forms.TreeView();
             this.checkPDBAvail = new System.Windows.Forms.Button();
             this.dnldButton = new System.Windows.Forms.Button();
-            this.statusStrip1.SuspendLayout();
+            this.buildsFormStatusStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -30,16 +30,16 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.splitContainer2.Panel2.SuspendLayout();
             this.splitContainer2.SuspendLayout();
             this.SuspendLayout();
-            this.statusStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
-            this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.buildsFormStatusStrip.ImageScalingSize = new System.Drawing.Size(20, 20);
+            this.buildsFormStatusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.downloadStatus,
             this.downloadProgress});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 522);
-            this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Padding = new System.Windows.Forms.Padding(1, 0, 10, 0);
-            this.statusStrip1.Size = new System.Drawing.Size(411, 22);
-            this.statusStrip1.TabIndex = 2;
-            this.statusStrip1.Text = "statusStrip1";
+            this.buildsFormStatusStrip.Location = new System.Drawing.Point(0, 522);
+            this.buildsFormStatusStrip.Name = "buildsFormStatusStrip";
+            this.buildsFormStatusStrip.Padding = new System.Windows.Forms.Padding(1, 0, 10, 0);
+            this.buildsFormStatusStrip.Size = new System.Drawing.Size(411, 22);
+            this.buildsFormStatusStrip.TabIndex = 2;
+            this.buildsFormStatusStrip.Text = "buildsFormStatusStrip";
             this.downloadStatus.Name = "downloadStatus";
             this.downloadStatus.Size = new System.Drawing.Size(0, 17);
             this.downloadProgress.AccessibleDescription = "Progress of download";
@@ -120,7 +120,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.dnldButton.AccessibleDescription = "Download public PDBs";
             this.dnldButton.AccessibleName = "dnldButton";
             this.dnldButton.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.dnldButton.DialogResult = System.Windows.Forms.DialogResult.OK;
             this.dnldButton.Location = new System.Drawing.Point(199, 12);
             this.dnldButton.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.dnldButton.Name = "dnldButton";
@@ -129,11 +128,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.dnldButton.Text = "Download PDBs";
             this.dnldButton.UseVisualStyleBackColor = true;
             this.dnldButton.Click += new System.EventHandler(this.DownloadPDBs);
-            this.AcceptButton = this.dnldButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(411, 544);
-            this.Controls.Add(this.statusStrip1);
+            this.Controls.Add(this.buildsFormStatusStrip);
             this.Controls.Add(this.splitContainer1);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
@@ -141,8 +139,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
             this.Text = "Select SQL build";
             this.Load += new System.EventHandler(this.Treeview_Load);
-            this.statusStrip1.ResumeLayout(false);
-            this.statusStrip1.PerformLayout();
+            this.buildsFormStatusStrip.ResumeLayout(false);
+            this.buildsFormStatusStrip.PerformLayout();
             this.splitContainer1.Panel1.ResumeLayout(false);
             this.splitContainer1.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
@@ -157,7 +155,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         }
         #endregion
-        private System.Windows.Forms.StatusStrip statusStrip1;
+        private System.Windows.Forms.StatusStrip buildsFormStatusStrip;
         private System.Windows.Forms.ToolStripStatusLabel downloadStatus;
         private System.Windows.Forms.ToolStripProgressBar downloadProgress;
         private System.Windows.Forms.SplitContainer splitContainer1;
