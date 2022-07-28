@@ -4,7 +4,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     public partial class SQLBuildsForm : Form {
         public string pathToPDBs = string.Empty;
         public string lastDownloadedSymFolder = string.Empty;
-        private bool activeDownload = false;
+        private Task _dnldTask = null;
+        private CancellationTokenSource _cts;
 
         public SQLBuildsForm() {
             InitializeComponent();
@@ -27,56 +28,59 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         private void DownloadPDBs(object sender, EventArgs e) {
-            if (treeviewSyms.SelectedNode is null) {
+            if (treeviewSyms.SelectedNode is null) return;
+            if (_dnldTask != null) {
+                _cts.Cancel();
                 return;
             }
 
             if (treeviewSyms.SelectedNode.Tag is SQLBuildInfo bld && bld.SymbolDetails.Count > 0) {
-                dnldButton.Enabled = false;
+                var statusMsg = new StringBuilder();
+                dnldButton.Text = "Cancel download";
                 lastDownloadedSymFolder = $@"{pathToPDBs}\{bld.BuildNumber}.{bld.MachineType}";
                 Directory.CreateDirectory(lastDownloadedSymFolder);
-                using var client = new WebClient();
-                client.DownloadProgressChanged += new DownloadProgressChangedEventHandler(Client_DownloadProgressChanged);
-                client.DownloadFileCompleted += new AsyncCompletedEventHandler(Client_DownloadFileCompleted);
                 var urls = bld.SymbolDetails.Select(s => s.DownloadURL);
-                foreach (var (url, filename) in from url in urls where !string.IsNullOrEmpty(url) let uri = new Uri(url) let filename = Path.GetFileName(uri.LocalPath) select (url, filename)) {
-                    if (File.Exists($@"{lastDownloadedSymFolder}\{filename}")) continue;
-                    downloadStatus.Text = filename;
-                    activeDownload = true;
-                    client.DownloadFileAsync(new Uri(url), $@"{lastDownloadedSymFolder}\{filename}");
-                    while (activeDownload) {
-                        Thread.Sleep(300);
-                        Application.DoEvents();
+                using (_cts = new CancellationTokenSource()) {
+                    foreach (var (url, filename) in from url in urls where !string.IsNullOrEmpty(url) let uri = new Uri(url) let filename = Path.GetFileName(uri.LocalPath) select (url, filename)) {
+                        if (_cts.IsCancellationRequested) break;
+                        if (File.Exists($@"{lastDownloadedSymFolder}\{filename}")) continue;
+                        downloadStatus.Text = filename;
+                        var prog = new DownloadProgress();
+                        _dnldTask = Task.Run(async () => {
+                            var res = await Utils.DownloadFromUrl(url, $@"{lastDownloadedSymFolder}\{filename}", prog, _cts);
+                            if (!res) statusMsg.AppendLine($"Failed to download {url}");
+                        });
+
+                        while (!_dnldTask.Wait(StackResolver.OperationWaitIntervalMilliseconds)) {
+                            downloadProgress.ProgressBar.Value = prog.Percent;
+                            Application.DoEvents();
+                        }
+                        _dnldTask = null;
+                    }
+
+                    dnldButton.Text = "Download PDBs";
+                    downloadProgress.ProgressBar.Value = 0;
+                    downloadStatus.Text = String.Empty;
+
+                    if (statusMsg.Length > 0 && DialogResult.Yes == MessageBox.Show(this, "One or more files could not be downloaded. Press Yes to go back (and try again), or No to close. Error details:" + Environment.NewLine + Environment.NewLine + statusMsg, "Error(s) downloading PDB symbols", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)) {
+                        return;
+                    }
+
+                    if (!_cts.IsCancellationRequested) {
+                        this.Close();
                     }
                 }
-
-                downloadStatus.Text = "Done.";
-                dnldButton.Enabled = true;
             }
         }
 
-        void Client_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e) {
-            double bytesIn = e.BytesReceived;
-            double totalBytes = e.TotalBytesToReceive;
-            double percentage = bytesIn / totalBytes * 100;
-            downloadProgress.ProgressBar.Value = (int)percentage;
-            statusStrip1.Refresh();
-        }
-
-        void Client_DownloadFileCompleted(object sender, AsyncCompletedEventArgs e) {
-            downloadProgress.ProgressBar.Value = 0;
-            statusStrip1.Refresh();
-            activeDownload = false;
-        }
-
-        private void CheckPDBAvail_Click(object sender, EventArgs e) {
+        private async void CheckPDBAvail_Click(object sender, EventArgs e) {
             if (treeviewSyms.SelectedNode is null) return;
             if (treeviewSyms.SelectedNode.Tag is SQLBuildInfo bld && bld.SymbolDetails.Count > 0) {
                 List<string> failedUrls = new();
                 var urls = bld.SymbolDetails.Select(s => s.DownloadURL);
                 foreach (var url in urls) {
                     downloadStatus.Text = url;
-                    if (!Symbol.IsURLValid(new Uri(url))) failedUrls.Add(url);
+                    if (!(await Symbol.IsURLValid(new Uri(url)))) failedUrls.Add(url);
                 }
 
                 if (failedUrls.Count > 0) MessageBox.Show(string.Join(",", failedUrls));
