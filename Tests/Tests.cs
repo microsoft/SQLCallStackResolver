@@ -119,7 +119,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Check the processing of module base address information.
-        [TestMethod][TestCategory("Unit")] public void ModuleLoadAddressInputNonRecognizedInput() {
+        [TestMethod][TestCategory("Unit")] public void ModuleLoadAddressInputUnusualInput() {
             using var csr = new StackResolver();
             Assert.IsTrue(csr.ProcessBaseAddresses(string.Empty));
             Assert.IsFalse(csr.ProcessBaseAddresses(@"hello wor1213ld"));

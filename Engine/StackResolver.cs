@@ -39,8 +39,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         /// Convert virtual-address only type frames to their module+offset format
         private string[] PreProcessVAs(string[] callStackLines, CancellationTokenSource cts) {
-            if (!this.LoadedModules.Any()) return callStackLines;// only makes sense doing the rest of the work in this function if have loaded module information
-
             string[] retval = new string[callStackLines.Length];
             int frameNum = 0;
             foreach (var currentFrame in callStackLines) {
@@ -251,25 +249,18 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// </summary>
         public bool ProcessBaseAddresses(string baseAddressesString) {
             bool retVal = true;
-            if (string.IsNullOrEmpty(baseAddressesString)) {
-                // changed this to return true because this is not a true error condition
-                return true;
-            }
+            if (string.IsNullOrEmpty(baseAddressesString)) return true; // not a true error condition so we are okay
             LoadedModules.Clear();
             var mcmodules = rgxmoduleaddress.Matches(baseAddressesString);
-            if (mcmodules.Count == 0) {
-                // it is likely that we have malformed input, cannot ignore this so return false.
-                return false;
-            }
+            if (!mcmodules.Cast<Match>().Any()) return false; // it is likely that we have malformed input, cannot ignore this so return false.
 
             try {
-                foreach (Match matchedmoduleinfo in mcmodules) {
-                    LoadedModules.Add(new ModuleInfo() {
-                        ModuleName = Path.GetFileNameWithoutExtension(matchedmoduleinfo.Groups["filepath"].Value),
-                        BaseAddress = Convert.ToUInt64(matchedmoduleinfo.Groups["baseaddress"].Value.Replace("`", string.Empty), 16),
-                        EndAddress = ulong.MaxValue // stub this with an 'infinite' end address; only the highest loaded module will end up with this value finally
-                    });
-                }
+                string[] validExtensions = { ".dll", ".exe" };
+                mcmodules.Cast<Match>().Where(m => validExtensions.Contains(Path.GetExtension(m.Groups["filepath"].Value).Trim().ToLower())).ToList().ForEach(matchedmoduleinfo => LoadedModules.Add(new ModuleInfo() {
+                    ModuleName = Path.GetFileNameWithoutExtension(matchedmoduleinfo.Groups["filepath"].Value),
+                    BaseAddress = Convert.ToUInt64(matchedmoduleinfo.Groups["baseaddress"].Value.Replace("`", string.Empty), 16),
+                    EndAddress = ulong.MaxValue // stub this with an 'infinite' end address; only the highest loaded module will end up with this value finally
+                }));
             } catch (FormatException) {
                 // typically errors with non-numeric info passed to Convert.ToUInt64
                 retVal = false;
@@ -280,6 +271,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 // typically these are malformed paths passed to Path.GetFileNameWithoutExtension
                 retVal = false;
             }
+            if (!LoadedModules.Any()) return false; // no valid modules found
 
             // check for duplicate base addresses - this should normally never be possible unless there is wrong data input
             if (LoadedModules.Select(m => m.BaseAddress).GroupBy(m => m).Where(g => g.Count() > 1).Any()) return false;
@@ -529,7 +521,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 SafeNativeMethods.EstablishActivationContext();
                 var _diautils = new Dictionary<string, DiaUtil>();
                 var modulesToIgnore = new List<string>();
-                var loadedModulesCount = this.LoadedModules.Count;
 
                 for (int tmpStackIndex = 0; tmpStackIndex < listOfCallStacks.Count; tmpStackIndex++) {
                     if (cts.IsCancellationRequested) break;
@@ -538,7 +529,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     var currstack = listOfCallStacks[tmpStackIndex];
                     var ordinalResolvedFrames = this.dllMapHelper.LoadDllsIfApplicable(currstack.CallstackFrames, searchDLLRecursively, dllPaths);
                     // process any frames which are purely virtual address (in such cases, the caller should have specified base addresses)
-                    var callStackLines = loadedModulesCount > 0 ? PreProcessVAs(ordinalResolvedFrames, cts) : ordinalResolvedFrames;
+                    var callStackLines = this.LoadedModules.Any() ? PreProcessVAs(ordinalResolvedFrames, cts) : ordinalResolvedFrames;
                     if (cts.IsCancellationRequested) return;
 
                     // resolve symbols by using DIA
