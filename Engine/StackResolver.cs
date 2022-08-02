@@ -180,7 +180,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                     // if we did find a block symbol then we look for its parent till we find either a function or public symbol
                     // an addition check is on the name of the symbol being non-null and non-empty
-                    while (!(mysym.symTag == (uint)SymTagEnum.SymTagFunction || mysym.symTag == (uint)Dia.SymTagEnum.SymTagPublicSymbol) && string.IsNullOrEmpty(mysym.name)) {
+                    while (!(mysym.symTag == (uint)SymTagEnum.SymTagFunction || mysym.symTag == (uint)SymTagEnum.SymTagPublicSymbol) && string.IsNullOrEmpty(mysym.name)) {
                         mysym = mysym.lexicalParent;
                     }
 

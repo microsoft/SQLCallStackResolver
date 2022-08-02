@@ -1,11 +1,39 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License - see LICENSE file in this repo.
 
+# Find out the installation path for the highest version of Visual Studio installed
+$vsMaxVerFound = 0
+$vsPath = $null
+$vsVersions = (& "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe" -legacy -prerelease -format json) | ConvertFrom-Json
+foreach ($vsInstance in $vsVersions) {
+    $vsFullVersion = $vsInstance.installationVersion
+    $verFound = [int]::Parse($vsFullVersion.Split(".")[0])
+    if ($verFound -gt $vsMaxVerFound) {
+        $vsMaxVerFound = $verFound
+        $vsPath = $vsInstance.installationPath
+    }
+}
+
+if ($null -eq $vsPath) { Write-Error "No Visual Studio installation found. Exiting..." -ErrorAction Stop } 
+else { Write-Host "Using Visual Studio $vsFullVersion from $vsPath" }
+
+if (-not (Test-Path DIA/Dia2Lib.dll)) {
+    pushd "$vsPath/Common7/Tools"
+    cmd /c "VsDevCmd.bat&set" |
+    foreach { if ($_ -match "=") {
+        $v = $_.split("=", 2); set-item -force -path "ENV:/$($v[0])"  -value "$($v[1])" 
+      } }
+    popd
+
+    pushd "$env:TEMP"
+    midl.exe /I "$env:VSINSTALLDIR/DIA SDK/include" "$env:VSINSTALLDIR/DIA SDK/idl/dia2.idl" /tlb dia2.tlb
+    popd
+    tlbimp.exe "$env:TEMP/dia2.tlb" /out:"DIA/Dia2Lib.dll"
+}
+
 Write-Host "DIA file versions:"
 $diaFiles = @(dir "../packages/Microsoft.TestPlatform.17.2.0/tools/net451/Common7/IDE/Extensions/TestPlatform/x64/msdia140.dll")
-foreach ($file in $diaFiles) {
-    Write-Host $file.FullName":" $file.VersionInfo.FileVersion
-}
+foreach ($file in $diaFiles) { Write-Host $file.FullName":" $file.VersionInfo.FileVersion }
 
 if ((dir "../packages/Microsoft.TestPlatform.17.2.0/tools/net451/Common7/IDE/Extensions/TestPlatform/x64/msdia140.*").Length -ne 2) {
     Write-Error "You must manually obtain msdia140.dll and msdia140.dll.manifest, and copy them to the Engine\DIA sub-folder. Those are redistributable components of Visual Studio 2022 subject to terms as published here: https://docs.microsoft.com/en-us/visualstudio/releases/2022/redistribution." -ErrorAction Stop
@@ -18,6 +46,4 @@ $diaManifestPath = "../packages/Microsoft.TestPlatform.17.2.0/tools/net451/Commo
 Write-Host "Debugger file versions:"
 $dbgFiles = @(dir "../packages/Microsoft.Debugging.Platform.DbgEng.20220711.1523.0/content/amd64/dbghelp.dll")
 $dbgFiles += dir "../packages/Microsoft.Debugging.Platform.SymSrv.20220711.1523.0/content/amd64/symsrv.dll"
-foreach ($file in $dbgFiles) {
-    Write-Host $file.FullName":" $file.VersionInfo.FileVersion
-}
+foreach ($file in $dbgFiles) { Write-Host $file.FullName":" $file.VersionInfo.FileVersion }

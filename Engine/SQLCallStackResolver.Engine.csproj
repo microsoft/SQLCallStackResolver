@@ -47,10 +47,10 @@
     <Reference Include="Microsoft.SqlServer.XEvent.XELite, Version=1.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.SqlServer.XEvent.XELite.2021.12.12.2\lib\net462\Microsoft.SqlServer.XEvent.XELite.dll</HintPath>
     </Reference>
-    <Reference Include="msdia140typelib_clr0200">
-      <HintPath>..\packages\Microsoft.TestPlatform.17.2.0\tools\net451\Common7\IDE\Extensions\TestPlatform\msdia140typelib_clr0200.dll</HintPath>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </Reference>
+<Reference Include="Dia2Lib">
+  <HintPath>DIA\Dia2Lib.dll</HintPath>
+  <EmbedInteropTypes>True</EmbedInteropTypes>
+</Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
