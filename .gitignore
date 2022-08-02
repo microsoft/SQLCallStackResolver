@@ -89,6 +89,7 @@ Target
 /Tests/TestCases/TestOrdinal/sqldk.zip
 /Tests/TestCases/ImportXEL/*.xel
 /Tests/TestCases/ImportXEL/*.zip
+/Tests/TestCases/SourceInformation/*.zip
 /TestResults/
 Engine/BinaryDependencies.zip
 Engine/DIA
