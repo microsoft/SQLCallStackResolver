@@ -501,6 +501,23 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             Assert.AreEqual(expected.Trim(), ret.Trim());
         }
 
+        // Test a combo symbol path to ensure that local PDBs + symbol server based PDBs both work together when needed
+        [TestMethod][TestCategory("Unit")] public async Task E2ESymSrvXMLFramesComboSymbolPath() {
+            using var csr = new StackResolver();
+            using var cts = new CancellationTokenSource();
+            var pdbPath = @"..\..\..\Tests\TestCases\SourceInformation;srv*https://msdl.microsoft.com/download/symbols";
+            var input = "Frame = <frame id=\"00\" pdb=\"ntdll.pdb\" age=\"1\" guid=\"C374E059-5793-9B92-6525-386A66A2D3F5\" module=\"ntdll.dll\" rva=\"0x9F7E4\" />        \r\n" +
+"Frame = <frame id=\"01\" pdb=\"kernelbase.pdb\" age=\"1\" guid=\"E77E26E7-D1C4-72BB-2C05-DD17624A9E58\" module=\"KERNELBASE.dll\" rva=\"0x38973\" />                          \n" +
+"Frame = <frame id=\"02\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-\r\nd905ad930ee6\" module=\"sqldk.dll\" rva=\"0x40609\" />                                    \r\n" +
+"<frame id=\"03\" pdb=\"vcruntime140.amd64.pdb\" age=\"1\" guid=\"AF138C3F-2933-4097-8883-C1071B13375E\" module=\"VCRUNTIME140.dll\" rva=\"0xB8F0\" />\r\n" +
+"Frame = <frame id=\"04\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x2249f\" />                                    \n" +
+"Frame = <frame id=\"05\" pdb=\"onnxruntime.pdb\" age=\"1\" guid=\"D1106301-B61B-4655-BFAC-DC1EA8911A7E\" module=\"onnxruntime.dll\" rva=\"0x4fd50\" />";
+
+            var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(input, false, cts), pdbPath, false, null, false, true, false, true, false, false, null, cts);
+            var expected = "00 ntdll!NtWaitForSingleObject+20\r\n01 KERNELBASE!WaitForSingleObjectEx+147\r\n02 sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644\r\n03 VCRUNTIME140!__C_specific_handler+160	(d:\\agent\\_work\\2\\s\\src\\vctools\\crt\\vcruntime\\src\\eh\\riscchandler.cpp:290)\r\n04 sqldk!Spinlock<244,2,1>::SpinToAcquireWithExponentialBackoff+349\r\n05 onnxruntime!onnxruntime::InferenceSession::Initialize+0\t(D:\\a\\_work\\1\\s\\onnxruntime\\core\\session\\inference_session.cc:1238)";
+            Assert.AreEqual(expected.Trim(), ret.Trim());
+        }
+
         [TestMethod][TestCategory("Unit")] public async Task E2ESymSrvXMLFramesModuleFileExtensionMissing() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
