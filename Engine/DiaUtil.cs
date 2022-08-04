@@ -26,7 +26,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 }
                 Marshal.FinalReleaseComObject(matchedSyms);
             } catch (COMException) {
-                Dispose(true);
+                ReleaseDiaObjects();
                 throw;
             }
         }
@@ -37,12 +37,14 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         protected virtual void Dispose(bool disposing) {
             if (!disposedValue) {
-                if (disposing) {
-                    if (null != _IDiaSession) Marshal.FinalReleaseComObject(_IDiaSession);
-                    if (null != _IDiaDataSource) Marshal.FinalReleaseComObject(_IDiaDataSource);
-                }
+                if (disposing) ReleaseDiaObjects();
                 disposedValue = true;
             }
+        }
+
+        private void ReleaseDiaObjects() {
+            if (null != _IDiaSession) Marshal.FinalReleaseComObject(_IDiaSession);
+            if (null != _IDiaDataSource) Marshal.FinalReleaseComObject(_IDiaDataSource);
         }
 
         /// This function builds up the PDB map, by searching for matched PDBs (based on name) and constructing the DIA session for each
