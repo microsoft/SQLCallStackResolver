@@ -18,17 +18,13 @@ if ($null -eq $vsPath) { Write-Error "No Visual Studio installation found. Exiti
 else { Write-Host "Using Visual Studio $vsFullVersion from $vsPath" }
 
 if (-not (Test-Path DIA/Dia2Lib.dll)) {
-    pushd "$vsPath/Common7/Tools"
-    cmd /c "VsDevCmd.bat&set" |
-    foreach { if ($_ -match "=") {
-        $v = $_.split("=", 2); set-item -force -path "ENV:/$($v[0])"  -value "$($v[1])" 
-      } }
-    popd
-
+    $vsEnvJson = (cmd /C """$vsPath/Common7/Tools/VsDevCmd.bat"" -no_logo -arch=x64 & powershell -Command ""Get-ChildItem env: | Select-Object Key,Value | ConvertTo-Json""")
+    ($vsEnvJson | ConvertFrom-Json) | ForEach-Object { $k, $v = $_.Key, $_.Value
+      Set-Content env:\"$k" "$v" }
     pushd "$env:TEMP"
     midl.exe /I "$env:VSINSTALLDIR/DIA SDK/include" "$env:VSINSTALLDIR/DIA SDK/idl/dia2.idl" /tlb dia2.tlb
     popd
-    tlbimp.exe "$env:TEMP/dia2.tlb" /out:"DIA/Dia2Lib.dll"
+    tlbimp.exe "$env:TEMP/dia2.tlb" /machine:x64 /out:"DIA/Dia2Lib.dll"
 }
 
 Write-Host "DIA file versions:"

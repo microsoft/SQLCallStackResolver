@@ -47,10 +47,10 @@
     <Reference Include="Microsoft.SqlServer.XEvent.XELite, Version=1.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.SqlServer.XEvent.XELite.2021.12.12.2\lib\net462\Microsoft.SqlServer.XEvent.XELite.dll</HintPath>
     </Reference>
-<Reference Include="Dia2Lib">
-  <HintPath>DIA\Dia2Lib.dll</HintPath>
-  <EmbedInteropTypes>True</EmbedInteropTypes>
-</Reference>
+    <Reference Include="Dia2Lib">
+      <HintPath>DIA\Dia2Lib.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
@@ -125,7 +125,8 @@
   </Target>
   <PropertyGroup>
     <PreBuildEvent>cd $(ProjectDir)
-powershell -File "$(ProjectDir)/getBuildPreReqs.ps1"</PreBuildEvent>
+powershell -File "$(ProjectDir)getBuildPreReqs.ps1"
+</PreBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
