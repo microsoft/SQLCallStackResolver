@@ -3,26 +3,17 @@
 
 # Find out the installation path for the highest version of Visual Studio installed
 $vsMaxVerFound = 0
-$vsPath = $null
-$vsVersions = (& "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe" -legacy -prerelease -format json) | ConvertFrom-Json
-foreach ($vsInstance in $vsVersions) {
-    $vsFullVersion = $vsInstance.installationVersion
-    $verFound = [int]::Parse($vsFullVersion.Split(".")[0])
-    if ($verFound -gt $vsMaxVerFound) {
-        $vsMaxVerFound = $verFound
-        $vsPath = $vsInstance.installationPath
-    }
-}
-
-if ($null -eq $vsPath) { Write-Error "No Visual Studio installation found. Exiting..." -ErrorAction Stop } 
-else { Write-Host "Using Visual Studio $vsFullVersion from $vsPath" }
+$vsPath = (& "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe" -latest -prerelease -property installationPath)
+if ($vsPath -eq $null) { Write-Error "No Visual Studio installation found. Exiting..." -ErrorAction Stop }
+else { Write-Host "Using Visual Studio from $vsPath" }
 
 if (-not (Test-Path DIA/Dia2Lib.dll)) {
-    $vsEnvJson = (cmd /C """$vsPath/Common7/Tools/VsDevCmd.bat"" -no_logo -arch=x64 & powershell -Command ""Get-ChildItem env: | Select-Object Key,Value | ConvertTo-Json""")
-    ($vsEnvJson | ConvertFrom-Json) | ForEach-Object { $k, $v = $_.Key, $_.Value
-      Set-Content env:\"$k" "$v" }
+    & "${env:COMSPEC}" /s /c "`"$vsPath\Common7\Tools\vsdevcmd.bat`" -no_logo && set" | foreach-object {
+        $name, $value = $_ -split '=', 2
+        set-content env:\"$name" $value
+      }
     pushd "$env:TEMP"
-    midl.exe /I "$env:VSINSTALLDIR/DIA SDK/include" "$env:VSINSTALLDIR/DIA SDK/idl/dia2.idl" /tlb dia2.tlb
+    midl.exe /x64 /I "$env:VSINSTALLDIR/DIA SDK/include" "$env:VSINSTALLDIR/DIA SDK/idl/dia2.idl" /tlb dia2.tlb
     popd
     tlbimp.exe "$env:TEMP/dia2.tlb" /machine:x64 /out:"DIA/Dia2Lib.dll"
 }
