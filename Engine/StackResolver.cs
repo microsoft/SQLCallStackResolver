@@ -518,7 +518,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         string symPath, List<string> dllPaths, bool searchPDBsRecursively, bool searchDLLRecursively,
         bool includeSourceInfo, bool showInlineFrames, bool relookupSource, bool includeOffsets, bool cachePDB, CancellationTokenSource cts) {
             await Task.Run(() => {
-                SafeNativeMethods.EstablishActivationContext();
+                if (!SafeNativeMethods.EstablishActivationContext()) return;
                 var _diautils = new Dictionary<string, DiaUtil>();
                 var modulesToIgnore = new List<string>();
 
