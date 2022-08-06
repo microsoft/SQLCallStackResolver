@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
 
-global using Dia;
+global using Dia2Lib;
 global using Microsoft.SqlServer.XEvent.XELite;
 global using System;
 global using System.Collections.Concurrent;

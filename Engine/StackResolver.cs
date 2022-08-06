@@ -180,7 +180,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                     // if we did find a block symbol then we look for its parent till we find either a function or public symbol
                     // an addition check is on the name of the symbol being non-null and non-empty
-                    while (!(mysym.symTag == (uint)SymTagEnum.SymTagFunction || mysym.symTag == (uint)Dia.SymTagEnum.SymTagPublicSymbol) && string.IsNullOrEmpty(mysym.name)) {
+                    while (!(mysym.symTag == (uint)SymTagEnum.SymTagFunction || mysym.symTag == (uint)SymTagEnum.SymTagPublicSymbol) && string.IsNullOrEmpty(mysym.name)) {
                         mysym = mysym.lexicalParent;
                     }
 
@@ -518,7 +518,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         string symPath, List<string> dllPaths, bool searchPDBsRecursively, bool searchDLLRecursively,
         bool includeSourceInfo, bool showInlineFrames, bool relookupSource, bool includeOffsets, bool cachePDB, CancellationTokenSource cts) {
             await Task.Run(() => {
-                SafeNativeMethods.EstablishActivationContext();
+                if (!SafeNativeMethods.EstablishActivationContext()) return;
                 var _diautils = new Dictionary<string, DiaUtil>();
                 var modulesToIgnore = new List<string>();
 

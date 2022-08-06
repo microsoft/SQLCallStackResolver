@@ -10,20 +10,25 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         private static readonly object _syncRoot = new();
 
         internal DiaUtil(string pdbName) {
-            _IDiaDataSource = new DiaSource();
-            _IDiaDataSource.loadDataFromPdb(pdbName);
-            _IDiaDataSource.openSession(out _IDiaSession);
-            this._IDiaSession.findChildrenEx(this._IDiaSession.globalScope, SymTagEnum.SymTagFunction, null, 0, out IDiaEnumSymbols matchedSyms);
-            foreach (IDiaSymbol sym in matchedSyms) {
-                this._IDiaSession.findLinesByRVA(sym.relativeVirtualAddress, (uint)sym.length, out IDiaEnumLineNumbers enumLineNums);
-                Marshal.FinalReleaseComObject(sym);
-                if (enumLineNums.count > 0) { // this PDB has at least 1 function with source info, so end the search
-                    HasSourceInfo = true;
-                    break;
+            try {
+                _IDiaDataSource = new DiaSource();
+                _IDiaDataSource.loadDataFromPdb(pdbName);
+                _IDiaDataSource.openSession(out _IDiaSession);
+                this._IDiaSession.findChildrenEx(this._IDiaSession.globalScope, SymTagEnum.SymTagFunction, null, 0, out IDiaEnumSymbols matchedSyms);
+                foreach (IDiaSymbol sym in matchedSyms) {
+                    this._IDiaSession.findLinesByRVA(sym.relativeVirtualAddress, (uint)sym.length, out IDiaEnumLineNumbers enumLineNums);
+                    Marshal.FinalReleaseComObject(sym);
+                    if (enumLineNums.count > 0) { // this PDB has at least 1 function with source info, so end the search
+                        HasSourceInfo = true;
+                        break;
+                    }
+                    Marshal.FinalReleaseComObject(enumLineNums);
                 }
-                Marshal.FinalReleaseComObject(enumLineNums);
+                Marshal.FinalReleaseComObject(matchedSyms);
+            } catch (COMException) {
+                ReleaseDiaObjects();
+                throw;
             }
-            Marshal.FinalReleaseComObject(matchedSyms);
         }
 
         public void Dispose() {
@@ -32,12 +37,14 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         protected virtual void Dispose(bool disposing) {
             if (!disposedValue) {
-                if (disposing) {
-                    Marshal.FinalReleaseComObject(_IDiaSession);
-                    Marshal.FinalReleaseComObject(_IDiaDataSource);
-                }
+                if (disposing) ReleaseDiaObjects();
                 disposedValue = true;
             }
+        }
+
+        private void ReleaseDiaObjects() {
+            if (null != _IDiaSession) Marshal.FinalReleaseComObject(_IDiaSession);
+            if (null != _IDiaDataSource) Marshal.FinalReleaseComObject(_IDiaDataSource);
         }
 
         /// This function builds up the PDB map, by searching for matched PDBs (based on name) and constructing the DIA session for each

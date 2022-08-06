@@ -25,6 +25,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "utils", "utils", "{BD982082-93D3-4A65-8ECC-0173715BDED2}"
+	ProjectSection(SolutionItems) = preProject
+		utils\getBuildPreReqs.ps1 = utils\getBuildPreReqs.ps1
+		utils\import-vsenv.ps1 = utils\import-vsenv.ps1
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
