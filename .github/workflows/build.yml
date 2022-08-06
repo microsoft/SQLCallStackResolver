@@ -7,7 +7,6 @@ on:
         description: 'Filter expression to use for running tests'
         default: 'TestCategory=Unit|TestCategory=Perf'
         required: false
-
 jobs:
   build:
     runs-on: windows-latest

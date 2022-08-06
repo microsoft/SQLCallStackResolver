@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License - see LICENSE file in this repo.
 
-# This script should be executed with the Engine folder as the working folder
-
 . "$PSScriptRoot/import-vsenv.ps1"  # import VS environment
 
 if (-not (Test-Path DIA/Dia2Lib.dll)) {
