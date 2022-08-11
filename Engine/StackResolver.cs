@@ -550,47 +550,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             });
         }
 
-        static readonly string[] wellKnownModuleNames = new string[] { "ntdll", "kernel32", "kernelbase", "ntoskrnl", "sqldk", "sqlmin", "sqllang", "sqltses", "sqlaccess", "qds", "hkruntime", "hkengine", "hkcompile", "sqlos", "sqlservr", "SqlServerSpatial", "SqlServerSpatial110", "SqlServerSpatial120", "SqlServerSpatial130", "SqlServerSpatial140", "SqlServerSpatial150", "SqlServerSpatial160" };
-
-        /// <summary>
-        /// This method generates a PowerShell script to automate download of matched PDBs from the public symbol server.
-        /// </summary>
-        public static async Task<List<Symbol>> GetSymbolDetailsForBinaries(List<string> dllPaths, bool recurse, List<Symbol> existingSymbols = null) {
-            if (dllPaths == null || dllPaths.Count == 0) return new List<Symbol>();
-
-            var symbolsFound = new List<Symbol>();
-            foreach (var currentModule in wellKnownModuleNames) {
-                if (null != existingSymbols) {
-                    var syms = existingSymbols.Where(s => string.Equals(s.PDBName, currentModule, StringComparison.InvariantCultureIgnoreCase));
-                    if (syms.Any()) {
-                        symbolsFound.Add(syms.First());
-                        continue;
-                    }
-                }
-                var search = dllPaths.Where(p => Directory.Exists(p)).SelectMany(currPath => Directory.EnumerateFiles(currPath, currentModule + ".*", recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly))
-                    .Where(f => f.EndsWith(".dll", StringComparison.InvariantCultureIgnoreCase) || f.EndsWith(".exe", StringComparison.InvariantCultureIgnoreCase));
-                if (search.Any()) {
-                    using var dllFileStream = new FileStream(search.First(), FileMode.Open, FileAccess.Read, FileShare.Read);
-                    using var reader = new PEReader(dllFileStream);
-                    var lastPdbInfo = PEHelper.ReadPdbs(reader).Last();
-                    var internalPDBName = lastPdbInfo.Path;
-                    var pdbGuid = lastPdbInfo.Guid;
-                    var pdbAge = lastPdbInfo.Age;
-                    var usablePDBName = Path.GetFileNameWithoutExtension(internalPDBName);
-                    var fileVer = FileVersionInfo.GetVersionInfo(search.First()).FileVersion;
-                    var newSymbol = new Symbol() {
-                        PDBName = usablePDBName, InternalPDBName = internalPDBName,
-                        DownloadURL = string.Format(CultureInfo.CurrentCulture, @"https://msdl.microsoft.com/download/symbols/{0}.pdb/{1}/{0}.pdb",
-                            usablePDBName, pdbGuid.ToString("N", CultureInfo.CurrentCulture) + pdbAge.ToString(CultureInfo.CurrentCulture)), FileVersion = fileVer
-                    };
-                    newSymbol.DownloadVerified = await Symbol.IsURLValid(new Uri(newSymbol.DownloadURL));
-                    symbolsFound.Add(newSymbol);
-                }
-            }
-
-            return symbolsFound;
-        }
-
         private bool disposedValue = false;
 
         protected virtual void Dispose(bool disposing) {
