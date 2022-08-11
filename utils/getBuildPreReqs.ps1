@@ -21,5 +21,5 @@ if ((dir "DIA/*").Length -ne 3)
 $diaManifestPath = "DIA/msdia140.dll.manifest"
 (Get-Content $diaManifestPath).Replace("DIA/msdia140.dll", "msdia140.dll") -Replace " description", " threadingModel=`"Both`" description " | Set-Content $diaManifestPath
 
-@(dir "../packages/Microsoft.Debugging.Platform.DbgEng.20220711.1523.0/content/amd64/dbghelp.dll").VersionInfo.ToString()
-@(dir "../packages/Microsoft.Debugging.Platform.SymSrv.20220711.1523.0/content/amd64/symsrv.dll").VersionInfo.ToString()
+@(dir "../packages/Microsoft.Debugging.Platform.DbgEng.20220801.1622.0/content/amd64/dbghelp.dll").VersionInfo.ToString()
+@(dir "../packages/Microsoft.Debugging.Platform.SymSrv.20220801.1622.0/content/amd64/symsrv.dll").VersionInfo.ToString()
