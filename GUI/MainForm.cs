@@ -4,7 +4,6 @@
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     public partial class MainForm : Form {
         public MainForm() {
-            MessageBox.Show("Copyright (c) 2022 Microsoft Corporation. All rights reserved.\r\n\r\nTHIS SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\r\n\r\nUSAGE OF THE MICROSOFT SYMBOL SERVER IS COVERED BY THE LICENSE TERMS PUBLISHED AT https://docs.microsoft.com/legal/windows-sdk/microsoft-symbol-server-license-terms.", "SQLCallStackResolver - Legal Notice", MessageBoxButtons.OK, MessageBoxIcon.Information);
             InitializeComponent();
         }
 
@@ -251,6 +250,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         private async void MainForm_Load(object sender, EventArgs e) {
+            MessageBox.Show(this, "Copyright (c) 2022 Microsoft Corporation. All rights reserved.\r\n\r\nTHIS SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\r\n\r\nUSAGE OF THE MICROSOFT SYMBOL SERVER IS COVERED BY THE LICENSE TERMS PUBLISHED AT https://docs.microsoft.com/legal/windows-sdk/microsoft-symbol-server-license-terms.", "SQLCallStackResolver - Legal Notice", MessageBoxButtons.OK, MessageBoxIcon.Information);
             DateTime latestReleaseDateTimeServer = DateTime.MinValue;
             DateTime latestReleaseDateTimeLocal = DateTime.MinValue;
             var latestReleaseURLs = ConfigurationManager.AppSettings["LatestReleaseURLs"].Split(';');
