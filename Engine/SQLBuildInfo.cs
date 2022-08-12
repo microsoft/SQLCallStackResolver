@@ -42,27 +42,5 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             allBuilds.ForEach(bld => wrtr.WriteLine(JsonSerializer.Serialize(bld)));
             fs.Flush();
         }
-
-        public static string GetDownloadScriptPowerShell(SQLBuildInfo bld, bool includeMarkdown) {
-            Contract.Requires(bld != null);
-            var symcmds = new StringBuilder();
-            if (null != bld.SymbolDetails && bld.SymbolDetails.Where(s => s.DownloadVerified).Any()) {
-                if (includeMarkdown) {
-                    symcmds.AppendLine($"# {bld}");
-                    symcmds.AppendLine("``` powershell");
-                }
-                symcmds.AppendLine($"# {bld}");
-                symcmds.AppendLine($"$outputFolder = 'c:\\sqlsyms\\{bld.BuildNumber}\\{bld.MachineType}' # <<change this output folder if needed>>'");
-                symcmds.AppendLine($"mkdir -f $outputFolder");
-                foreach (var sym in bld.SymbolDetails.Where(s => s.DownloadVerified)) {
-                    symcmds.AppendLine($"if (-not (Test-Path \"$outputFolder\\{sym.PDBName}.pdb\")) {{ Invoke-WebRequest -uri '{sym.DownloadURL}' -OutFile \"$outputFolder\\{sym.PDBName}.pdb\" }} # File version {sym.FileVersion}");
-                }
-
-                if (includeMarkdown) symcmds.AppendLine("```");
-                symcmds.AppendLine();
-            }
-
-            return symcmds.ToString();
-        }
     }
 }

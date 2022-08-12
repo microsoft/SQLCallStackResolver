@@ -201,16 +201,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             Assert.AreEqual(expectedSymbol, ret.Trim());
         }
 
-        /// Check whether symbol details for a given binary are correct.
-        [TestMethod][TestCategory("Unit")] public async Task GetSymDetails() {
-            var dllPaths = new List<string> { @"..\..\..\..\..\Tests\TestCases\TestOrdinal" };
-            var ret = await StackResolver.GetSymbolDetailsForBinaries(dllPaths, true);
-            Assert.AreEqual(1, ret.Count);
-            Assert.AreEqual("https://msdl.microsoft.com/download/symbols/sqldk.pdb/6a1934433512464b8b8ed905ad930ee62/sqldk.pdb", ret[0].DownloadURL);
-            Assert.IsTrue(ret[0].DownloadVerified);
-            Assert.AreEqual("2015.0130.4560.00 ((SQL16_SP1_QFE-CU).190312-0204)", ret[0].FileVersion);
-        }
-
         /// Make sure that caching PDB files is working. To do this we must use XEL input to trigger multiple worker threads.
         [TestMethod][TestCategory("Unit")] public async Task SymbolFileCaching() {
             using var csr = new StackResolver();
