@@ -494,6 +494,22 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             Assert.AreEqual(expected.Trim(), ret.Trim());
         }
 
+        /// End-to-end test with stacks being resolved based on symbols from symsrv, and to check that frame numbers are preserved
+        [TestMethod][TestCategory("Unit")] public async Task E2ESymSrvXMLFramesWithInlineFramesAndRenumbering() {
+            using var csr = new StackResolver();
+            using var cts = new CancellationTokenSource();
+            var pdbPath = @"srv*https://msdl.microsoft.com/download/symbols";
+            var input = "<frame id=\"00\" pdb=\"ntdll.pdb\" age=\"1\" guid=\"C374E059-5793-9B92-6525-386A66A2D3F5\" module=\"ntdll.dll\" rva=\"0x9F7E4\" />" +
+"<frame id=\"01\" pdb=\"Wdf01000.pdb\" age=\"1\" guid=\"C9EC2937-69A8-15AB-22B5-909C290FB963\" module=\"Wdf01000.sys\" rva=\"0x17f27\" />\r\n" +
+"<frame id=\"02\" pdb=\"kernelbase.pdb\" age=\"1\" guid=\"E77E26E7-D1C4-72BB-2C05-DD17624A9E58\" module=\"KERNELBASE.dll\" rva=\"0x38973\" />\r\n\r\n" +
+"<frame id=\"00\" pdb=\"ntdll.pdb\" age=\"1\" guid=\"C374E059-5793-9B92-6525-386A66A2D3F5\" module=\"ntdll.dll\" rva=\"0x9F7E4\" />" +
+"<frame id=\"01\" pdb=\"kernelbase.pdb\" age=\"1\" guid=\"E77E26E7-D1C4-72BB-2C05-DD17624A9E58\" module=\"KERNELBASE.dll\" rva=\"0x38973\" />";
+
+            var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(input, false, cts), pdbPath, false, null, false, true, false, true, true, false, null, cts);
+            var expected = "00 ntdll!NtWaitForSingleObject+20\r\n01 (Inline Function) Wdf01000!Mx::MxLeaveCriticalRegion+12	(minkernel\\wdf\\framework\\shared\\inc\\primitives\\km\\MxGeneralKm.h:198)\r\n02 (Inline Function) Wdf01000!FxWaitLockInternal::ReleaseLock+62	(minkernel\\wdf\\framework\\shared\\inc\\private\\common\\FxWaitLock.hpp:305)\r\n03 (Inline Function) Wdf01000!FxEnumerationInfo::ReleaseParentPowerStateLock+62	(minkernel\\wdf\\framework\\shared\\inc\\private\\common\\FxPkgPnp.hpp:510)\r\n04 Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143	(minkernel\\wdf\\framework\\shared\\inc\\private\\common\\FxPkgPnp.hpp:4127)\r\n05 KERNELBASE!WaitForSingleObjectEx+147\r\n00 ntdll!NtWaitForSingleObject+20\r\n01 KERNELBASE!WaitForSingleObjectEx+147";
+            Assert.AreEqual(expected.Trim(), ret.Trim());
+        }
+
         /// End-to-end test with stacks being resolved based on symbols from symsrv, with XML-encoded input (as is usually seen in clients like SSMS).
         [TestMethod][TestCategory("Unit")] public async Task E2ESymSrvXMLFramesEncoded() {
             using var csr = new StackResolver();

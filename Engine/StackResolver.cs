@@ -72,7 +72,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// Runs through each of the frames in a call stack and looks up symbols for each
         private string ResolveSymbols(Dictionary<string, DiaUtil> _diautils, string[] callStackLines, string symPath, bool searchPDBsRecursively, bool cachePDB, bool includeSourceInfo, bool relookupSource, bool includeOffsets, bool showInlineFrames, List<string> modulesToIgnore, CancellationTokenSource cts) {
             var finalCallstack = new StringBuilder();
-            int frameNum = int.MinValue;
+            int runningFrameNum = int.MinValue;
             foreach (var iterFrame in callStackLines) {
                 if (cts.IsCancellationRequested) { StatusMessage = OperationCanceled; PercentComplete = 0; return OperationCanceled; }
                 // hard-coded find-replace for XML markup - useful when importing from XML histograms
@@ -127,9 +127,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     var matchedModuleName = match.Groups["module"].Value;
                     // maybe we have a "not well-known" module, attempt to (best effort) find PDB for it.
                     if (!_diautils.ContainsKey(matchedModuleName)) DiaUtil.LocateandLoadPDBs(_diautils, symPath, searchPDBsRecursively, new List<string>() { matchedModuleName }, cachePDB, modulesToIgnore);
-                    frameNum = string.IsNullOrWhiteSpace(match.Groups["framenum"].Value) ? int.MinValue : frameNum == int.MinValue ? Convert.ToInt32(match.Groups["framenum"].Value, 16) : frameNum;
+                    int frameNumFromInput = string.IsNullOrWhiteSpace(match.Groups["framenum"].Value) ? int.MinValue : Convert.ToInt32(match.Groups["framenum"].Value, 16);
+                    if (frameNumFromInput != int.MinValue && runningFrameNum == int.MinValue) runningFrameNum = frameNumFromInput;
                     if (_diautils.ContainsKey(matchedModuleName)) {
-                        string processedFrame = ProcessFrameModuleOffset(_diautils, ref frameNum, matchedModuleName, match.Groups["offset"].Value, includeSourceInfo, includeOffsets, showInlineFrames);
+                        string processedFrame = ProcessFrameModuleOffset(_diautils, frameNumFromInput, ref runningFrameNum, matchedModuleName, match.Groups["offset"].Value, includeSourceInfo, includeOffsets, showInlineFrames);
                         if (!string.IsNullOrEmpty(processedFrame)) finalCallstack.AppendLine(processedFrame);   // typically this is because we could not find the offset in any known function range
                         else finalCallstack.AppendLine(currentFrame);
                     }
@@ -162,7 +163,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         /// This is the most important function in this whole utility! It uses DIA to lookup the symbol based on RVA offset
         /// It also looks up line number information if available and then formats all of this information for returning to caller
-        private string ProcessFrameModuleOffset(Dictionary<string, DiaUtil> _diautils, ref int frameNum, string moduleName, string offset, bool includeSourceInfo, bool includeOffset, bool showInlineFrames) {
+        private string ProcessFrameModuleOffset(Dictionary<string, DiaUtil> _diautils, int frameNumFromInput, ref int frameNum, string moduleName, string offset, bool includeSourceInfo, bool includeOffset, bool showInlineFrames) {
             bool useUndecorateLogic = false;
 
             // the offsets in the XE output are in hex, so we convert to base-10 accordingly
@@ -233,6 +234,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             }
 
             if (frameNum != int.MinValue) {
+                if (frameNumFromInput == 0) frameNum = frameNumFromInput;
                 var withFrameNums = new StringBuilder();
                 var resultLines = result.Split('\n');
                 foreach (var line in resultLines) {
