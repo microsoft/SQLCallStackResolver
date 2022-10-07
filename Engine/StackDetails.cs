@@ -13,7 +13,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this._annotation = annotation;
             this._stackKey = stackKey;
             this._framesOnSingleLine = framesOnSingleLine;
-            this._callStack = framesOnSingleLine ? Regex.Replace(callStack, @"\s{2,}", " ") : callStack;
+            this._callStack = System.Net.WebUtility.HtmlDecode(framesOnSingleLine ? Regex.Replace(callStack, @"\s{2,}", " ") : callStack);
             _stackKey = stackKey;
         }
 
