@@ -510,6 +510,21 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             Assert.AreEqual(expected.Trim(), ret.Trim());
         }
 
+        /// End-to-end test with multiple stacks, each with different versions of the module / PDBs
+        [TestMethod][TestCategory("Unit")] public async Task E2ESymSrvXMLFramesWithMultiplePDBVersions() {
+            using var csr = new StackResolver();
+            using var cts = new CancellationTokenSource();
+            var pdbPath = @"srv*https://msdl.microsoft.com/download/symbols";
+            var input = "<frame id=\"00\" pdb=\"sqldk.pdb\" age=\"2\" guid=\"122FC135-ABF2-4465-BA9E-6BE0A6274EB3\" module=\"sqldk.dll\" rva=\"0x106C7C\" />" +
+"<frame id=\"01\" pdb=\"sqldk.pdb\" age=\"2\" guid=\"122FC135-ABF2-4465-BA9E-6BE0A6274EB3\" module=\"sqldk.dll\" rva=\"0x59204\" />\r\n\r\n" +
+"<frame id=\"00\" pdb=\"sqldk.pdb\" age=\"2\" guid=\"1D3FA75E-B355-40E2-87B2-E012D69785DF\" module=\"sqldk.dll\" rva=\"0xFD919\" />" +
+"<frame id=\"01\" pdb=\"sqldk.pdb\" age=\"2\" guid=\"1D3FA75E-B355-40E2-87B2-E012D69785DF\" module=\"sqldk.dll\" rva=\"0x3D45D\" />";
+
+            var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(input, false, cts), pdbPath, false, null, false, true, false, true, true, false, null, cts);
+            var expected = "00 sqldk!XeSosPkg::wait_completed::Publish+476\r\n01 sqldk!SOS_Scheduler::UpdateWaitTimeStats+1186\r\n00 sqldk!XeSosPkg::spinlock_backoff::Publish+425\r\n01 sqldk!SpinlockBase::Sleep+182\r\n";
+            Assert.AreEqual(expected.Trim(), ret.Trim());
+        }
+
         /// End-to-end test with stacks being resolved based on symbols from symsrv, with XML-encoded input (as is usually seen in clients like SSMS).
         [TestMethod][TestCategory("Unit")] public async Task E2ESymSrvXMLFramesEncoded() {
             using var csr = new StackResolver();
