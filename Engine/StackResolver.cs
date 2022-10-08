@@ -331,6 +331,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     this.StatusMessage = "Looking for embedded XML-formatted frames and symbol information...";
                     // attempt to check if there are XML-formatted frames each with the related PDB attributes and if so replace those lines with the normalized versions
                     (syms, listOfCallStacks) = await ModuleInfoHelper.ParseModuleInfoXMLAsync(listOfCallStacks, cts);
+                    if (syms == null) return "Unable to determine symbol information from XML frames - this may be caused by multiple PDB versions in the same input.";
                     if (cts.IsCancellationRequested) { StatusMessage = OperationCanceled; PercentComplete = 0; return OperationCanceled; }
                     if (syms.Count() > 0) {
                         // if the user has provided such a list of module info, proceed to actually use dbghelp.dll / symsrv.dll to download thos PDBs and get local paths for them

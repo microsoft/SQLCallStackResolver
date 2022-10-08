@@ -89,6 +89,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                                     lock (syms) {
                                         if (syms.TryGetValue(moduleName, out var existingEntry)) {
+                                            if (Guid.Parse(reader.GetAttribute("guid")).ToString("N") != existingEntry.PDBGuid || int.Parse(reader.GetAttribute("age")) != existingEntry.PDBAge) {
+                                                syms = null;
+                                                return;
+                                            }
                                             if (ulong.MinValue == existingEntry.CalculatedModuleBaseAddress) existingEntry.CalculatedModuleBaseAddress = calcBaseAddress;
                                         } else syms.Add(moduleName, new Symbol() { PDBName = reader.GetAttribute("pdb").ToLower(), PDBAge = int.Parse(reader.GetAttribute("age")), PDBGuid = Guid.Parse(reader.GetAttribute("guid")).ToString("N"), CalculatedModuleBaseAddress = calcBaseAddress });
                                     }
