@@ -3,7 +3,7 @@
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     [DataContract] public class Symbol {
         [DataMember(Order = 0)] public string PDBName;
-        [IgnoreDataMember] public string InternalPDBName;
+        [IgnoreDataMember] public string ModuleName;
         [IgnoreDataMember] public string PDBGuid;
         [IgnoreDataMember] public int PDBAge;
         [IgnoreDataMember] public ulong CalculatedModuleBaseAddress;

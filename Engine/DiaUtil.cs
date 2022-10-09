@@ -6,7 +6,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         internal readonly IDiaDataSource _IDiaDataSource;
         internal readonly IDiaSession _IDiaSession;
         private bool disposedValue = false;
-        public readonly bool HasSourceInfo = false;
+        internal readonly bool HasSourceInfo = false;
         private static readonly object _syncRoot = new();
 
         internal DiaUtil(string pdbName) {
@@ -48,7 +48,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// This function builds up the PDB map, by searching for matched PDBs (based on name) and constructing the DIA session for each
-        internal static bool LocateandLoadPDBs(Dictionary<string, DiaUtil> _diautils, string rootPaths, bool recurse, List<string> moduleNames, bool cachePDB, List<string> modulesToIgnore) {
+        internal static bool LocateandLoadPDBs(Dictionary<string, DiaUtil> _diautils, string rootPaths, bool recurse, Dictionary<string, string> moduleNamesMap, bool cachePDB, List<string> modulesToIgnore) {
+            var moduleNames = moduleNamesMap.Keys;
             // loop through each module, trying to find matched PDB files
             foreach (string currentModule in moduleNames.Where(m => !modulesToIgnore.Contains(m) && !_diautils.ContainsKey(m))) {
                 // we only need to search for the PDB if it does not already exist in our map
@@ -102,6 +103,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             string offsetStr = string.Empty;
             if (includeOffset) offsetStr = string.Format(CultureInfo.CurrentCulture, "+{0}", displacement);
             var inlineePrefix = isInLinee ? "(Inline Function) " : string.Empty;
+            // replace any "unique" module names with their original values
+            
+
             return $"{inlineePrefix}{moduleName}!{funcname2}{offsetStr}";
         }
 

@@ -521,8 +521,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 "<frame id=\"01\" pdb=\"sqldk.pdb\" age=\"2\" guid=\"1D3FA75E-B355-40E2-87B2-E012D69785DF\" module=\"sqldk.dll\" rva=\"0x3D45D\" />";
 
             var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(input, false, cts), pdbPath, false, null, false, true, false, true, true, false, null, cts);
-            //var expected = "00 sqldk!XeSosPkg::wait_completed::Publish+476\r\n01 sqldk!SOS_Scheduler::UpdateWaitTimeStats+1186\r\n00 sqldk!XeSosPkg::spinlock_backoff::Publish+425\r\n01 sqldk!SpinlockBase::Sleep+182\r\n";
-            var expected = "Unable to determine symbol information from XML frames - this may be caused by multiple PDB versions in the same input.";
+            var expected = "00 sqldk!XeSosPkg::wait_completed::Publish+476\r\n01 sqldk!SOS_Scheduler::UpdateWaitTimeStats+1186\r\n00 sqldk!XeSosPkg::spinlock_backoff::Publish+425\r\n01 sqldk!SpinlockBase::Sleep+182\r\n";
+            //var expected = "Unable to determine symbol information from XML frames - this may be caused by multiple PDB versions in the same input.";
             Assert.AreEqual(expected.Trim(), ret.Trim());
         }
 
