@@ -402,18 +402,22 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
             var syms = result.Item1;
             Assert.AreEqual(4, syms.Count());
-            Assert.AreEqual("ntdll.pdb", syms["ntdll"].PDBName);
-            Assert.AreEqual("C374E05957939B926525386A66A2D3F5", syms["ntdll"].PDBGuid, ignoreCase: true);
-            Assert.AreEqual(1, syms["ntdll"].PDBAge);
-            Assert.AreEqual("kernelbase.pdb", syms["KERNELBASE"].PDBName);
-            Assert.AreEqual("E77E26E7D1C472BB2C05DD17624A9E58", syms["KERNELBASE"].PDBGuid, ignoreCase: true);
-            Assert.AreEqual(1, syms["KERNELBASE"].PDBAge);
-            Assert.AreEqual("sqldk.pdb", syms["sqldk"].PDBName);
-            Assert.AreEqual("6a1934433512464b8b8ed905ad930ee6", syms["sqldk"].PDBGuid, ignoreCase: true);
-            Assert.AreEqual(2, syms["sqldk"].PDBAge);
-            Assert.AreEqual("vcruntime140.amd64.pdb", syms["VCRUNTIME140"].PDBName);
-            Assert.AreEqual("AF138C3F293340978883C1071B13375E", syms["VCRUNTIME140"].PDBGuid, ignoreCase: true);
-            Assert.AreEqual(1, syms["VCRUNTIME140"].PDBAge);
+            Assert.AreEqual("ntdll.pdb", syms["C374E05957939B926525386A66A2D3F51"].PDBName);
+            Assert.AreEqual("C374E05957939B926525386A66A2D3F5", syms["C374E05957939B926525386A66A2D3F51"].PDBGuid);
+            Assert.AreEqual("ntdll", syms["C374E05957939B926525386A66A2D3F51"].ModuleName);
+            Assert.AreEqual(1, syms["C374E05957939B926525386A66A2D3F51"].PDBAge);
+            Assert.AreEqual("kernelbase.pdb", syms["E77E26E7D1C472BB2C05DD17624A9E581"].PDBName);
+            Assert.AreEqual("E77E26E7D1C472BB2C05DD17624A9E58", syms["E77E26E7D1C472BB2C05DD17624A9E581"].PDBGuid);
+            Assert.AreEqual("KERNELBASE", syms["E77E26E7D1C472BB2C05DD17624A9E581"].ModuleName);
+            Assert.AreEqual(1, syms["E77E26E7D1C472BB2C05DD17624A9E581"].PDBAge);
+            Assert.AreEqual("sqldk.pdb", syms["6A1934433512464B8B8ED905AD930EE62"].PDBName);
+            Assert.AreEqual("6A1934433512464B8B8ED905AD930EE6", syms["6A1934433512464B8B8ED905AD930EE62"].PDBGuid);
+            Assert.AreEqual("sqldk", syms["6A1934433512464B8B8ED905AD930EE62"].ModuleName);
+            Assert.AreEqual(2, syms["6A1934433512464B8B8ED905AD930EE62"].PDBAge);
+            Assert.AreEqual("vcruntime140.amd64.pdb", syms["AF138C3F293340978883C1071B13375E1"].PDBName);
+            Assert.AreEqual("AF138C3F293340978883C1071B13375E", syms["AF138C3F293340978883C1071B13375E1"].PDBGuid);
+            Assert.AreEqual("VCRUNTIME140", syms["AF138C3F293340978883C1071B13375E1"].ModuleName);
+            Assert.AreEqual(1, syms["AF138C3F293340978883C1071B13375E1"].PDBAge);
         }
 
         /// Tests the parsing and extraction of PDB details from a set of rows each with XML frames. Some of those XML frames do not have sym info or RVA included.
@@ -423,11 +427,13 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var result = await ModuleInfoHelper.ParseModuleInfoXMLAsync(new List<StackDetails> { input }, cts);
 
             var syms = result.Item1;
+            var symKey = "6A1934433512464B8B8ED905AD930EE62";
             Assert.AreEqual(1, syms.Count);
-            Assert.AreEqual("sqldk.pdb", syms["sqldk"].PDBName);
-            Assert.AreEqual("6a1934433512464b8b8ed905ad930ee6", syms["sqldk"].PDBGuid, ignoreCase: true);
-            Assert.AreEqual(2, syms["sqldk"].PDBAge);
-            Assert.AreEqual((ulong)0x100400000, syms["sqldk"].CalculatedModuleBaseAddress);
+            Assert.AreEqual("sqldk.pdb", syms[symKey].PDBName);
+            Assert.AreEqual("sqldk", syms[symKey].ModuleName);
+            Assert.AreEqual("6a1934433512464b8b8ed905ad930ee6", syms[symKey].PDBGuid, ignoreCase: true);
+            Assert.AreEqual(2, syms[symKey].PDBAge);
+            Assert.AreEqual((ulong)0x100400000, syms[symKey].CalculatedModuleBaseAddress);
         }
 
         /// Tests the parsing and extraction of PDB details from a set of rows each with commma-separated fields.
