@@ -63,7 +63,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                                 foundFiles = Directory.EnumerateFiles(currPath, currentModule + ".*.pdb", recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
                             }
 
-                            if (foundFiles.Any()) {
+                            if (!foundFiles.Any() && currPath.EndsWith(currentModule)) { // search for subfolder with PDB GUID as the name
+                                foundFiles = Directory.EnumerateFiles(currPath, "*.pdb", recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
+                            }
+
+                            if (foundFiles.Count() == 1) {  // we need to be sure there is only 1 file which matches
                                 if (cachePDB) File.Copy(foundFiles.First(), cachedPDBFile);
                                 else cachedPDBFile = foundFiles.First();
                                 break;

@@ -86,26 +86,29 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                                     ulong rvaIfPresent = string.IsNullOrEmpty(rvaAttributeVal) ? ulong.MinValue : Convert.ToUInt64(rvaAttributeVal, 16);
                                     ulong calcBaseAddress = ulong.MinValue;
                                     if (rvaIfPresent != ulong.MinValue && addressIfPresent != ulong.MinValue) calcBaseAddress = addressIfPresent - rvaIfPresent;
-
+                                    var pdbGuid = reader.GetAttribute("guid");
+                                    var pdbAge = reader.GetAttribute("age");
+                                    // TODO handle cases when the above are null
+                                    var uniqueModuleName = $"{pdbGuid.Replace("-", string.Empty).ToUpper()}{pdbAge}";
                                     lock (syms) {
-                                        if (syms.TryGetValue(moduleName, out var existingEntry)) {
+                                        if (syms.TryGetValue(uniqueModuleName, out var existingEntry)) {
                                             if (Guid.Parse(reader.GetAttribute("guid")).ToString("N") != existingEntry.PDBGuid || int.Parse(reader.GetAttribute("age")) != existingEntry.PDBAge) {
                                                 syms = null;
                                                 return;
                                             }
                                             if (ulong.MinValue == existingEntry.CalculatedModuleBaseAddress) existingEntry.CalculatedModuleBaseAddress = calcBaseAddress;
-                                        } else syms.Add(moduleName, new Symbol() { PDBName = reader.GetAttribute("pdb").ToLower(), PDBAge = int.Parse(reader.GetAttribute("age")), PDBGuid = Guid.Parse(reader.GetAttribute("guid")).ToString("N"), CalculatedModuleBaseAddress = calcBaseAddress });
+                                        } else syms.Add(uniqueModuleName, new Symbol() { PDBName = reader.GetAttribute("pdb").ToLower(), PDBAge = int.Parse(pdbAge), PDBGuid = Guid.Parse(pdbGuid).ToString("N"), CalculatedModuleBaseAddress = calcBaseAddress });
                                     }
                                     string rvaAsIsOrDerived = null;
                                     if (ulong.MinValue != rvaIfPresent) rvaAsIsOrDerived = rvaAttributeVal;
-                                    else if (ulong.MinValue != addressIfPresent && ulong.MinValue != syms[moduleName].CalculatedModuleBaseAddress)
-                                        rvaAsIsOrDerived = "0x" + (addressIfPresent - syms[moduleName].CalculatedModuleBaseAddress).ToString("X");
+                                    else if (ulong.MinValue != addressIfPresent && ulong.MinValue != syms[uniqueModuleName].CalculatedModuleBaseAddress)
+                                        rvaAsIsOrDerived = "0x" + (addressIfPresent - syms[uniqueModuleName].CalculatedModuleBaseAddress).ToString("X");
 
                                     if (string.IsNullOrEmpty(rvaAsIsOrDerived)) { throw new NullReferenceException(); }
 
                                     var frameNumHex = string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:x2}", int.Parse(reader.GetAttribute("id")));
                                     // transform the XML into a simple module+offset notation
-                                    outCallstack.AppendFormat($"{frameNumHex} {moduleName}+{rvaAsIsOrDerived}{Environment.NewLine}");
+                                    outCallstack.AppendFormat($"{frameNumHex} {uniqueModuleName}+{rvaAsIsOrDerived}{Environment.NewLine}");
                                     continue;
                                 }
                             } catch (Exception ex) {
