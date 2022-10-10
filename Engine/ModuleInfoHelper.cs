@@ -9,7 +9,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// Parse the input and return a set of resolved Symbol objects
         /// </summary>
         public async static Task<Dictionary<string, Symbol>> ParseModuleInfoAsync(List<StackDetails> listOfCallStacks, CancellationTokenSource cts) {
-            var retval = new Dictionary<string, Symbol>();
+            var syms = new Dictionary<string, Symbol>();
             await Task.Run(() => Parallel.ForEach(listOfCallStacks.Where(c => c.Callstack.Contains(",")).Select(c => c.CallstackFrames), lines => {
                 if (cts.IsCancellationRequested) return;
                 Contract.Requires(lines.Length > 0);
@@ -41,15 +41,15 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                         // check if we have all 3 details
                         if (!string.IsNullOrEmpty(pdbName) && pdbAge != int.MinValue && pdbGuid != Guid.Empty) {
-                            lock (retval) {
-                                if (!retval.ContainsKey(moduleName)) retval.Add(moduleName, new Symbol() { PDBName = pdbName + ".pdb", PDBAge = pdbAge, PDBGuid = pdbGuid.ToString("N") });
+                            lock (syms) {
+                                if (!syms.ContainsKey(moduleName)) syms.Add(moduleName, new Symbol() { ModuleName = moduleName, PDBName = pdbName + ".pdb", PDBAge = pdbAge, PDBGuid = pdbGuid.ToString("N") });
                             }
                         }
                     }
                 }
             }));
 
-            return cts.IsCancellationRequested ? new Dictionary<string, Symbol>() : retval;
+            return cts.IsCancellationRequested ? new Dictionary<string, Symbol>() : syms;
         }
 
         public async static Task<(Dictionary<string, Symbol>, List<StackDetails>)> ParseModuleInfoXMLAsync(List<StackDetails> listOfCallStacks, CancellationTokenSource cts) {

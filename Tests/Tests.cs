@@ -699,7 +699,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
             var pdbPath = string.Empty;
-            var input = @"ntdll+0x9F7E4\r\nKERNELBASE+0x38973\r\nVCRUNTIME140+0xB8F0\r\nntdll+0xA479F\r\nntdll+0x4BEF\r\nntdll+0x89E6\r\nKERNELBASE+0x396C9\r\n" +
+            var input = "ntdll+0x9F7E4\r\nKERNELBASE+0x38973\r\nVCRUNTIME140+0xB8F0\r\nntdll+0xA479F\r\nntdll+0x4BEF\r\nntdll+0x89E6\r\nKERNELBASE+0x396C9\r\n" +
 "\"ntdll.dll\",\"10.0.17763.1490\",2019328,462107166,2009368,\"ntdll.pdb\",\"{C374E059-5793-9B92-6525-386A66A2D3F5}\",0,1\r\n" +
 "\"KERNELBASE.dll\",\"10.0.17763.1518\",2707456,4281343292,2763414,\"kernelbase.pdb\",\"{E77E26E7-D1C4-72BB-2C05-DD17624A9E58}\",0,1\r\n" +
 "\"VCRUNTIME140.dll\",\"14.16.27033.0\",86016,1563486943,105788,\"vcruntime140.amd64.pdb\",\"{AF138C3F-2933-4097-8883-C1071B13375E}\",0,1\r\n";
