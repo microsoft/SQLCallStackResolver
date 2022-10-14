@@ -320,6 +320,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                 this.StatusMessage = "Checking for embedded symbol information...";
                 var syms = await ModuleInfoHelper.ParseModuleInfoAsync(listOfCallStacks, cts);
+                if (syms == null) return "Unable to determine symbol information from XML frames - this may be caused by multiple PDB versions in the same input.";
                 if (cts.IsCancellationRequested) { StatusMessage = OperationCanceled; PercentComplete = 0; return OperationCanceled; }
 
                 var symSrvSymPath = string.Empty;
@@ -339,7 +340,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     }
                 }
 
-                var moduleNamesMap = syms.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ModuleName, StringComparer.OrdinalIgnoreCase); //.Select(kvp => new KeyValuePair<string, string>(kvp.Key, kvp.Value.PDBName));
+                var moduleNamesMap = syms.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ModuleName, StringComparer.OrdinalIgnoreCase);
 
                 this.StatusMessage = "Resolving callstacks to symbols...";
                 this.globalCounter = 0;

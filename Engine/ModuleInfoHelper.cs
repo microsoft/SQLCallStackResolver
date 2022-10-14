@@ -10,6 +10,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// </summary>
         public async static Task<Dictionary<string, Symbol>> ParseModuleInfoAsync(List<StackDetails> listOfCallStacks, CancellationTokenSource cts) {
             var syms = new Dictionary<string, Symbol>();
+            bool anyTaskFailed = false;
             await Task.Run(() => Parallel.ForEach(listOfCallStacks.Where(c => c.Callstack.Contains(",")).Select(c => c.CallstackFrames), lines => {
                 if (cts.IsCancellationRequested) return;
                 Contract.Requires(lines.Length > 0);
@@ -43,13 +44,17 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         if (!string.IsNullOrEmpty(pdbName) && pdbAge != int.MinValue && pdbGuid != Guid.Empty) {
                             lock (syms) {
                                 if (!syms.ContainsKey(moduleName)) syms.Add(moduleName, new Symbol() { ModuleName = moduleName, PDBName = pdbName + ".pdb", PDBAge = pdbAge, PDBGuid = pdbGuid.ToString("N") });
+                                else if (!(syms[moduleName].ModuleName == moduleName && syms[moduleName].PDBName == pdbName + ".pdb" && syms[moduleName].PDBAge == pdbAge && syms[moduleName].PDBGuid == pdbGuid.ToString("N"))) { 
+                                    anyTaskFailed = true;
+                                    return;
+                                }
                             }
                         }
                     }
                 }
             }));
 
-            return cts.IsCancellationRequested ? new Dictionary<string, Symbol>() : syms;
+            return cts.IsCancellationRequested ? new Dictionary<string, Symbol>() : (anyTaskFailed ? null : syms);
         }
 
         public async static Task<(Dictionary<string, Symbol>, List<StackDetails>)> ParseModuleInfoXMLAsync(List<StackDetails> listOfCallStacks, CancellationTokenSource cts) {
@@ -91,7 +96,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                                     var pdbGuid = reader.GetAttribute("guid");
                                     var pdbAge = reader.GetAttribute("age");
                                     string uniqueModuleName;
-                                    // TODO handle cases when the above are null
+                                    // createe a map of the last mapped module names to handle cases when the frame is "truncated" and the above PDB details are not available
                                     if (pdbGuid != null && pdbAge != null) {
                                         uniqueModuleName = $"{pdbGuid.Replace("-", string.Empty).ToUpper()}{pdbAge}";
                                         if (latestMappedModuleNames.ContainsKey(moduleName)) latestMappedModuleNames[moduleName] = uniqueModuleName;

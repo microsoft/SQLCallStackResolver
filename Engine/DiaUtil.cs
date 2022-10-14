@@ -1,7 +1,5 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
-using System.Collections.Generic;
-
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     /// Wrapper class around DIA
     internal class DiaUtil {
@@ -69,14 +67,13 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                                 if (foundFiles.Any()) break;
                             } else break;
 
-                            if (!foundFiles.Any() && currPath.EndsWith(currentModule)) { // search for subfolder with PDB GUID as the name
+                            if (currPath.EndsWith(currentModule)) { // search for subfolder with PDB GUID as the name
                                 foundFiles = Directory.EnumerateFiles(currPath, "*.pdb", recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
                                 if (foundFiles.Any()) break;
                             }
                         }
 
-                        // last attempt, fall back to looking for the original module name, but only amongst user-supplied symbol path folder(s)
-                        // TODO add test for this with vcruntime
+                        // if needed, make a last attempt looking for the original module name - but only amongst user-supplied symbol path folder(s)
                         if (!foundFiles.Any()) foreach (var currPath in userSuppliedSymPath.Split(';').Where(p => Directory.Exists(p))) {
                                 if (!currPath.EndsWith(currentModule)) foundFiles = Directory.EnumerateFiles(currPath, moduleNamesMap[currentModule] + ".pdb", recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
                             }
