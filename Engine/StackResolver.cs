@@ -215,7 +215,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     sourceInfo = DiaUtil.GetSourceInfo(enumLineNums, pdbHasSourceInfo);
                     Marshal.FinalReleaseComObject(enumLineNums);
                 }
-                var originalModuleName = moduleNamesMap.ContainsKey(moduleName) ? moduleNamesMap[moduleName] : moduleName;
+                var originalModuleName = moduleNamesMap.TryGetValue(moduleName, out string existingModule) ? existingModule : moduleName;
                 if (showInlineFrames && pdbHasSourceInfo && !sourceInfo.Contains("-- WARNING:")) {
                     inlineFrameAndSourceInfo = DiaUtil.ProcessInlineFrames(originalModuleName, useUndecorateLogic, includeOffset, includeSourceInfo, rva, mysym, pdbHasSourceInfo);
                 }

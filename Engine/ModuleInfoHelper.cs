@@ -43,8 +43,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         // check if we have all 3 details
                         if (!string.IsNullOrEmpty(pdbName) && pdbAge != int.MinValue && pdbGuid != Guid.Empty) {
                             lock (syms) {
-                                if (!syms.ContainsKey(moduleName)) syms.Add(moduleName, new Symbol() { ModuleName = moduleName, PDBName = pdbName + ".pdb", PDBAge = pdbAge, PDBGuid = pdbGuid.ToString("N") });
-                                else if (!(syms[moduleName].ModuleName == moduleName && syms[moduleName].PDBName == pdbName + ".pdb" && syms[moduleName].PDBAge == pdbAge && syms[moduleName].PDBGuid == pdbGuid.ToString("N"))) { 
+                                if (!syms.TryGetValue(moduleName, out Symbol existingSym)) syms.Add(moduleName, new Symbol() { ModuleName = moduleName, PDBName = pdbName + ".pdb", PDBAge = pdbAge, PDBGuid = pdbGuid.ToString("N") });
+                                else if (!(existingSym.ModuleName == moduleName && existingSym.PDBName == pdbName + ".pdb" && existingSym.PDBAge == pdbAge && existingSym.PDBGuid == pdbGuid.ToString("N"))) {
                                     anyTaskFailed = true;
                                     return;
                                 }
