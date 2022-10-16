@@ -70,7 +70,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Runs through each of the frames in a call stack and looks up symbols for each
-        private string ResolveSymbols(Dictionary<string, DiaUtil> _diautils, string[] callStackLines, string symPath, bool searchPDBsRecursively, bool cachePDB, bool includeSourceInfo, bool relookupSource, bool includeOffsets, bool showInlineFrames, List<string> modulesToIgnore, CancellationTokenSource cts) {
+        private string ResolveSymbols(Dictionary<string, DiaUtil> _diautils, Dictionary<string, string> moduleNamesMap, string[] callStackLines, string userSuppliedSymPath, string symSrvSymPath, bool searchPDBsRecursively, bool cachePDB, bool includeSourceInfo, bool relookupSource, bool includeOffsets, bool showInlineFrames, List<string> modulesToIgnore, CancellationTokenSource cts) {
             var finalCallstack = new StringBuilder();
             int runningFrameNum = int.MinValue;
             foreach (var iterFrame in callStackLines) {
@@ -87,7 +87,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     var matchAlreadySymbolized = rgxAlreadySymbolizedFrame.Match(currentFrame);
                     if (matchAlreadySymbolized.Success) {
                         var matchedModuleName = matchAlreadySymbolized.Groups["module"].Value;
-                        if (!_diautils.ContainsKey(matchedModuleName)) DiaUtil.LocateandLoadPDBs(_diautils, symPath, searchPDBsRecursively, new List<string>() { matchedModuleName }, cachePDB, modulesToIgnore);
+                        if (!_diautils.ContainsKey(matchedModuleName)) DiaUtil.LocateandLoadPDBs(_diautils, userSuppliedSymPath, symSrvSymPath, searchPDBsRecursively, new Dictionary<string, string>() { { matchedModuleName, matchedModuleName } }, cachePDB, modulesToIgnore);
                         if (_diautils.TryGetValue(matchedModuleName, out var existingEntry) && _diautils[matchedModuleName].HasSourceInfo) {
                             var myDIAsession = existingEntry._IDiaSession;
                             myDIAsession.findChildrenEx(myDIAsession.globalScope, SymTagEnum.SymTagNull, matchAlreadySymbolized.Groups["symbolizedfunc"].Value, 0, out IDiaEnumSymbols matchedSyms);
@@ -125,12 +125,12 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 var match = rgxModuleName.Match(currentFrame);
                 if (match.Success) {
                     var matchedModuleName = match.Groups["module"].Value;
-                    // maybe we have a "not well-known" module, attempt to (best effort) find PDB for it.
-                    if (!_diautils.ContainsKey(matchedModuleName)) DiaUtil.LocateandLoadPDBs(_diautils, symPath, searchPDBsRecursively, new List<string>() { matchedModuleName }, cachePDB, modulesToIgnore);
+                    lock (moduleNamesMap) if (!moduleNamesMap.ContainsKey(matchedModuleName)) moduleNamesMap.Add(matchedModuleName, matchedModuleName);
+                    if (!_diautils.ContainsKey(matchedModuleName)) DiaUtil.LocateandLoadPDBs(_diautils, userSuppliedSymPath, symSrvSymPath, searchPDBsRecursively, moduleNamesMap, cachePDB, modulesToIgnore);
                     int frameNumFromInput = string.IsNullOrWhiteSpace(match.Groups["framenum"].Value) ? int.MinValue : Convert.ToInt32(match.Groups["framenum"].Value, 16);
                     if (frameNumFromInput != int.MinValue && runningFrameNum == int.MinValue) runningFrameNum = frameNumFromInput;
                     if (_diautils.ContainsKey(matchedModuleName)) {
-                        string processedFrame = ProcessFrameModuleOffset(_diautils, frameNumFromInput, ref runningFrameNum, matchedModuleName, match.Groups["offset"].Value, includeSourceInfo, includeOffsets, showInlineFrames);
+                        string processedFrame = ProcessFrameModuleOffset(_diautils, moduleNamesMap, frameNumFromInput, ref runningFrameNum, matchedModuleName, match.Groups["offset"].Value, includeSourceInfo, includeOffsets, showInlineFrames);
                         if (!string.IsNullOrEmpty(processedFrame)) finalCallstack.AppendLine(processedFrame);   // typically this is because we could not find the offset in any known function range
                         else finalCallstack.AppendLine(currentFrame);
                     }
@@ -163,7 +163,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         /// This is the most important function in this whole utility! It uses DIA to lookup the symbol based on RVA offset
         /// It also looks up line number information if available and then formats all of this information for returning to caller
-        private string ProcessFrameModuleOffset(Dictionary<string, DiaUtil> _diautils, int frameNumFromInput, ref int frameNum, string moduleName, string offset, bool includeSourceInfo, bool includeOffset, bool showInlineFrames) {
+        private string ProcessFrameModuleOffset(Dictionary<string, DiaUtil> _diautils, Dictionary<string, string> moduleNamesMap, int frameNumFromInput, ref int frameNum, string moduleName, string offset, bool includeSourceInfo, bool includeOffset, bool showInlineFrames) {
             bool useUndecorateLogic = false;
 
             // the offsets in the XE output are in hex, so we convert to base-10 accordingly
@@ -215,11 +215,12 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     sourceInfo = DiaUtil.GetSourceInfo(enumLineNums, pdbHasSourceInfo);
                     Marshal.FinalReleaseComObject(enumLineNums);
                 }
+                var originalModuleName = moduleNamesMap.TryGetValue(moduleName, out string existingModule) ? existingModule : moduleName;
                 if (showInlineFrames && pdbHasSourceInfo && !sourceInfo.Contains("-- WARNING:")) {
-                    inlineFrameAndSourceInfo = DiaUtil.ProcessInlineFrames(moduleName, useUndecorateLogic, includeOffset, includeSourceInfo, rva, mysym, pdbHasSourceInfo);
+                    inlineFrameAndSourceInfo = DiaUtil.ProcessInlineFrames(originalModuleName, useUndecorateLogic, includeOffset, includeSourceInfo, rva, mysym, pdbHasSourceInfo);
                 }
 
-                var symbolizedFrame = DiaUtil.GetSymbolizedFrame(moduleName, mysym, useUndecorateLogic, includeOffset, displacement, false);
+                var symbolizedFrame = DiaUtil.GetSymbolizedFrame(originalModuleName, mysym, useUndecorateLogic, includeOffset, displacement, false);
 
                 // make sure we cleanup COM allocations for the resolved sym
                 Marshal.FinalReleaseComObject(mysym);
@@ -293,7 +294,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// This is what the caller will invoke to resolve symbols
         /// </summary>
         /// <param name="inputCallstackText">the input call stack text or XML</param>
-        /// <param name="symPath">PDB search paths; separated by semi-colons. The first path containing a 'matching' PDB will be used.</param>
+        /// <param name="userSuppliedSymPath">PDB search paths; separated by semi-colons. The first path containing a 'matching' PDB will be used.</param>
         /// <param name="searchPDBsRecursively">search for PDBs recursively in each path specified</param>
         /// <param name="dllPaths">DLL search paths. this is optional unless the call stack has frames of the form dll!OrdinalNNN+offset</param>
         /// <param name="searchDLLRecursively">Search for DLLs recursively in each path specified. The first path containing a 'matching' DLL will be used.</param>
@@ -305,7 +306,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// <param name="cachePDB">Boolean, whether to cache PDBs locally</param>
         /// <param name="outputFilePath">File path, used if output is directly written to a file</param>
         /// <returns></returns>
-        public async Task<string> ResolveCallstacksAsync(List<StackDetails> listOfCallStacks, string symPath, bool searchPDBsRecursively, List<string> dllPaths,
+        public async Task<string> ResolveCallstacksAsync(List<StackDetails> listOfCallStacks, string userSuppliedSymPath, bool searchPDBsRecursively, List<string> dllPaths,
             bool searchDLLRecursively, bool includeSourceInfo, bool relookupSource, bool includeOffsets,
             bool showInlineFrames, bool cachePDB, string outputFilePath, CancellationTokenSource cts) {
             return await Task.Run(async () => {
@@ -319,26 +320,27 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                 this.StatusMessage = "Checking for embedded symbol information...";
                 var syms = await ModuleInfoHelper.ParseModuleInfoAsync(listOfCallStacks, cts);
+                if (syms == null) return "Unable to determine symbol information from XML frames - this may be caused by multiple PDB versions in the same input.";
                 if (cts.IsCancellationRequested) { StatusMessage = OperationCanceled; PercentComplete = 0; return OperationCanceled; }
 
+                var symSrvSymPath = string.Empty;
                 if (syms.Count() > 0) {
                     this.StatusMessage = "Downloading symbols as needed...";
                     // if the user has provided such a list of module info, proceed to actually use dbghelp.dll / symsrv.dll to download those PDBs and get local paths for them
-                    var paths = SymSrvHelpers.GetFolderPathsForPDBs(this, symPath, syms.Values.ToList());
-                    // we then "inject" those local PDB paths as higher priority than any possible user provided paths
-                    symPath = string.Join(";", paths) + ";" + symPath;
+                    symSrvSymPath = string.Join(";", SymSrvHelpers.GetFolderPathsForPDBs(this, userSuppliedSymPath, syms.Values.ToList()));
                 } else {
                     this.StatusMessage = "Looking for embedded XML-formatted frames and symbol information...";
                     // attempt to check if there are XML-formatted frames each with the related PDB attributes and if so replace those lines with the normalized versions
                     (syms, listOfCallStacks) = await ModuleInfoHelper.ParseModuleInfoXMLAsync(listOfCallStacks, cts);
+                    if (syms == null) return "Unable to determine symbol information from XML frames - this may be caused by multiple PDB versions in the same input.";
                     if (cts.IsCancellationRequested) { StatusMessage = OperationCanceled; PercentComplete = 0; return OperationCanceled; }
                     if (syms.Count() > 0) {
                         // if the user has provided such a list of module info, proceed to actually use dbghelp.dll / symsrv.dll to download thos PDBs and get local paths for them
-                        var paths = SymSrvHelpers.GetFolderPathsForPDBs(this, symPath, syms.Values.ToList());
-                        // we then "inject" those local PDB paths as higher priority than any possible user provided paths
-                        symPath = string.Join(";", paths) + ";" + symPath;
+                        symSrvSymPath = string.Join(";", SymSrvHelpers.GetFolderPathsForPDBs(this, userSuppliedSymPath, syms.Values.ToList()));
                     }
                 }
+
+                var moduleNamesMap = syms.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ModuleName, StringComparer.OrdinalIgnoreCase);
 
                 this.StatusMessage = "Resolving callstacks to symbols...";
                 this.globalCounter = 0;
@@ -350,8 +352,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 this.StatusMessage = "Starting tasks to process frames...";
                 int numThreads = Math.Min(listOfCallStacks.Count, Environment.ProcessorCount);
                 List<Task> tasks = new();
-                for (int taskOrdinal = 0; taskOrdinal < numThreads; taskOrdinal++) tasks.Add(ProcessCallStack(taskOrdinal, numThreads, listOfCallStacks,
-                    symPath, dllPaths, searchPDBsRecursively, searchDLLRecursively, includeSourceInfo, showInlineFrames,
+                for (int taskOrdinal = 0; taskOrdinal < numThreads; taskOrdinal++) tasks.Add(ProcessCallStack(taskOrdinal, numThreads, listOfCallStacks, moduleNamesMap,
+                    userSuppliedSymPath, symSrvSymPath, dllPaths, searchPDBsRecursively, searchDLLRecursively, includeSourceInfo, showInlineFrames,
                     relookupSource, includeOffsets, cachePDB, cts));
 
                 this.StatusMessage = "Waiting for tasks to finish...";
@@ -516,8 +518,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Function executed by worker threads to process callstacks. Threads work on portions of the listOfCallStacks based on their thread ordinal.
-        private async Task ProcessCallStack(int threadOrdinal, int numThreads, List<StackDetails> listOfCallStacks,
-        string symPath, List<string> dllPaths, bool searchPDBsRecursively, bool searchDLLRecursively,
+        private async Task ProcessCallStack(int threadOrdinal, int numThreads, List<StackDetails> listOfCallStacks, Dictionary<string, string> moduleNamesMap,
+        string userSuppliedSymPath, string symSrvSymPath, List<string> dllPaths, bool searchPDBsRecursively, bool searchDLLRecursively,
         bool includeSourceInfo, bool showInlineFrames, bool relookupSource, bool includeOffsets, bool cachePDB, CancellationTokenSource cts) {
             await Task.Run(() => {
                 if (!SafeNativeMethods.EstablishActivationContext()) return;
@@ -535,7 +537,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     if (cts.IsCancellationRequested) return;
 
                     // resolve symbols by using DIA
-                    currstack.Resolvedstack = ResolveSymbols(_diautils, callStackLines, symPath, searchPDBsRecursively, cachePDB,  includeSourceInfo, relookupSource, includeOffsets, showInlineFrames, modulesToIgnore, cts);
+                    currstack.Resolvedstack = ResolveSymbols(_diautils, moduleNamesMap, callStackLines, userSuppliedSymPath, symSrvSymPath, searchPDBsRecursively, cachePDB,  includeSourceInfo, relookupSource, includeOffsets, showInlineFrames, modulesToIgnore, cts);
                     if (cts.IsCancellationRequested) return;
 
                     var localCounter = Interlocked.Increment(ref this.globalCounter);

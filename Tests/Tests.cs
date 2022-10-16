@@ -402,18 +402,22 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
             var syms = result.Item1;
             Assert.AreEqual(4, syms.Count());
-            Assert.AreEqual("ntdll.pdb", syms["ntdll"].PDBName);
-            Assert.AreEqual("C374E05957939B926525386A66A2D3F5", syms["ntdll"].PDBGuid, ignoreCase: true);
-            Assert.AreEqual(1, syms["ntdll"].PDBAge);
-            Assert.AreEqual("kernelbase.pdb", syms["KERNELBASE"].PDBName);
-            Assert.AreEqual("E77E26E7D1C472BB2C05DD17624A9E58", syms["KERNELBASE"].PDBGuid, ignoreCase: true);
-            Assert.AreEqual(1, syms["KERNELBASE"].PDBAge);
-            Assert.AreEqual("sqldk.pdb", syms["sqldk"].PDBName);
-            Assert.AreEqual("6a1934433512464b8b8ed905ad930ee6", syms["sqldk"].PDBGuid, ignoreCase: true);
-            Assert.AreEqual(2, syms["sqldk"].PDBAge);
-            Assert.AreEqual("vcruntime140.amd64.pdb", syms["VCRUNTIME140"].PDBName);
-            Assert.AreEqual("AF138C3F293340978883C1071B13375E", syms["VCRUNTIME140"].PDBGuid, ignoreCase: true);
-            Assert.AreEqual(1, syms["VCRUNTIME140"].PDBAge);
+            Assert.AreEqual("ntdll.pdb", syms["C374E05957939B926525386A66A2D3F51"].PDBName);
+            Assert.AreEqual("C374E05957939B926525386A66A2D3F5", syms["C374E05957939B926525386A66A2D3F51"].PDBGuid);
+            Assert.AreEqual("ntdll", syms["C374E05957939B926525386A66A2D3F51"].ModuleName);
+            Assert.AreEqual(1, syms["C374E05957939B926525386A66A2D3F51"].PDBAge);
+            Assert.AreEqual("kernelbase.pdb", syms["E77E26E7D1C472BB2C05DD17624A9E581"].PDBName);
+            Assert.AreEqual("E77E26E7D1C472BB2C05DD17624A9E58", syms["E77E26E7D1C472BB2C05DD17624A9E581"].PDBGuid);
+            Assert.AreEqual("KERNELBASE", syms["E77E26E7D1C472BB2C05DD17624A9E581"].ModuleName);
+            Assert.AreEqual(1, syms["E77E26E7D1C472BB2C05DD17624A9E581"].PDBAge);
+            Assert.AreEqual("sqldk.pdb", syms["6A1934433512464B8B8ED905AD930EE62"].PDBName);
+            Assert.AreEqual("6A1934433512464B8B8ED905AD930EE6", syms["6A1934433512464B8B8ED905AD930EE62"].PDBGuid);
+            Assert.AreEqual("sqldk", syms["6A1934433512464B8B8ED905AD930EE62"].ModuleName);
+            Assert.AreEqual(2, syms["6A1934433512464B8B8ED905AD930EE62"].PDBAge);
+            Assert.AreEqual("vcruntime140.amd64.pdb", syms["AF138C3F293340978883C1071B13375E1"].PDBName);
+            Assert.AreEqual("AF138C3F293340978883C1071B13375E", syms["AF138C3F293340978883C1071B13375E1"].PDBGuid);
+            Assert.AreEqual("VCRUNTIME140", syms["AF138C3F293340978883C1071B13375E1"].ModuleName);
+            Assert.AreEqual(1, syms["AF138C3F293340978883C1071B13375E1"].PDBAge);
         }
 
         /// Tests the parsing and extraction of PDB details from a set of rows each with XML frames. Some of those XML frames do not have sym info or RVA included.
@@ -423,18 +427,30 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var result = await ModuleInfoHelper.ParseModuleInfoXMLAsync(new List<StackDetails> { input }, cts);
 
             var syms = result.Item1;
+            var symKey = "6A1934433512464B8B8ED905AD930EE62";
             Assert.AreEqual(1, syms.Count);
-            Assert.AreEqual("sqldk.pdb", syms["sqldk"].PDBName);
-            Assert.AreEqual("6a1934433512464b8b8ed905ad930ee6", syms["sqldk"].PDBGuid, ignoreCase: true);
-            Assert.AreEqual(2, syms["sqldk"].PDBAge);
-            Assert.AreEqual((ulong)0x100400000, syms["sqldk"].CalculatedModuleBaseAddress);
+            Assert.AreEqual("sqldk.pdb", syms[symKey].PDBName);
+            Assert.AreEqual("sqldk", syms[symKey].ModuleName);
+            Assert.AreEqual("6a1934433512464b8b8ed905ad930ee6", syms[symKey].PDBGuid, ignoreCase: true);
+            Assert.AreEqual(2, syms[symKey].PDBAge);
+            Assert.AreEqual((ulong)0x100400000, syms[symKey].CalculatedModuleBaseAddress);
         }
 
         /// Tests the parsing and extraction of PDB details from a set of rows each with commma-separated fields.
-        [TestMethod][TestCategory("Unit")] public async Task ExtractModuleInfoEmptyString() {
+        [TestMethod][TestCategory("Unit")] public async Task ExtractModuleInfoExceptionalCases() {
             using var cts = new CancellationTokenSource();
             var ret = await ModuleInfoHelper.ParseModuleInfoAsync(new List<StackDetails>() { new StackDetails(string.Empty, false) }, cts);
             Assert.AreEqual(ret.Count(), 0);
+            // test for a completely duplicated symbol entry - that's okay
+            ret = await ModuleInfoHelper.ParseModuleInfoAsync(new List<StackDetails>() { new StackDetails("\"ntdll.dll\",\"10.0.19041.662\",2056192,666871280,2084960,\"ntdll.pdb\",\"{1EB9FACB-04C7-3C5D-EA71-60764CD333D0}\",0,1\r\n" +
+"\"ntdll.dll\",\"10.0.19041.662\",2056192,666871280,2084960,\"ntdll.pdb\",\"{1EB9FACB-04C7-3C5D-EA71-60764CD333D0}\",0,1\r\n" +
+"\"kernel32.dll\",\"10.0.19041.662\",774144,1262097423,770204,\"kernel32.pdb\",\"{54448D8E-EFC5-AB3C-7193-D2C7A6DF9008}\",0,1\r\n", false)}, cts);
+            Assert.AreEqual(ret.Count(), 2);
+            // when there is more than one PDB for the same module, fail
+            ret = await ModuleInfoHelper.ParseModuleInfoAsync(new List<StackDetails>() { new StackDetails("\"sqldk.dll\",\"14.0.3192.2\",0,0,0,\"sqldk.pdb\",\"{122FC135-ABF2-4465-BA9E-6BE0A6274EB3}\",0,2\r\n" +
+"\"sqldk.dll\",\"13.0.4001.0\",0,0,0,\"sqldk.pdb\",\"{1D3FA75E-B355-40E2-87B2-E012D69785DF}\",0,2\r\n" +
+"\"kernel32.dll\",\"10.0.19041.662\",774144,1262097423,770204,\"kernel32.pdb\",\"{54448D8E-EFC5-AB3C-7193-D2C7A6DF9008}\",0,1\r\n", false)}, cts);
+            Assert.IsNull(ret);
         }
 
         /// Test obtaining a local path for symbols downloaded from a symbol server.
@@ -510,6 +526,22 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             Assert.AreEqual(expected.Trim(), ret.Trim());
         }
 
+        /// End-to-end test with multiple stacks, each with different versions of the module / PDBs
+        [TestMethod][TestCategory("Unit")] public async Task E2ESymSrvXMLFramesWithMultiplePDBVersions() {
+            using var csr = new StackResolver();
+            using var cts = new CancellationTokenSource();
+            var pdbPath = @"srv*https://msdl.microsoft.com/download/symbols";
+            var input = "<frame id=\"00\" pdb=\"sqldk.pdb\" age=\"2\" guid=\"122FC135-ABF2-4465-BA9E-6BE0A6274EB3\" module=\"sqldk.dll\" rva=\"0x106C7C\" />" +
+"<frame id=\"01\" pdb=\"sqldk.pdb\" age=\"2\" guid=\"122FC135-ABF2-4465-BA9E-6BE0A6274EB3\" module=\"sqldk.dll\" rva=\"0x59204\" />\r\n\r\n" +
+"<frame id=\"00\" pdb=\"sqldk.pdb\" age=\"2\" guid=\"1D3FA75E-B355-40E2-87B2-E012D69785DF\" module=\"sqldk.dll\" rva=\"0xFD919\" />" +
+"<frame id=\"01\" pdb=\"sqldk.pdb\" age=\"2\" guid=\"1D3FA75E-B355-40E2-87B2-E012D69785DF\" module=\"sqldk.dll\" rva=\"0x3D45D\" />";
+
+            var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(input, false, cts), pdbPath, false, null, false, true, false, true, true, false, null, cts);
+            var expected = "00 sqldk!XeSosPkg::wait_completed::Publish+476\r\n01 sqldk!SOS_Scheduler::UpdateWaitTimeStats+1186\r\n00 sqldk!XeSosPkg::spinlock_backoff::Publish+425\r\n01 sqldk!SpinlockBase::Sleep+182\r\n";
+            //var expected = "Unable to determine symbol information from XML frames - this may be caused by multiple PDB versions in the same input.";
+            Assert.AreEqual(expected.Trim(), ret.Trim());
+        }
+
         /// End-to-end test with stacks being resolved based on symbols from symsrv, with XML-encoded input (as is usually seen in clients like SSMS).
         [TestMethod][TestCategory("Unit")] public async Task E2ESymSrvXMLFramesEncoded() {
             using var csr = new StackResolver();
@@ -534,11 +566,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var input = "Frame = <frame id=\"00\" pdb=\"ntdll.pdb\" age=\"1\" guid=\"C374E059-5793-9B92-6525-386A66A2D3F5\" module=\"ntdll.dll\" rva=\"0x9F7E4\" />        \r\n" +
 "Frame = <frame id=\"01\" pdb=\"kernelbase.pdb\" age=\"1\" guid=\"E77E26E7-D1C4-72BB-2C05-DD17624A9E58\" module=\"KERNELBASE.dll\" rva=\"0x38973\" />                          \n" +
 "Frame = <frame id=\"02\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-\r\nd905ad930ee6\" module=\"sqldk.dll\" rva=\"0x40609\" />                                    \r\n" +
-"<frame id=\"03\" pdb=\"vcruntime140.amd64.pdb\" age=\"1\" guid=\"AF138C3F-2933-4097-8883-C1071B13375E\" module=\"VCRUNTIME140.dll\" rva=\"0xB8F0\" />\r\n" +
+"VCRUNTIME140+0xB8F0\r\n" +
 "Frame = <frame id=\"04\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x2249f\" />                                    \n" +
 "Frame = <frame id=\"05\" pdb=\"onnxruntime.pdb\" age=\"1\" guid=\"D1106301-B61B-4655-BFAC-DC1EA8911A7E\" module=\"onnxruntime.dll\" rva=\"0x4fd50\" />";
 
-            var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(input, false, cts), pdbPath, false, null, false, true, false, true, false, false, null, cts);
+                        var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(input, false, cts), pdbPath, false, null, false, true, false, true, false, false, null, cts);
             var expected = "00 ntdll!NtWaitForSingleObject+20\r\n01 KERNELBASE!WaitForSingleObjectEx+147\r\n02 sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644\r\n03 VCRUNTIME140!__C_specific_handler+160	(d:\\agent\\_work\\2\\s\\src\\vctools\\crt\\vcruntime\\src\\eh\\riscchandler.cpp:290)\r\n04 sqldk!Spinlock<244,2,1>::SpinToAcquireWithExponentialBackoff+349\r\n05 onnxruntime!onnxruntime::InferenceSession::Initialize+0\t(D:\\a\\_work\\1\\s\\onnxruntime\\core\\session\\inference_session.cc:1238)";
             Assert.AreEqual(expected.Trim(), ret.Trim());
         }
@@ -677,7 +709,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
             var pdbPath = string.Empty;
-            var input = @"ntdll+0x9F7E4\r\nKERNELBASE+0x38973\r\nVCRUNTIME140+0xB8F0\r\nntdll+0xA479F\r\nntdll+0x4BEF\r\nntdll+0x89E6\r\nKERNELBASE+0x396C9\r\n" +
+            var input = "ntdll+0x9F7E4\r\nKERNELBASE+0x38973\r\nVCRUNTIME140+0xB8F0\r\nntdll+0xA479F\r\nntdll+0x4BEF\r\nntdll+0x89E6\r\nKERNELBASE+0x396C9\r\n" +
 "\"ntdll.dll\",\"10.0.17763.1490\",2019328,462107166,2009368,\"ntdll.pdb\",\"{C374E059-5793-9B92-6525-386A66A2D3F5}\",0,1\r\n" +
 "\"KERNELBASE.dll\",\"10.0.17763.1518\",2707456,4281343292,2763414,\"kernelbase.pdb\",\"{E77E26E7-D1C4-72BB-2C05-DD17624A9E58}\",0,1\r\n" +
 "\"VCRUNTIME140.dll\",\"14.16.27033.0\",86016,1563486943,105788,\"vcruntime140.amd64.pdb\",\"{AF138C3F-2933-4097-8883-C1071B13375E}\",0,1\r\n";

@@ -21,6 +21,12 @@ if (-not (test-path $localpath)) {
     dir $localpath
 }
 
+$localpath = "./SourceInformation/vcruntime140.amd64.pdb"
+if (-not (test-path $localpath)) {
+    Invoke-WebRequest -UseBasicParsing -uri ($msdlurl + "vcruntime140.amd64.pdb\AF138C3F293340978883C1071B13375E1/vcruntime140.amd64.pdb") -OutFile $localpath
+    dir $localpath
+}
+
 $onnxpdb = [System.IO.Path]::Combine($PWD, "SourceInformation/onnxruntime.pdb")
 $onnxzipfile = [System.IO.Path]::Combine($PWD, "SourceInformation/onnxruntime-win-x64-1.12.0.zip")
 if (-not (test-path $onnxpdb)) {

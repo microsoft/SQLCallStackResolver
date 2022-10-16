@@ -9,7 +9,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// Parse the input and return a set of resolved Symbol objects
         /// </summary>
         public async static Task<Dictionary<string, Symbol>> ParseModuleInfoAsync(List<StackDetails> listOfCallStacks, CancellationTokenSource cts) {
-            var retval = new Dictionary<string, Symbol>();
+            var syms = new Dictionary<string, Symbol>();
+            bool anyTaskFailed = false;
             await Task.Run(() => Parallel.ForEach(listOfCallStacks.Where(c => c.Callstack.Contains(",")).Select(c => c.CallstackFrames), lines => {
                 if (cts.IsCancellationRequested) return;
                 Contract.Requires(lines.Length > 0);
@@ -41,20 +42,26 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                         // check if we have all 3 details
                         if (!string.IsNullOrEmpty(pdbName) && pdbAge != int.MinValue && pdbGuid != Guid.Empty) {
-                            lock (retval) {
-                                if (!retval.ContainsKey(moduleName)) retval.Add(moduleName, new Symbol() { PDBName = pdbName + ".pdb", PDBAge = pdbAge, PDBGuid = pdbGuid.ToString("N") });
+                            lock (syms) {
+                                if (!syms.TryGetValue(moduleName, out Symbol existingSym)) syms.Add(moduleName, new Symbol() { ModuleName = moduleName, PDBName = pdbName + ".pdb", PDBAge = pdbAge, PDBGuid = pdbGuid.ToString("N") });
+                                else if (!(existingSym.ModuleName == moduleName && existingSym.PDBName == pdbName + ".pdb" && existingSym.PDBAge == pdbAge && existingSym.PDBGuid == pdbGuid.ToString("N"))) {
+                                    anyTaskFailed = true;
+                                    return;
+                                }
                             }
                         }
                     }
                 }
             }));
 
-            return cts.IsCancellationRequested ? new Dictionary<string, Symbol>() : retval;
+            return cts.IsCancellationRequested ? new Dictionary<string, Symbol>() : (anyTaskFailed ? null : syms);
         }
 
         public async static Task<(Dictionary<string, Symbol>, List<StackDetails>)> ParseModuleInfoXMLAsync(List<StackDetails> listOfCallStacks, CancellationTokenSource cts) {
             var syms = new Dictionary<string, Symbol>();
+            bool anyTaskFailed = false;
             await Task.Run(() => Parallel.ForEach(listOfCallStacks, currItem => {
+                var latestMappedModuleNames = new Dictionary<string, string>();
                 if (cts.IsCancellationRequested) return;
                 var outCallstack = new StringBuilder();
                 // sniff test to allow for quick exit if input has no XML at all
@@ -86,22 +93,39 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                                     ulong rvaIfPresent = string.IsNullOrEmpty(rvaAttributeVal) ? ulong.MinValue : Convert.ToUInt64(rvaAttributeVal, 16);
                                     ulong calcBaseAddress = ulong.MinValue;
                                     if (rvaIfPresent != ulong.MinValue && addressIfPresent != ulong.MinValue) calcBaseAddress = addressIfPresent - rvaIfPresent;
-
+                                    var pdbGuid = reader.GetAttribute("guid");
+                                    var pdbAge = reader.GetAttribute("age");
+                                    string uniqueModuleName;
+                                    // createe a map of the last mapped module names to handle cases when the frame is "truncated" and the above PDB details are not available
+                                    if (pdbGuid != null && pdbAge != null) {
+                                        uniqueModuleName = $"{pdbGuid.Replace("-", string.Empty).ToUpper()}{pdbAge}";
+                                        if (latestMappedModuleNames.ContainsKey(moduleName)) latestMappedModuleNames[moduleName] = uniqueModuleName;
+                                        else latestMappedModuleNames.Add(moduleName, uniqueModuleName);
+                                    } else {
+                                        if (!latestMappedModuleNames.TryGetValue(moduleName, out uniqueModuleName)) {
+                                            anyTaskFailed = true;
+                                            return;
+                                        }
+                                    }
                                     lock (syms) {
-                                        if (syms.TryGetValue(moduleName, out var existingEntry)) {
+                                        if (syms.TryGetValue(uniqueModuleName, out var existingEntry)) {
+                                            //if (Guid.Parse(reader.GetAttribute("guid")).ToString("N") != existingEntry.PDBGuid || int.Parse(reader.GetAttribute("age")) != existingEntry.PDBAge) {
+                                            //    anyTaskFailed = true;
+                                            //    return;
+                                            //}
                                             if (ulong.MinValue == existingEntry.CalculatedModuleBaseAddress) existingEntry.CalculatedModuleBaseAddress = calcBaseAddress;
-                                        } else syms.Add(moduleName, new Symbol() { PDBName = reader.GetAttribute("pdb").ToLower(), PDBAge = int.Parse(reader.GetAttribute("age")), PDBGuid = Guid.Parse(reader.GetAttribute("guid")).ToString("N"), CalculatedModuleBaseAddress = calcBaseAddress });
+                                        } else syms.Add(uniqueModuleName, new Symbol() { PDBName = reader.GetAttribute("pdb").ToLower(), ModuleName = moduleName, PDBAge = int.Parse(pdbAge), PDBGuid = Guid.Parse(pdbGuid).ToString("N").ToUpper(), CalculatedModuleBaseAddress = calcBaseAddress });
                                     }
                                     string rvaAsIsOrDerived = null;
                                     if (ulong.MinValue != rvaIfPresent) rvaAsIsOrDerived = rvaAttributeVal;
-                                    else if (ulong.MinValue != addressIfPresent && ulong.MinValue != syms[moduleName].CalculatedModuleBaseAddress)
-                                        rvaAsIsOrDerived = "0x" + (addressIfPresent - syms[moduleName].CalculatedModuleBaseAddress).ToString("X");
+                                    else if (ulong.MinValue != addressIfPresent && ulong.MinValue != syms[uniqueModuleName].CalculatedModuleBaseAddress)
+                                        rvaAsIsOrDerived = "0x" + (addressIfPresent - syms[uniqueModuleName].CalculatedModuleBaseAddress).ToString("X");
 
                                     if (string.IsNullOrEmpty(rvaAsIsOrDerived)) { throw new NullReferenceException(); }
 
                                     var frameNumHex = string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:x2}", int.Parse(reader.GetAttribute("id")));
                                     // transform the XML into a simple module+offset notation
-                                    outCallstack.AppendFormat($"{frameNumHex} {moduleName}+{rvaAsIsOrDerived}{Environment.NewLine}");
+                                    outCallstack.AppendFormat($"{frameNumHex} {uniqueModuleName}+{rvaAsIsOrDerived}{Environment.NewLine}");
                                     continue;
                                 }
                             } catch (Exception ex) {
@@ -116,7 +140,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 }
             }));
 
-            return cts.IsCancellationRequested ? (new Dictionary<string, Symbol>(), new List<StackDetails>()) : (syms, listOfCallStacks);
+            return cts.IsCancellationRequested ? (new Dictionary<string, Symbol>(), new List<StackDetails>()) : (anyTaskFailed ? null : syms, listOfCallStacks);
         }
     }
 }
