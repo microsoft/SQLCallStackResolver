@@ -74,8 +74,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         }
 
                         // if needed, make a last attempt looking for the original module name - but only amongst user-supplied symbol path folder(s)
-                        if (!foundFiles.Any()) foreach (var currPath in userSuppliedSymPath.Split(';').Where(p => Directory.Exists(p))) {
-                                if (!currPath.EndsWith(currentModule)) foundFiles = Directory.EnumerateFiles(currPath, moduleNamesMap[currentModule] + ".pdb", recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
+                        if (!foundFiles.Any()) foreach (var currPath in userSuppliedSymPath.Split(';').Where(p => Directory.Exists(p) && !p.EndsWith(currentModule))) {
+                                foundFiles = Directory.EnumerateFiles(currPath, moduleNamesMap[currentModule] + ".pdb", recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
                             }
 
                         if (foundFiles?.Count() == 1) {  // we need to be sure there is only 1 file which matches
