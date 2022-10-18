@@ -123,7 +123,7 @@
   </Target>
   <PropertyGroup>
     <PreBuildEvent>cd $(ProjectDir)
-powershell -File "$(ProjectDir)../utils/getBuildPreReqs.ps1"
+type ..\utils\import-vsenv.ps1 ..\utils\getBuildPreReqs.ps1 2&gt;nul | powershell
 </PreBuildEvent>
   </PropertyGroup>
   <PropertyGroup>

@@ -1,8 +1,5 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License - see LICENSE file in this repo.
-
-. "$PSScriptRoot/import-vsenv.ps1"  # import VS environment
-
 if (-not (Test-Path DIA/Dia2Lib.dll)) {
     pushd "$env:TEMP"
     midl.exe /x64 /I "$env:VSINSTALLDIR/DIA SDK/include" "$env:VSINSTALLDIR/DIA SDK/idl/dia2.idl" /tlb dia2.tlb
