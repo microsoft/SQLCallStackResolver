@@ -30,7 +30,7 @@ jobs:
           !Target/Release/*.xml
           !Target/Release/Tests
     - name: Prep for running tests
-      run: ./downloadsyms.ps1 '${{ secrets.SQLDKDLL_URL }}' '${{ secrets.XESPINS_ZIP_URL }}' '${{ secrets.XEWAIT_URL }}'
+      run: ./downloadsyms.ps1
       working-directory: Tests/TestCases
       shell: powershell
     - name: Run tests
