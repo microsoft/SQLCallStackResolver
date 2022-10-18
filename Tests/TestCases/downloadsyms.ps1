@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License - see LICENSE file in this repo.
 
-param ($sqldkDownloadURL, $spinsXelZipDownloadURL, $waitCompletedXelDownloadUrl)
 $msdlurl = "https://msdl.microsoft.com/download/symbols/"
 $ProgressPreference = "SilentlyContinue"
 
@@ -46,18 +45,16 @@ if (-not (test-path $localpath)) {
     dir $localpath
 }
 
-$localpath = "./TestOrdinal/sqldk.zip"
+$localpath = "./TestOrdinal/ntdll.pdb"
 if (-not (test-path $localpath)) {
-    try {
-        Invoke-WebRequest -UseBasicParsing -uri $sqldkDownloadURL -OutFile $localpath -ErrorAction Ignore
-        Expand-Archive -Path $localpath -DestinationPath "./TestOrdinal"
-        dir "./TestOrdinal"
-    } catch {}
+    Invoke-WebRequest -UseBasicParsing -uri ($msdlurl + "ntdll.pdb/309B7D2A275C49A1917EC6033A73D0ED1/ntdll.pdb") -OutFile $localpath
+    dir $localpath
 }
 
-$localpath = "./TestOrdinal/sqldk.dll"
-if (-not (test-path $localpath))    {
-    Write-Warning "You must manually download CU14 for SQL 2016 SP1 (KB 4488535) and extract the sqldk.dll from that install to TestOrdinal/sqldk.dll"
+$localpath = "./TestOrdinal/ntdll.dll"
+if (-not (test-path $localpath)) {
+    Invoke-WebRequest -UseBasicParsing -uri ($msdlurl + "ntdll.dll/57AE642E1ad000/ntdll.dll") -OutFile $localpath
+    dir "./TestOrdinal"
 }
 
 ### ImportXEL
@@ -65,7 +62,7 @@ mkdir -Force "./ImportXEL" -ErrorAction Ignore
 $localpath = "./ImportXEL/XESpins_0_131627061603030000.xel"
 if (-not (test-path $localpath)) {
     try {
-        Invoke-WebRequest -UseBasicParsing -uri $spinsXelZipDownloadURL -OutFile ($localpath + ".zip") -ErrorAction Ignore
+        Invoke-WebRequest -UseBasicParsing -uri "https://github.com/arvindshmicrosoft/SQLCallStackResolver/raw/main/docs/SQLSat696/Demos/LOCK_HASH/XESpins_0_131627061603030000.zip" -OutFile ($localpath + ".zip") -ErrorAction Ignore
         Expand-Archive -Path ($localpath + ".zip") -DestinationPath "./ImportXEL"
     }
     catch{    }
@@ -79,7 +76,7 @@ if (-not (test-path $localpath)) {
 $localpath = "./ImportXEL/xe_wait_completed_0_132353446563350000.xel"
 if (-not (test-path $localpath)){
     try{
-        Invoke-WebRequest -UseBasicParsing -uri $waitCompletedXelDownloadUrl -OutFile $localpath -ErrorAction Ignore
+        Invoke-WebRequest -UseBasicParsing -uri "https://github.com/arvindshmicrosoft/SQLCallStackResolver/raw/main/docs/SQLSat696/Demos/xe_wait_completed_0_132353446563350000.xel" -OutFile $localpath -ErrorAction Ignore
     }
     catch {}
 

@@ -62,8 +62,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
             var dllPaths = new List<string> { Path.GetTempPath(), @"..\..\..\Tests\TestCases\TestOrdinal", Path.GetTempPath() };    // use different paths to validate the multi-path handling
-            var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync("sqldk!Ordinal298+00000000000004A5\r\n00007FF818405E70      Module(sqldk+0000000000003505) (Ordinal298 + 00000000000004A5)", false, cts), @"..\..\..\Tests\TestCases\TestOrdinal", false, dllPaths, false, false, false, true, false, false, null, cts);
-            Assert.AreEqual("sqldk!SOS_Scheduler::SwitchContext+941\r\nsqldk!SOS_Scheduler::SwitchContext+941", ret.Trim());
+            var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync("ntdll!Ordinal298+00000000000004A5\r\n00007FF818405E70      Module(ntdll+0000000000091735) (Ordinal298 + 00000000000004A5)", false, cts), @"..\..\..\Tests\TestCases\TestOrdinal", false, dllPaths, false, false, false, true, false, false, null, cts);
+            Assert.AreEqual("ntdll!NtOpenKeyEx+5\r\nntdll!NtOpenKeyEx+5", ret.Trim());
         }
 
         /// Test the resolution of a "regular" symbol with input specifying a hex offset into module.
@@ -720,12 +720,12 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         /// Test for exported symbols
         [TestMethod][TestCategory("Unit")] public void ExportedSymbols() {
-            var ret = ExportedSymbol.GetExports(@"..\..\..\Tests\TestCases\TestOrdinal\sqldk.dll");
-            Assert.AreEqual(931, ret.Count);
-            Assert.AreEqual((uint)1095072, ret[15].Address);
-            Assert.AreEqual((uint)897568, ret[259].Address);
-            Assert.AreEqual((uint)58752, ret[684].Address);
-            Assert.AreEqual((uint)1447120, ret[1161].Address);
+            var ret = ExportedSymbol.GetExports(@"..\..\..\Tests\TestCases\TestOrdinal\ntdll.dll");
+            Assert.AreEqual(2183, ret.Count);
+            Assert.AreEqual((uint)0xd14c0, ret[15].Address);
+            Assert.AreEqual((uint)0x90b30, ret[259].Address);
+            Assert.AreEqual((uint)0x74110, ret[684].Address);
+            Assert.AreEqual((uint)0x19db0, ret[1161].Address);
         }
 
         [TestMethod][TestCategory("Unit")] public async Task IsUrlValid() {

@@ -85,8 +85,8 @@ $tf/
 UpgradeLog*.XML
 UpgradeLog*.htm
 Target
-/Tests/TestCases/TestOrdinal/sqldk.dll
-/Tests/TestCases/TestOrdinal/sqldk.zip
+/Tests/TestCases/TestOrdinal/ntdll.dll
+/Tests/TestCases/TestOrdinal/ntdll.pdb
 /Tests/TestCases/ImportXEL/*.xel
 /Tests/TestCases/ImportXEL/*.zip
 /Tests/TestCases/SourceInformation/*.zip
