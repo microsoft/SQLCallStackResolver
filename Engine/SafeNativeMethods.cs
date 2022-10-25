@@ -72,14 +72,5 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             [Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder filePath,
             IntPtr callback,
             IntPtr context);
-
-        [DllImport("dbghelp.dll")]
-        public static extern bool SymCleanup(IntPtr hProcess);
-
-        [DllImport("dbghelp.dll", CharSet = CharSet.Unicode)]
-        public static extern bool SymInitialize(
-            IntPtr hProcess,
-            [MarshalAs(UnmanagedType.LPWStr)] string UserSearchPath,
-            bool fInvadeProcess);
     }
 }
