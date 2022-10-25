@@ -599,6 +599,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(input, false, cts), pdbPath, false, null, false, true, false, true, false, false, null, cts);
             var expected = "02 sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644\r\n03 sqldk!Spinlock<244,2,1>::SpinToAcquireWithExponentialBackoff+349";
             Assert.AreEqual(expected.Trim(), ret.Trim());
+            // modify the input to not have any prior PDB info - this will be an "error" case
+            input = "Frame = <frame id=\"02\" name=\"sqldk.dll\" address = \"0x100440609\"/>\r\n<frame id=\"03\" name=\"sqldk.dll\" address=\"0x10042249f\" />\n";
+            ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(input, false, cts), pdbPath, false, null, false, true, false, true, false, false, null, cts);
+            Assert.IsTrue(ret.StartsWith("Unable to determine symbol information from XML frames"));
         }
 
         /// End-to-end test with XE histogram target and XML frames.
