@@ -112,8 +112,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             string offsetStr = string.Empty;
             if (includeOffset) offsetStr = string.Format(CultureInfo.CurrentCulture, "+{0}", displacement);
             var inlineePrefix = isInLinee ? "(Inline Function) " : string.Empty;
-            // replace any "unique" module names with their original values
-            
 
             return $"{inlineePrefix}{moduleName}!{funcname2}{offsetStr}";
         }

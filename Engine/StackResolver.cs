@@ -73,7 +73,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Runs through each of the frames in a call stack and looks up symbols for each
-        private string ResolveSymbols(Dictionary<string, DiaUtil> _diautils, Dictionary<string, string> moduleNamesMap, string[] callStackLines, string userSuppliedSymPath, string symSrvSymPath, bool searchPDBsRecursively, bool cachePDB, bool includeSourceInfo, bool relookupSource, bool includeOffsets, bool showInlineFrames, List<string> modulesToIgnore, CancellationTokenSource cts) {
+        private string ResolveSymbols(Dictionary<string, DiaUtil> _diautils, Dictionary<string, string> moduleNamesMap, string[] callStackLines, string userSuppliedSymPath, string symSrvSymPath, bool searchPDBsRecursively, bool cachePDB, bool includeSourceInfo, bool relookupSource, bool includeOffsets, bool showInlineFrames, bool includeModOffset, List<string> modulesToIgnore, CancellationTokenSource cts) {
             var finalCallstack = new StringBuilder();
             int runningFrameNum = int.MinValue;
             foreach (var iterFrame in callStackLines) {
@@ -82,7 +82,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 var initialSBLength = finalCallstack.Length;
                 if (relookupSource && includeSourceInfo) {
                     // This is a rare case. Sometimes we get frames which are already resolved to their symbols but do not include source and line number information
-                    // take for example     sqldk.dll!SpinlockBase::Sleep+0x2d0
+                    // take for example:     sqldk.dll!SpinlockBase::Sleep+0x2d0
                     // in these cases, we may want to 're-resolve' them to a symbol using DIA so that later
                     // we can embed source / line number information if that is available now (this is important for some
                     // Microsoft internal cases where customers send us stacks resolved with public PDBs but internally we
@@ -93,9 +93,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         if (!_diautils.ContainsKey(matchedModuleName) && !DiaUtil.LocateandLoadPDBs(matchedModuleName, $"{matchedModuleName}.pdb", _diautils, userSuppliedSymPath, symSrvSymPath, searchPDBsRecursively, cachePDB, modulesToIgnore, out string errorDetails)) {
                             currentFrame += $" {WARNING_PREFIX} could not load symbol file {errorDetails}. The file may possibly be corrupt.";
                         }
-                        if (_diautils.TryGetValue(matchedModuleName, out var existingEntry) && _diautils[matchedModuleName].HasSourceInfo) {
+                        if (_diautils.TryGetValue(matchedModuleName, out var existingEntry)) {
+                            var matchedFuncName = matchAlreadySymbolized.Groups["symbolizedfunc"].Value;
                             var myDIAsession = existingEntry._IDiaSession;
-                            myDIAsession.findChildrenEx(myDIAsession.globalScope, SymTagEnum.SymTagNull, matchAlreadySymbolized.Groups["symbolizedfunc"].Value, 0, out IDiaEnumSymbols matchedSyms);
+                            myDIAsession.findChildrenEx(myDIAsession.globalScope, SymTagEnum.SymTagFunction, $"{matchedFuncName}", 0, out IDiaEnumSymbols matchedSyms);
 
                             var foundMatch = false;
                             for (uint tmpOrdinal = 0; tmpOrdinal < matchedSyms.count; tmpOrdinal++) {
@@ -109,7 +110,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                                     var effectiveRVA = currAddress - enumAllLineNums.Item(tmpOrdinalInner).addressOffset + enumAllLineNums.Item(tmpOrdinalInner).relativeVirtualAddress;
                                     int frameNumFromInput = string.IsNullOrWhiteSpace(matchAlreadySymbolized.Groups["framenum"].Value) ? int.MinValue : Convert.ToInt32(matchAlreadySymbolized.Groups["framenum"].Value, 16);
                                     if (frameNumFromInput != int.MinValue && runningFrameNum == int.MinValue) runningFrameNum = frameNumFromInput;
-                                    string processedFrame = ProcessFrameModuleOffset(_diautils, moduleNamesMap, frameNumFromInput, ref runningFrameNum, matchedModuleName, $"{effectiveRVA:X}", includeSourceInfo, includeOffsets, showInlineFrames);
+                                    string processedFrame = ProcessFrameModuleOffset(_diautils, moduleNamesMap, frameNumFromInput, ref runningFrameNum, matchedModuleName, $"{effectiveRVA:X}", includeSourceInfo, includeOffsets, showInlineFrames, includeModOffset);
                                     processedFrame += (foundMatch ? $" {WARNING_PREFIX}: ambiguous symbol; relookup might be incorrect -- " : String.Empty);
                                     if (!string.IsNullOrEmpty(processedFrame)) finalCallstack.AppendLine(processedFrame);
                                     foundMatch = true;
@@ -136,7 +137,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         int frameNumFromInput = string.IsNullOrWhiteSpace(match.Groups["framenum"].Value) ? int.MinValue : Convert.ToInt32(match.Groups["framenum"].Value, 16);
                         if (frameNumFromInput != int.MinValue && runningFrameNum == int.MinValue) runningFrameNum = frameNumFromInput;
                         if (_diautils.ContainsKey(matchedModuleName)) {
-                            string processedFrame = ProcessFrameModuleOffset(_diautils, moduleNamesMap, frameNumFromInput, ref runningFrameNum, matchedModuleName, match.Groups["offset"].Value, includeSourceInfo, includeOffsets, showInlineFrames);
+                            string processedFrame = ProcessFrameModuleOffset(_diautils, moduleNamesMap, frameNumFromInput, ref runningFrameNum, matchedModuleName, match.Groups["offset"].Value, includeSourceInfo, includeOffsets, showInlineFrames, includeModOffset);
                             if (!string.IsNullOrEmpty(processedFrame)) finalCallstack.AppendLine(processedFrame);   // typically this is because we could not find the offset in any known function range
                         }
                     }
@@ -168,7 +169,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         /// This is the most important function in this whole utility! It uses DIA to lookup the symbol based on RVA offset
         /// It also looks up line number information if available and then formats all of this information for returning to caller
-        private string ProcessFrameModuleOffset(Dictionary<string, DiaUtil> _diautils, Dictionary<string, string> moduleNamesMap, int frameNumFromInput, ref int frameNum, string moduleName, string offset, bool includeSourceInfo, bool includeOffset, bool showInlineFrames) {
+        private string ProcessFrameModuleOffset(Dictionary<string, DiaUtil> _diautils, Dictionary<string, string> moduleNamesMap, int frameNumFromInput, ref int frameNum, string moduleName, string offset, bool includeSourceInfo, bool includeOffset, bool showInlineFrames, bool includeModOffset) {
             bool useUndecorateLogic = false;
 
             // the offsets in the XE output are in hex, so we convert to base-10 accordingly
@@ -224,7 +225,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                 // make sure we cleanup COM allocations for the resolved sym
                 Marshal.FinalReleaseComObject(mysym);
-                result = (inlineFrameAndSourceInfo + symbolizedFrame + "\t" + sourceInfo).Trim();
+                result = (inlineFrameAndSourceInfo + symbolizedFrame + "\t" + sourceInfo + (includeModOffset ? $"\t{moduleName}+{offset:X}" : string.Empty)).Trim();
                 if (!resWasCached) {    // we only need to add to cache if it was not already cached.
                     this.rwLockCachedSymbols.AcquireWriterLock(-1);
                     if (!this.cachedSymbols.ContainsKey(symKey)) this.cachedSymbols.Add(symKey, result);
@@ -306,7 +307,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// <returns></returns>
         public async Task<string> ResolveCallstacksAsync(List<StackDetails> listOfCallStacks, string userSuppliedSymPath, bool searchPDBsRecursively, List<string> dllPaths,
             bool searchDLLRecursively, bool includeSourceInfo, bool relookupSource, bool includeOffsets,
-            bool showInlineFrames, bool cachePDB, string outputFilePath, CancellationTokenSource cts) {
+            bool showInlineFrames, bool cachePDB, string outputFilePath, bool includeModOffset, CancellationTokenSource cts) {
             return await Task.Run(async () => {
                 this.cachedSymbols.Clear();
 
@@ -352,7 +353,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 List<Task> tasks = new();
                 for (int taskOrdinal = 0; taskOrdinal < numThreads; taskOrdinal++) tasks.Add(ProcessCallStack(taskOrdinal, numThreads, listOfCallStacks, moduleNamesMap,
                     userSuppliedSymPath, symSrvSymPath, dllPaths, searchPDBsRecursively, searchDLLRecursively, includeSourceInfo, showInlineFrames,
-                    relookupSource, includeOffsets, cachePDB, cts));
+                    relookupSource, includeOffsets, includeModOffset, cachePDB, cts));
 
                 this.StatusMessage = "Waiting for tasks to finish...";
                 while (true) if (Task.WaitAll(tasks.ToArray(), OperationWaitIntervalMilliseconds)) break;
@@ -523,7 +524,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// Function executed by worker threads to process callstacks. Threads work on portions of the listOfCallStacks based on their thread ordinal.
         private async Task ProcessCallStack(int threadOrdinal, int numThreads, List<StackDetails> listOfCallStacks, Dictionary<string, string> moduleNamesMap,
         string userSuppliedSymPath, string symSrvSymPath, List<string> dllPaths, bool searchPDBsRecursively, bool searchDLLRecursively,
-        bool includeSourceInfo, bool showInlineFrames, bool relookupSource, bool includeOffsets, bool cachePDB, CancellationTokenSource cts) {
+        bool includeSourceInfo, bool showInlineFrames, bool relookupSource, bool includeOffsets, bool includeModOffset, bool cachePDB, CancellationTokenSource cts) {
             await Task.Run(() => {
                 if (!SafeNativeMethods.EstablishActivationContext()) return;
                 var _diautils = new Dictionary<string, DiaUtil>();
@@ -540,7 +541,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     if (cts.IsCancellationRequested) return;
 
                     // resolve symbols by using DIA
-                    currstack.Resolvedstack = ResolveSymbols(_diautils, moduleNamesMap, callStackLines, userSuppliedSymPath, symSrvSymPath, searchPDBsRecursively, cachePDB,  includeSourceInfo, relookupSource, includeOffsets, showInlineFrames, modulesToIgnore, cts);
+                    currstack.Resolvedstack = ResolveSymbols(_diautils, moduleNamesMap, callStackLines, userSuppliedSymPath, symSrvSymPath, searchPDBsRecursively, cachePDB,  includeSourceInfo, relookupSource, includeOffsets, showInlineFrames, includeModOffset, modulesToIgnore, cts);
                     if (cts.IsCancellationRequested) return;
 
                     var localCounter = Interlocked.Increment(ref this.globalCounter);

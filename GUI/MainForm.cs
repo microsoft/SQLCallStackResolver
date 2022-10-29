@@ -92,7 +92,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             if (allStacks.Any()) using (BackgroundCTS = new CancellationTokenSource()) {
                     var resolverTask = this._resolver.ResolveCallstacksAsync(allStacks, pdbPaths.Text, pdbRecurse.Checked, string.IsNullOrEmpty(binaryPaths.Text) ? null : binaryPaths.Text.Split(';').ToList(),
                         DLLrecurse.Checked, IncludeLineNumbers.Checked, RelookupSource.Checked,
-                        includeOffsets.Checked, showInlineFrames.Checked, cachePDB.Checked, outputFilePath.Text, BackgroundCTS);
+                        includeOffsets.Checked, showInlineFrames.Checked, cachePDB.Checked, outputFilePath.Text, false, BackgroundCTS);
                     this.MonitorBackgroundTask(resolverTask);
                     finalOutput.Text = resolverTask.Result;
                 }
