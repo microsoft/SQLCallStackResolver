@@ -50,7 +50,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// This function builds up the PDB map, by searching for matched PDBs (based on name) and constructing the DIA session for each
         internal static bool LocateandLoadPDBs(Dictionary<string, DiaUtil> _diautils, string userSuppliedSymPath, string symSrvSymPath, bool recurse, Dictionary<string, string> moduleNamesMap, bool cachePDB, List<string> modulesToIgnore) {
             var completeSymPath = $"{symSrvSymPath};{userSuppliedSymPath}";
-            var moduleNames = moduleNamesMap.Keys.ToList();
+            List<string> moduleNames;
+            lock (moduleNamesMap) moduleNames = moduleNamesMap.Keys.ToList();
             // loop through each module, trying to find matched PDB files
             foreach (string currentModule in moduleNames.Where(m => !modulesToIgnore.Contains(m) && !_diautils.ContainsKey(m))) {
                 // we only need to search for the PDB if it does not already exist in our map
@@ -74,8 +75,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         }
 
                         // if needed, make a last attempt looking for the original module name - but only amongst user-supplied symbol path folder(s)
+                        string pdbFileName;
+                        lock (moduleNamesMap) pdbFileName = moduleNamesMap[currentModule] + ".pdb";
                         if (!foundFiles.Any()) foreach (var currPath in userSuppliedSymPath.Split(';').Where(p => Directory.Exists(p) && !p.EndsWith(currentModule))) {
-                                foundFiles = Directory.EnumerateFiles(currPath, moduleNamesMap[currentModule] + ".pdb", recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
+                                foundFiles = Directory.EnumerateFiles(currPath, pdbFileName, recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
                             }
 
                         if (foundFiles?.Count() == 1) {  // we need to be sure there is only 1 file which matches
