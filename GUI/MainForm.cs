@@ -21,8 +21,13 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         internal static readonly string LatestReleaseTimestampCulture = "en-US";
 
         private void ResolveCallstacks_Click(object sender, EventArgs e) {
-            List<string> dllPaths = null;
-            if (!string.IsNullOrEmpty(binaryPaths.Text)) dllPaths = binaryPaths.Text.Split(';').ToList();
+            if (string.IsNullOrWhiteSpace(pdbPaths.Text)) {
+                MessageBox.Show(this,
+                    "Please specify path(s) to PDB files!",
+                    "No symbol path(s) specified", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
             var res = this._resolver.ProcessBaseAddresses(this._baseAddressesString);
             if (!res) {
                 MessageBox.Show(this, "Cannot interpret the module base address information. Make sure you just have the output of the following query (no column headers, no other columns) copied from SSMS using the Grid Results\r\n\r\nselect name, base_address from sys.dm_os_loaded_modules where name not like '%.rll'",
@@ -85,12 +90,12 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 allStacks = allStacksTask.Result;
             }
             if (allStacks.Any()) using (BackgroundCTS = new CancellationTokenSource()) {
-                var resolverTask = this._resolver.ResolveCallstacksAsync(allStacks, pdbPaths.Text, pdbRecurse.Checked, dllPaths,
+                    var resolverTask = this._resolver.ResolveCallstacksAsync(allStacks, pdbPaths.Text, pdbRecurse.Checked, string.IsNullOrEmpty(binaryPaths.Text) ? null : binaryPaths.Text.Split(';').ToList(),
                         DLLrecurse.Checked, IncludeLineNumbers.Checked, RelookupSource.Checked,
                         includeOffsets.Checked, showInlineFrames.Checked, cachePDB.Checked, outputFilePath.Text, BackgroundCTS);
-                this.MonitorBackgroundTask(resolverTask);
-                finalOutput.Text = resolverTask.Result;
-            }
+                    this.MonitorBackgroundTask(resolverTask);
+                    finalOutput.Text = resolverTask.Result;
+                }
 
             if (finalOutput.Text.Contains("WARNING:")) {
                 MessageBox.Show(this,
