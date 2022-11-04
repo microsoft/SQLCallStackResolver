@@ -75,6 +75,14 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             Assert.AreEqual(expectedSymbol + Environment.NewLine + expectedSymbol, ret.Trim());
         }
 
+        /// A corrupt PDB should be reported as a warning
+        [TestMethod][TestCategory("Unit")] public async Task CorruptPDBWarning() {
+            using var csr = new StackResolver();
+            using var cts = new CancellationTokenSource();
+            var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync("sqldk+40609", false, cts), @"..\..\..\Tests\TestCases\CorruptPDB", false, null, false, false, false, true, false, false, null, cts);
+            Assert.IsTrue(ret.StartsWith($"sqldk+40609 {StackResolver.WARNING_PREFIX}"));
+        }
+
         /// Test the resolution of a "regular" symbol with virtual address as input.
         [TestMethod][TestCategory("Unit")] public async Task RegularSymbolVirtualAddress() {
             using var csr = new StackResolver();

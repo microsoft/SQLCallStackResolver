@@ -48,12 +48,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// This function builds up the PDB map, by searching for matched PDBs (based on name) and constructing the DIA session for each
-        internal static bool LocateandLoadPDBs(Dictionary<string, DiaUtil> _diautils, string userSuppliedSymPath, string symSrvSymPath, bool recurse, Dictionary<string, string> moduleNamesMap, bool cachePDB, List<string> modulesToIgnore) {
+        internal static bool LocateandLoadPDBs(string currentModule, string pdbFileName, Dictionary<string, DiaUtil> _diautils, string userSuppliedSymPath, string symSrvSymPath, bool recurse, bool cachePDB, List<string> modulesToIgnore, out string errorDetails) {
             var completeSymPath = $"{symSrvSymPath};{userSuppliedSymPath}";
-            List<string> moduleNames;
-            lock (moduleNamesMap) moduleNames = moduleNamesMap.Keys.ToList();
             // loop through each module, trying to find matched PDB files
-            foreach (string currentModule in moduleNames.Where(m => !modulesToIgnore.Contains(m) && !_diautils.ContainsKey(m))) {
+            if (!modulesToIgnore.Contains(currentModule) && !_diautils.ContainsKey(currentModule)) {
                 // we only need to search for the PDB if it does not already exist in our map
                 var cachedPDBFile = Path.Combine(Path.GetTempPath(), "SymCache", currentModule + ".pdb");
                 lock (_syncRoot) {  // the lock is needed to ensure that we do not make multiple copies of PDBs when cachePDB is true
@@ -75,8 +73,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         }
 
                         // if needed, make a last attempt looking for the original module name - but only amongst user-supplied symbol path folder(s)
-                        string pdbFileName;
-                        lock (moduleNamesMap) pdbFileName = moduleNamesMap[currentModule] + ".pdb";
                         if (!foundFiles.Any()) foreach (var currPath in userSuppliedSymPath.Split(';').Where(p => Directory.Exists(p) && !p.EndsWith(currentModule))) {
                                 foundFiles = Directory.EnumerateFiles(currPath, pdbFileName, recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
                             }
@@ -92,10 +88,12 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     try {
                         _diautils.Add(currentModule, new DiaUtil(cachedPDBFile));
                     } catch (COMException) {
+                        errorDetails = cachedPDBFile;
                         return false;
                     }
                 } else if (!modulesToIgnore.Contains(currentModule)) modulesToIgnore.Add(currentModule);
             }
+            errorDetails = string.Empty;
             return true;
         }
 
@@ -127,7 +125,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             // only if we found line number information should we append to output 
             if (enumLineNums.count > 0) {
                 for (uint tmpOrdinal = 0; tmpOrdinal < enumLineNums.count; tmpOrdinal++) {
-                    if (tmpOrdinal > 0) sbOutput.Append(" -- WARNING: multiple matches -- ");
+                    if (tmpOrdinal > 0) sbOutput.Append($" {StackResolver.WARNING_PREFIX} multiple matches -- ");
                     sbOutput.Append(string.Format(CultureInfo.CurrentCulture,
                         "({0}:{1})", enumLineNums.Item(tmpOrdinal).sourceFile.fileName,
                         enumLineNums.Item(tmpOrdinal).lineNumber));
@@ -136,7 +134,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     Marshal.FinalReleaseComObject(enumLineNums.Item(tmpOrdinal));
                 }
             }
-            else if (pdbHasSourceInfo) sbOutput.Append("-- WARNING: unable to find source info --");
+            else if (pdbHasSourceInfo) sbOutput.Append($"{StackResolver.WARNING_PREFIX} unable to find source info --");
             Marshal.FinalReleaseComObject(enumLineNums);
             return sbOutput.ToString();
         }
@@ -163,9 +161,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 }
                 Marshal.FinalReleaseComObject(enumInlinees);
             } catch (COMException) {
-                sbInline.AppendLine(" -- WARNING: Unable to process inline frames; maybe symbols are mismatched?");
+                sbInline.AppendLine($" {StackResolver.WARNING_PREFIX} Unable to process inline frames; maybe symbols are mismatched?");
             } catch (System.ArgumentException) {
-                sbInline.AppendLine(" -- WARNING: Unable to process inline frames; maybe symbols are mismatched?");
+                sbInline.AppendLine($" {StackResolver.WARNING_PREFIX} Unable to process inline frames; maybe symbols are mismatched?");
             }
 
             return sbInline.ToString();

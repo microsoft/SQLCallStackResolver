@@ -67,7 +67,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         parent.PercentComplete = (int)((double)parent.globalCounter / callstackRaw.Count * 100.0);
                     }
 
-                    if (hasOverflow) xmlEquivalent.AppendLine("<!-- WARNING: output was truncated due to size limits -->");
+                    if (hasOverflow) xmlEquivalent.AppendLine($"<!{StackResolver.WARNING_PREFIX} output was truncated due to size limits -->");
                     xmlEquivalent.AppendLine("</Events>");
                     finalEventCount = callstackRaw.Count;
                 }

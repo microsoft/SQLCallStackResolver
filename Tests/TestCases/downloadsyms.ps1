@@ -57,6 +57,14 @@ if (-not (test-path $localpath)) {
     dir "./TestOrdinal"
 }
 
+### CorruptPDB
+mkdir -Force "./CorruptPDB" -ErrorAction Ignore
+$localpath = "./CorruptPDB/sqldk.pdb"
+if (-not (test-path $localpath)) {
+    (Get-Content "./TestOrdinal/sqldk.pdb" -encoding byte -TotalCount 1000) | Set-Content $localpath -encoding byte
+    dir $localpath
+}
+
 ### ImportXEL
 mkdir -Force "./ImportXEL" -ErrorAction Ignore
 $localpath = "./ImportXEL/XESpins_0_131627061603030000.xel"
