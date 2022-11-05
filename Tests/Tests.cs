@@ -640,6 +640,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(input, true, cts), pdbPath, false, null, true, false, false, true, false, false, null, cts);
             var expected = "Slot_0	[count:5]:\r\n\r\nsqldk!XeSosPkg::spinlock_backoff::Publish+425\r\nsqldk!SpinlockBase::Sleep+182\r\nsqlmin!Spinlock<143,7,1>::SpinToAcquireWithExponentialBackoff+363\r\nsqlmin!lck_lockInternal+2042";
             Assert.AreEqual(expected.Trim(), ret.Trim());
+            input = "&lt;HistogramTarget truncated=\"0\" buckets=\"256\"&gt;&lt;Slot count=\"5\"&gt;&lt;value&gt;0x00007FFEABD0D919        0x00007FFEABC4D45D      0x00007FFEAC0F7EE0  0x00007FFEAC0F80CF  &lt;/value&gt;&lt;/Slot&gt;&lt;/HistogramTarget&gt;";
+            ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(input, true, cts), pdbPath, false, null, true, false, false, true, false, false, null, cts);
+            Assert.AreEqual(expected.Trim(), ret.Trim());
         }
 
         [TestMethod][TestCategory("Unit")] public async Task E2ESymSrvXMLFramesMultiHistogram() {

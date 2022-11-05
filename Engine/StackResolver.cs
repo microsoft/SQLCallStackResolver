@@ -76,8 +76,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             int runningFrameNum = int.MinValue;
             foreach (var iterFrame in callStackLines) {
                 if (cts.IsCancellationRequested) { StatusMessage = OperationCanceled; PercentComplete = 0; return OperationCanceled; }
-                // hard-coded find-replace for XML markup - useful when importing from XML histograms
-                var currentFrame = iterFrame.Replace("&lt;", "<").Replace("&gt;", ">");
+                var currentFrame = iterFrame;
                 if (relookupSource && includeSourceInfo) {
                     // This is a rare case. Sometimes we get frames which are already resolved to their symbols but do not include source and line number information
                     // take for example     sqldk.dll!SpinlockBase::Sleep+0x2d0
@@ -428,6 +427,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// <returns>List of StackDetails objects</returns>
         public async Task<List<StackDetails>> GetListofCallStacksAsync(string inputCallstackText, bool framesOnSingleLine, CancellationTokenSource cts) {
             return await Task.Run(() => {
+                this.StatusMessage = "Decoding any encoded XML input...";
+                inputCallstackText = System.Net.WebUtility.HtmlDecode(inputCallstackText);
                 this.StatusMessage = "Analyzing input...";
                 if (Regex.IsMatch(inputCallstackText, @"<HistogramTarget(\s+|\>)") && inputCallstackText.Contains(@"</HistogramTarget>")) {
                     var numHistogramTargets = Regex.Matches(inputCallstackText, @"\<\/HistogramTarget\>").Count;
