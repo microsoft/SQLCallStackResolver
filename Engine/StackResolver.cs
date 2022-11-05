@@ -5,6 +5,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         public const string OperationCanceled = "Operation cancelled.";
         public const int OperationWaitIntervalMilliseconds = 300;
         public const int Operation100Percent = 100;
+        public const string WARNING_PREFIX = "-- WARNING:";
 
         /// This is used to store module name and start / end virtual address ranges
         /// Only populated if the user provides a tab-separated string corresponding to the output of the following SQL query:
@@ -87,7 +88,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     var matchAlreadySymbolized = rgxAlreadySymbolizedFrame.Match(currentFrame);
                     if (matchAlreadySymbolized.Success) {
                         var matchedModuleName = matchAlreadySymbolized.Groups["module"].Value;
-                        if (!_diautils.ContainsKey(matchedModuleName)) DiaUtil.LocateandLoadPDBs(_diautils, userSuppliedSymPath, symSrvSymPath, searchPDBsRecursively, new Dictionary<string, string>() { { matchedModuleName, matchedModuleName } }, cachePDB, modulesToIgnore);
+                        if (!_diautils.ContainsKey(matchedModuleName) && !DiaUtil.LocateandLoadPDBs(matchedModuleName, $"{matchedModuleName}.pdb", _diautils, userSuppliedSymPath, symSrvSymPath, searchPDBsRecursively, cachePDB, modulesToIgnore, out string errorDetails)) {
+                            currentFrame += $" {WARNING_PREFIX} could not load symbol file {errorDetails}. The file may possibly be corrupt.";
+                        }
                         if (_diautils.TryGetValue(matchedModuleName, out var existingEntry) && _diautils[matchedModuleName].HasSourceInfo) {
                             var myDIAsession = existingEntry._IDiaSession;
                             myDIAsession.findChildrenEx(myDIAsession.globalScope, SymTagEnum.SymTagNull, matchAlreadySymbolized.Groups["symbolizedfunc"].Value, 0, out IDiaEnumSymbols matchedSyms);
@@ -107,7 +110,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                                             if (enumAllLineNums.Item(tmpOrdinalInner).addressOffset <= currAddress
                                                 && currAddress < enumAllLineNums.Item(tmpOrdinalInner).addressOffset + enumAllLineNums.Item(tmpOrdinalInner).length) {
                                                 currentFrame = $"{matchedModuleName}+{currAddress - enumAllLineNums.Item(tmpOrdinalInner).addressOffset + enumAllLineNums.Item(tmpOrdinalInner).relativeVirtualAddress:X}" 
-                                                    + (foundMatch ? " -- WARNING: ambiguous symbol; relookup might be incorrect -- " : String.Empty);
+                                                    + (foundMatch ? $" {WARNING_PREFIX}: ambiguous symbol; relookup might be incorrect -- " : String.Empty);
                                                 foundMatch = true;
                                             }
                                             Marshal.FinalReleaseComObject(enumAllLineNums.Item(tmpOrdinalInner));
@@ -125,8 +128,14 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 var match = rgxModuleName.Match(currentFrame);
                 if (match.Success) {
                     var matchedModuleName = match.Groups["module"].Value;
-                    lock (moduleNamesMap) if (!moduleNamesMap.ContainsKey(matchedModuleName)) moduleNamesMap.Add(matchedModuleName, matchedModuleName);
-                    if (!_diautils.ContainsKey(matchedModuleName)) DiaUtil.LocateandLoadPDBs(_diautils, userSuppliedSymPath, symSrvSymPath, searchPDBsRecursively, moduleNamesMap, cachePDB, modulesToIgnore);
+                    string pdbFileName;
+                    lock (moduleNamesMap) {
+                        if (!moduleNamesMap.ContainsKey(matchedModuleName)) moduleNamesMap.Add(matchedModuleName, matchedModuleName);
+                        pdbFileName = $"{moduleNamesMap[matchedModuleName]}.pdb";
+                    }
+                    if (!_diautils.ContainsKey(matchedModuleName) && !DiaUtil.LocateandLoadPDBs(matchedModuleName, pdbFileName, _diautils, userSuppliedSymPath, symSrvSymPath, searchPDBsRecursively, cachePDB, modulesToIgnore, out string errorDetails)) {
+                        currentFrame += $" {WARNING_PREFIX} could not load symbol file {errorDetails}. The file may possibly be corrupt.";
+                    }
                     int frameNumFromInput = string.IsNullOrWhiteSpace(match.Groups["framenum"].Value) ? int.MinValue : Convert.ToInt32(match.Groups["framenum"].Value, 16);
                     if (frameNumFromInput != int.MinValue && runningFrameNum == int.MinValue) runningFrameNum = frameNumFromInput;
                     if (_diautils.ContainsKey(matchedModuleName)) {
@@ -216,7 +225,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     Marshal.FinalReleaseComObject(enumLineNums);
                 }
                 var originalModuleName = moduleNamesMap.TryGetValue(moduleName, out string existingModule) ? existingModule : moduleName;
-                if (showInlineFrames && pdbHasSourceInfo && !sourceInfo.Contains("-- WARNING:")) {
+                if (showInlineFrames && pdbHasSourceInfo && !sourceInfo.Contains(WARNING_PREFIX)) {
                     inlineFrameAndSourceInfo = DiaUtil.ProcessInlineFrames(originalModuleName, useUndecorateLogic, includeOffset, includeSourceInfo, rva, mysym, pdbHasSourceInfo);
                 }
 
