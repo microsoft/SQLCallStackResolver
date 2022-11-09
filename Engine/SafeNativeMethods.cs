@@ -9,14 +9,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         private const uint ACTCTX_FLAG_RESOURCE_NAME_VALID = 0x008;
         private const UInt16 ISOLATIONAWARE_MANIFEST_RESOURCE_ID = 2;
-        [DllImport("Kernel32.dll")]
-        private extern static IntPtr CreateActCtx(ref ACTCTX actctx);
-        [DllImport("Kernel32.dll")]
-        private extern static bool ActivateActCtx(IntPtr hActCtx, out IntPtr lpCookie);
-        [DllImport("Kernel32.dll")]
-        private extern static bool DeactivateActCtx(uint dwFlags, IntPtr lpCookie);
-        [DllImport("Kernel32.dll")]
-        private extern static bool ReleaseActCtx(IntPtr hActCtx);
+        [DllImport("Kernel32.dll")] private extern static IntPtr CreateActCtx(ref ACTCTX actctx);
+        [DllImport("Kernel32.dll")] private extern static bool ActivateActCtx(IntPtr hActCtx, out IntPtr lpCookie);
+        [DllImport("Kernel32.dll")] private extern static bool DeactivateActCtx(uint dwFlags, IntPtr lpCookie);
+        [DllImport("Kernel32.dll")] private extern static bool ReleaseActCtx(IntPtr hActCtx);
 
         private struct ACTCTX {
             public int cbSize;
@@ -30,10 +26,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             public IntPtr hModule;
         }
 
-        [ThreadStatic]
-        private static IntPtr m_cookie;
-        [ThreadStatic]
-        private static IntPtr m_hActCtx;
+        [ThreadStatic] private static IntPtr m_cookie;
+        [ThreadStatic] private static IntPtr m_hActCtx;
         internal static bool DestroyActivationContext() {
             if (m_cookie != IntPtr.Zero) {
                 if (!DeactivateActCtx(0, m_cookie))
@@ -61,16 +55,12 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             return true;
         }
 
-        [DllImport("dbghelp.dll", CharSet = CharSet.Unicode)]
-        public static extern bool SymFindFileInPath(IntPtr hProcess,
-            [MarshalAs(UnmanagedType.LPWStr)] string SearchPath,
-            [MarshalAs(UnmanagedType.LPWStr)] string FileName,
-            IntPtr id,
-            Int32 two,
-            Int32 three,
-            Int32 flags,
-            [Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder filePath,
-            IntPtr callback,
-            IntPtr context);
+        [DllImport("dbghelp.dll", CharSet = CharSet.Unicode)] public static extern bool SymFindFileInPath(IntPtr hProcess,
+            [MarshalAs(UnmanagedType.LPWStr)] string SearchPath, [MarshalAs(UnmanagedType.LPWStr)] string FileName, IntPtr id,
+            Int32 two, Int32 three, Int32 flags, [Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder filePath, IntPtr callback, IntPtr context);
+
+        [DllImport("dbghelp.dll")] public static extern bool SymCleanup(IntPtr hProcess);
+
+        [DllImport("dbghelp.dll", CharSet = CharSet.Unicode)] public static extern bool SymInitialize(IntPtr hProcess, [MarshalAs(UnmanagedType.LPWStr)] string UserSearchPath, bool fInvadeProcess);
     }
 }

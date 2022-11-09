@@ -10,7 +10,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             int rawsize = Marshal.SizeOf(guid);
             IntPtr buffer = Marshal.AllocHGlobal(rawsize);
             Marshal.StructureToPtr(guid, buffer, false);
-            bool success = SafeNativeMethods.SymFindFileInPath(IntPtr.Zero, symPath, pdbFilename, buffer, pdbAge, 0, 8, outPath, IntPtr.Zero, IntPtr.Zero);
+            bool success = SafeNativeMethods.SymFindFileInPath((IntPtr)(-1), null, pdbFilename, buffer, pdbAge, 0, 8, outPath, IntPtr.Zero, IntPtr.Zero);
             if (!success)  return String.Empty;
             return outPath.ToString();
         }
@@ -22,6 +22,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var retval = new List<string>();
             Contract.Requires(null != syms);
             Contract.Requires(null != parent);
+            if (!SafeNativeMethods.SymInitialize((IntPtr)(-1), symPath, false)) return retval;
             int progress = 0;
             foreach (var sym in syms) {
                 parent.StatusMessage = string.Format(CultureInfo.CurrentCulture, $"Finding local PDB path for {sym.PDBName}");
@@ -35,6 +36,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 progress++;
                 parent.PercentComplete = (int)((double)progress / syms.Count * 100.0);
             }
+            SafeNativeMethods.SymCleanup((IntPtr)(-1));
             return retval;
         }
     }
