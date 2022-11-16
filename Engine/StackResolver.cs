@@ -102,16 +102,18 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                                     int numberBase = offsetString.ToUpperInvariant().StartsWith("0X", StringComparison.CurrentCulture) ? 16 : 10;
                                     var currAddress = tmpSym.addressOffset + Convert.ToUInt32(offsetString, numberBase);
 
-                                    myDIAsession.findLinesByRVA(tmpSym.relativeVirtualAddress, (uint)tmpSym.length, out IDiaEnumLineNumbers enumAllLineNums);
+                                    myDIAsession.findLinesByAddr(tmpSym.addressSection, currAddress, 0, out IDiaEnumLineNumbers enumAllLineNums);
                                     if (enumAllLineNums.count > 0) {
                                         for (uint tmpOrdinalInner = 0; tmpOrdinalInner < enumAllLineNums.count; tmpOrdinalInner++) {
-                                            // below, we search for a line of code whose address range covers the current address of interest, and if matched, we re-write the current line in the module+RVA format
-                                            if (enumAllLineNums.Item(tmpOrdinalInner).addressOffset <= currAddress
-                                                && currAddress < enumAllLineNums.Item(tmpOrdinalInner).addressOffset + enumAllLineNums.Item(tmpOrdinalInner).length) {
-                                                currentFrame = $"{matchedModuleName}+{currAddress - enumAllLineNums.Item(tmpOrdinalInner).addressOffset + enumAllLineNums.Item(tmpOrdinalInner).relativeVirtualAddress:X}" 
-                                                    + (foundMatch ? $" {WARNING_PREFIX}: ambiguous symbol; relookup might be incorrect -- " : String.Empty);
-                                                foundMatch = true;
-                                            }
+                                            var effectiveRVA = currAddress - enumAllLineNums.Item(tmpOrdinalInner).addressOffset + enumAllLineNums.Item(tmpOrdinalInner).relativeVirtualAddress;
+                                            int frameNumFromInput = string.IsNullOrWhiteSpace(matchAlreadySymbolized.Groups["framenum"].Value) ? int.MinValue : Convert.ToInt32(matchAlreadySymbolized.Groups["framenum"].Value, 16);
+                                            if (frameNumFromInput != int.MinValue && runningFrameNum == int.MinValue) runningFrameNum = frameNumFromInput;
+                                            string processedFrame = ProcessFrameModuleOffset(_diautils, moduleNamesMap, frameNumFromInput, ref runningFrameNum, matchedModuleName, $"{effectiveRVA:X}", includeSourceInfo, includeOffsets, showInlineFrames);
+                                            processedFrame += (foundMatch ? $" {WARNING_PREFIX}: ambiguous symbol; relookup might be incorrect -- " : String.Empty);
+                                            if (!string.IsNullOrEmpty(processedFrame)) finalCallstack.AppendLine(processedFrame);
+                                            else finalCallstack.AppendLine(currentFrame);
+
+                                            foundMatch = true;
                                             Marshal.FinalReleaseComObject(enumAllLineNums.Item(tmpOrdinalInner));
                                         }
                                     }
@@ -122,29 +124,27 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                             }
                         }
                     }
+                } else {
+                    var match = rgxModuleName.Match(currentFrame);
+                    if (match.Success) {
+                        var matchedModuleName = match.Groups["module"].Value;
+                        string pdbFileName;
+                        lock (moduleNamesMap) {
+                            if (!moduleNamesMap.ContainsKey(matchedModuleName)) moduleNamesMap.Add(matchedModuleName, matchedModuleName);
+                            pdbFileName = $"{moduleNamesMap[matchedModuleName]}.pdb";
+                        }
+                        if (!_diautils.ContainsKey(matchedModuleName) && !DiaUtil.LocateandLoadPDBs(matchedModuleName, pdbFileName, _diautils, userSuppliedSymPath, symSrvSymPath, searchPDBsRecursively, cachePDB, modulesToIgnore, out string errorDetails)) {
+                            currentFrame += $" {WARNING_PREFIX} could not load symbol file {errorDetails}. The file may possibly be corrupt.";
+                        }
+                        int frameNumFromInput = string.IsNullOrWhiteSpace(match.Groups["framenum"].Value) ? int.MinValue : Convert.ToInt32(match.Groups["framenum"].Value, 16);
+                        if (frameNumFromInput != int.MinValue && runningFrameNum == int.MinValue) runningFrameNum = frameNumFromInput;
+                        if (_diautils.ContainsKey(matchedModuleName)) {
+                            string processedFrame = ProcessFrameModuleOffset(_diautils, moduleNamesMap, frameNumFromInput, ref runningFrameNum, matchedModuleName, match.Groups["offset"].Value, includeSourceInfo, includeOffsets, showInlineFrames);
+                            if (!string.IsNullOrEmpty(processedFrame)) finalCallstack.AppendLine(processedFrame);   // typically this is because we could not find the offset in any known function range
+                            else finalCallstack.AppendLine(currentFrame);
+                        } else finalCallstack.AppendLine(currentFrame.Trim());
+                    } else finalCallstack.AppendLine(currentFrame.Trim());
                 }
-
-                var match = rgxModuleName.Match(currentFrame);
-                if (match.Success) {
-                    var matchedModuleName = match.Groups["module"].Value;
-                    string pdbFileName;
-                    lock (moduleNamesMap) {
-                        if (!moduleNamesMap.ContainsKey(matchedModuleName)) moduleNamesMap.Add(matchedModuleName, matchedModuleName);
-                        pdbFileName = $"{moduleNamesMap[matchedModuleName]}.pdb";
-                    }
-                    if (!_diautils.ContainsKey(matchedModuleName) && !DiaUtil.LocateandLoadPDBs(matchedModuleName, pdbFileName, _diautils, userSuppliedSymPath, symSrvSymPath, searchPDBsRecursively, cachePDB, modulesToIgnore, out string errorDetails)) {
-                        currentFrame += $" {WARNING_PREFIX} could not load symbol file {errorDetails}. The file may possibly be corrupt.";
-                    }
-                    int frameNumFromInput = string.IsNullOrWhiteSpace(match.Groups["framenum"].Value) ? int.MinValue : Convert.ToInt32(match.Groups["framenum"].Value, 16);
-                    if (frameNumFromInput != int.MinValue && runningFrameNum == int.MinValue) runningFrameNum = frameNumFromInput;
-                    if (_diautils.ContainsKey(matchedModuleName)) {
-                        string processedFrame = ProcessFrameModuleOffset(_diautils, moduleNamesMap, frameNumFromInput, ref runningFrameNum, matchedModuleName, match.Groups["offset"].Value, includeSourceInfo, includeOffsets, showInlineFrames);
-                        if (!string.IsNullOrEmpty(processedFrame)) finalCallstack.AppendLine(processedFrame);   // typically this is because we could not find the offset in any known function range
-                        else finalCallstack.AppendLine(currentFrame);
-                    }
-                    else finalCallstack.AppendLine(currentFrame.Trim());
-                }
-                else finalCallstack.AppendLine(currentFrame.Trim());
             }
 
             return finalCallstack.ToString();
@@ -189,9 +189,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                     // if we did find a block symbol then we look for its parent till we find either a function or public symbol
                     // an addition check is on the name of the symbol being non-null and non-empty
-                    while (!(mysym.symTag == (uint)SymTagEnum.SymTagFunction || mysym.symTag == (uint)SymTagEnum.SymTagPublicSymbol) && string.IsNullOrEmpty(mysym.name)) {
+                    while (!(mysym.symTag == (uint)SymTagEnum.SymTagFunction || mysym.symTag == (uint)SymTagEnum.SymTagPublicSymbol) && string.IsNullOrEmpty(mysym.name))
                         mysym = mysym.lexicalParent;
-                    }
 
                     // Calculate offset into the function by assuming that the final lexical parent we found in the loop above
                     // is the actual start of the function. Then the difference between (the original block start function start + displacement) 
@@ -210,10 +209,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     }
                 }
 
-                if (mysym == null) {
-                    // if all attempts to locate a matching symbol have failed, return null
+                if (mysym == null) // if all attempts to locate a matching symbol have failed, return null
                     return null;
-                }
 
                 string sourceInfo = string.Empty;   // try to find if we have source and line number info and include it based on the param
                 string inlineFrameAndSourceInfo = string.Empty; // Process inline functions, but only if private PDBs are in use
@@ -224,9 +221,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     Marshal.FinalReleaseComObject(enumLineNums);
                 }
                 var originalModuleName = moduleNamesMap.TryGetValue(moduleName, out string existingModule) ? existingModule : moduleName;
-                if (showInlineFrames && pdbHasSourceInfo && !sourceInfo.Contains(WARNING_PREFIX)) {
+                if (showInlineFrames && pdbHasSourceInfo && !sourceInfo.Contains(WARNING_PREFIX))
                     inlineFrameAndSourceInfo = DiaUtil.ProcessInlineFrames(originalModuleName, useUndecorateLogic, includeOffset, includeSourceInfo, rva, mysym, pdbHasSourceInfo);
-                }
 
                 var symbolizedFrame = DiaUtil.GetSymbolizedFrame(originalModuleName, mysym, useUndecorateLogic, includeOffset, displacement, false);
 
@@ -235,9 +231,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 result = (inlineFrameAndSourceInfo + symbolizedFrame + "\t" + sourceInfo).Trim();
                 if (!resWasCached) {    // we only need to add to cache if it was not already cached.
                     this.rwLockCachedSymbols.AcquireWriterLock(-1);
-                    if (!this.cachedSymbols.ContainsKey(symKey)) {
-                        this.cachedSymbols.Add(symKey, result);
-                    }
+                    if (!this.cachedSymbols.ContainsKey(symKey)) this.cachedSymbols.Add(symKey, result);
                     this.rwLockCachedSymbols.ReleaseWriterLock();
                 }
             }
