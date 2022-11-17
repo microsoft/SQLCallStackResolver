@@ -8,11 +8,13 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         private string _annotation, _callStack, _resolvedStack;
         private readonly string _stackKey;
         private readonly bool _framesOnSingleLine;
+        private readonly bool _relookupSource;
 
-        public StackDetails(string callStack, bool framesOnSingleLine, string annotation = null, string stackKey = null) {
+        public StackDetails(string callStack, bool framesOnSingleLine, string annotation = null, string stackKey = null, bool relookupSource = false) {
             this._annotation = annotation;
             this._stackKey = stackKey;
             this._framesOnSingleLine = framesOnSingleLine;
+            this._relookupSource = relookupSource;
             this._callStack = System.Net.WebUtility.HtmlDecode(framesOnSingleLine ? Regex.Replace(callStack, @"\s{2,}", " ") : callStack);
             _stackKey = stackKey;
         }
@@ -27,7 +29,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 // sometimes we see call stacks which are arranged horizontally (this typically is seen when copy-pasting directly
                 // from the SSMS XEvent window (copying the callstack field without opening it in its own viewer)
                 // in that case, space is a valid delimiter, and we need to support that as an option
-                var delims = this._framesOnSingleLine ? new char[3] { ' ', '\t', '\n' } : new char[1] { '\n' };
+                var delims = this._framesOnSingleLine ? new char[] { '\t', '\n' } : new char[] { '\n' };
+                if (!this._relookupSource) delims = delims.Append(' ').ToArray();
                 return this._callStack.Replace("\r", string.Empty).Split(delims);
             }
         }

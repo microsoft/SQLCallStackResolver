@@ -90,8 +90,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     var matchAlreadySymbolized = rgxAlreadySymbolizedFrame.Match(currentFrame);
                     if (matchAlreadySymbolized.Success) {
                         var matchedModuleName = matchAlreadySymbolized.Groups["module"].Value;
-                        if (!_diautils.ContainsKey(matchedModuleName) && !DiaUtil.LocateandLoadPDBs(matchedModuleName, $"{matchedModuleName}.pdb", _diautils, userSuppliedSymPath, symSrvSymPath, searchPDBsRecursively, cachePDB, modulesToIgnore, out string errorDetails)) {
-                            currentFrame += $" {WARNING_PREFIX} could not load symbol file {errorDetails}. The file may possibly be corrupt.";
+                        if (!_diautils.ContainsKey(matchedModuleName)) {
+                            if (!DiaUtil.LocateandLoadPDBs(matchedModuleName, $"{matchedModuleName}.pdb", _diautils, userSuppliedSymPath, symSrvSymPath, searchPDBsRecursively, cachePDB, modulesToIgnore, out string errorDetails)) {
+                                currentFrame += $" {WARNING_PREFIX} could not load symbol file {errorDetails}. The file may possibly be corrupt.";
+                            }
                         }
                         if (_diautils.TryGetValue(matchedModuleName, out var existingEntry) && _diautils[matchedModuleName].HasSourceInfo) {
                             var myDIAsession = existingEntry._IDiaSession;
@@ -119,14 +121,14 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                                             foundMatch = true;
                                             Marshal.FinalReleaseComObject(enumAllLineNums.Item(tmpOrdinalInner));
                                         }
-                                    }
+                                    } else finalCallstack.AppendLine(currentFrame.Trim());
                                     Marshal.FinalReleaseComObject(enumAllLineNums);
                                     Marshal.FinalReleaseComObject(tmpSym);
                                 }
                                 Marshal.FinalReleaseComObject(matchedSyms);
-                            }
-                        }
-                    }
+                            } else finalCallstack.AppendLine(currentFrame.Trim());
+                        } else finalCallstack.AppendLine(currentFrame.Trim());
+                    } else finalCallstack.AppendLine(currentFrame.Trim());
                 } else {
                     var match = rgxModuleOffsetFrame.Match(currentFrame);
                     if (match.Success) {
@@ -422,7 +424,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// <param name="framesOnSingleLine"></param>
         /// <param name="cts"></param>
         /// <returns>List of StackDetails objects</returns>
-        public async Task<List<StackDetails>> GetListofCallStacksAsync(string inputCallstackText, bool framesOnSingleLine, CancellationTokenSource cts) {
+        public async Task<List<StackDetails>> GetListofCallStacksAsync(string inputCallstackText, bool framesOnSingleLine, bool relookupSource, CancellationTokenSource cts) {
             return await Task.Run(() => {
                 this.StatusMessage = "Decoding any encoded XML input...";
                 inputCallstackText = System.Net.WebUtility.HtmlDecode(inputCallstackText);
@@ -457,7 +459,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                 var allStacks = new List<StackDetails>();
                 if (!isXMLdoc) {
-                    allStacks.Add(new StackDetails(inputCallstackText, framesOnSingleLine));
+                    if (relookupSource && framesOnSingleLine) inputCallstackText = rgxAlreadySymbolizedFrame.Replace(inputCallstackText, "${framenum} ${module}!${symbolizedfunc}+${offset}\n");
+                    allStacks.Add(new StackDetails(inputCallstackText, framesOnSingleLine, null, null, relookupSource));
                 } else {
                     try {
                         int stacknum = 0;
