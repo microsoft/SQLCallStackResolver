@@ -20,6 +20,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [TestMethod][TestCategory("Unit")] public void SingleLineDetection() {
             using var csr = new StackResolver();
             var PatternsToTreatAsMultiline = "BEGIN STACK DUMP|Short Stack Dump";
+            Assert.IsFalse(csr.IsInputSingleLine("05 sqldk!SOS_Scheduler::UpdateWaitTimeStats+789", PatternsToTreatAsMultiline));
+            Assert.IsFalse(csr.IsInputSingleLine(@"\r\n    sqldk+0x40609\r\n", PatternsToTreatAsMultiline));
             Assert.IsFalse(csr.IsInputSingleLine("&lt;frame id=\"00\" address=\"0xf00\" pdb=\"ntdll.pdb\" age=\"1\" guid=\"C374E059-5793-9B92-6525-386A66A2D3F5\" module=\"ntdll.dll\" rva=\"0x9F7E4\" /&gt;&lt;" +
 "frame id=\"01\" address=\"0xf00\" pdb=\"kernelbase.pdb\" age=\"1\" guid=\"E77E26E7-D1C4-72BB-2C05-DD17624A9E58\" module=\"KERNELBASE.dll\" rva=\"0x38973\" /&gt;&lt;" +
 "frame id=\"02\" address=\"0xf00\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x40609\" /&gt;", PatternsToTreatAsMultiline));

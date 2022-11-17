@@ -24,7 +24,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         internal int globalCounter = 0;
 
         private static readonly RegexOptions rgxOptions = RegexOptions.ExplicitCapture | RegexOptions.Compiled;
-        private static readonly Regex rgxModuleName = new(@"((?<framenum>[0-9a-fA-F]+)\s+)*(?<module>\w+)(\.(dll|exe))*\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*", rgxOptions);
+        private static readonly Regex rgxModuleOffsetFrame = new(@"((?<framenum>[0-9a-fA-F]+)\s+)*(?<module>\w+)(\.(dll|exe))*\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*", rgxOptions);
         private static readonly Regex rgxVAOnly = new (@"^\s*0[xX](?<vaddress>[0-9a-fA-F]+)\s*$", rgxOptions);
         private static readonly Regex rgxAlreadySymbolizedFrame = new (@"((?<framenum>\d+)\s+)*(?<module>\w+)(\.(dll|exe))*!(?<symbolizedfunc>.+?)\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*", rgxOptions);
         private static readonly Regex rgxmoduleaddress = new (@"^\s*(?<filepath>.+)(\t+| +)(?<baseaddress>(0x)?[0-9a-fA-F`]+)\s*$", RegexOptions.Multiline);
@@ -62,7 +62,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         public bool IsInputSingleLine(string text, string patternsToTreatAsMultiline) {
             if (Regex.Match(text, patternsToTreatAsMultiline).Success) return false;
             text = System.Net.WebUtility.HtmlDecode(text);  // decode XML markup if present
-            if (!(Regex.Match(text, "Histogram").Success || Regex.Match(text, @"\<frame", RegexOptions.IgnoreCase).Success) && !text.Replace("\r", string.Empty).Trim().Contains('\n')) return true; // not a histogram and does not have any newlines, so is single-line
+            if (!(Regex.Match(text, "Histogram").Success || Regex.Match(text, @"\<frame", RegexOptions.IgnoreCase).Success) && !text.Replace("\r", string.Empty).Trim().Contains('\n')) {
+                if (rgxAlreadySymbolizedFrame.Matches(text).Count > 1 || rgxModuleOffsetFrame.Matches(text).Count > 1)
+                    return true; // not a histogram, not already a single-line input frame, and does not have any newlines, so is single-line
+            }
             if (!Regex.Match(text, @"\<frame").Success) {   // input does not have "XML frames", so keep looking...
                 if (Regex.Match(text, @"\<Slot.+\<\/Slot\>").Success) return true;  // the content within a given histogram slot is on a single line, so is single-line
                 if (Regex.Match(text, @"0x.+0x.+").Success) return true;
@@ -125,7 +128,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         }
                     }
                 } else {
-                    var match = rgxModuleName.Match(currentFrame);
+                    var match = rgxModuleOffsetFrame.Match(currentFrame);
                     if (match.Success) {
                         var matchedModuleName = match.Groups["module"].Value;
                         string pdbFileName;
