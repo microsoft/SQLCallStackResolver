@@ -30,7 +30,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 // from the SSMS XEvent window (copying the callstack field without opening it in its own viewer)
                 // in that case, space is a valid delimiter, and we need to support that as an option
                 var delims = this._framesOnSingleLine ? new char[] { '\t', '\n' } : new char[] { '\n' };
-                if (!this._relookupSource) delims = delims.Append(' ').ToArray();
+                if (!this._relookupSource && this._framesOnSingleLine) delims = delims.Append(' ').ToArray();
                 return this._callStack.Replace("\r", string.Empty).Split(delims);
             }
         }

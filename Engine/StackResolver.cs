@@ -80,6 +80,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             foreach (var iterFrame in callStackLines) {
                 if (cts.IsCancellationRequested) { StatusMessage = OperationCanceled; PercentComplete = 0; return OperationCanceled; }
                 var currentFrame = iterFrame;
+                var initialSBLength = finalCallstack.Length;
                 if (relookupSource && includeSourceInfo) {
                     // This is a rare case. Sometimes we get frames which are already resolved to their symbols but do not include source and line number information
                     // take for example     sqldk.dll!SpinlockBase::Sleep+0x2d0
@@ -90,45 +91,37 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     var matchAlreadySymbolized = rgxAlreadySymbolizedFrame.Match(currentFrame);
                     if (matchAlreadySymbolized.Success) {
                         var matchedModuleName = matchAlreadySymbolized.Groups["module"].Value;
-                        if (!_diautils.ContainsKey(matchedModuleName)) {
-                            if (!DiaUtil.LocateandLoadPDBs(matchedModuleName, $"{matchedModuleName}.pdb", _diautils, userSuppliedSymPath, symSrvSymPath, searchPDBsRecursively, cachePDB, modulesToIgnore, out string errorDetails)) {
-                                currentFrame += $" {WARNING_PREFIX} could not load symbol file {errorDetails}. The file may possibly be corrupt.";
-                            }
+                        if (!_diautils.ContainsKey(matchedModuleName) && !DiaUtil.LocateandLoadPDBs(matchedModuleName, $"{matchedModuleName}.pdb", _diautils, userSuppliedSymPath, symSrvSymPath, searchPDBsRecursively, cachePDB, modulesToIgnore, out string errorDetails)) {
+                            currentFrame += $" {WARNING_PREFIX} could not load symbol file {errorDetails}. The file may possibly be corrupt.";
                         }
                         if (_diautils.TryGetValue(matchedModuleName, out var existingEntry) && _diautils[matchedModuleName].HasSourceInfo) {
                             var myDIAsession = existingEntry._IDiaSession;
                             myDIAsession.findChildrenEx(myDIAsession.globalScope, SymTagEnum.SymTagNull, matchAlreadySymbolized.Groups["symbolizedfunc"].Value, 0, out IDiaEnumSymbols matchedSyms);
 
                             var foundMatch = false;
-                            if (matchedSyms.count > 0) {
-                                for (uint tmpOrdinal = 0; tmpOrdinal < matchedSyms.count; tmpOrdinal++) {
-                                    IDiaSymbol tmpSym = matchedSyms.Item(tmpOrdinal);
-                                    string offsetString = matchAlreadySymbolized.Groups["offset"].Value;
-                                    int numberBase = offsetString.ToUpperInvariant().StartsWith("0X", StringComparison.CurrentCulture) ? 16 : 10;
-                                    var currAddress = tmpSym.addressOffset + Convert.ToUInt32(offsetString, numberBase);
+                            for (uint tmpOrdinal = 0; tmpOrdinal < matchedSyms.count; tmpOrdinal++) {
+                                IDiaSymbol tmpSym = matchedSyms.Item(tmpOrdinal);
+                                string offsetString = matchAlreadySymbolized.Groups["offset"].Value;
+                                int numberBase = offsetString.ToUpperInvariant().StartsWith("0X", StringComparison.CurrentCulture) ? 16 : 10;
+                                var currAddress = tmpSym.addressOffset + Convert.ToUInt32(offsetString, numberBase);
 
-                                    myDIAsession.findLinesByAddr(tmpSym.addressSection, currAddress, 0, out IDiaEnumLineNumbers enumAllLineNums);
-                                    if (enumAllLineNums.count > 0) {
-                                        for (uint tmpOrdinalInner = 0; tmpOrdinalInner < enumAllLineNums.count; tmpOrdinalInner++) {
-                                            var effectiveRVA = currAddress - enumAllLineNums.Item(tmpOrdinalInner).addressOffset + enumAllLineNums.Item(tmpOrdinalInner).relativeVirtualAddress;
-                                            int frameNumFromInput = string.IsNullOrWhiteSpace(matchAlreadySymbolized.Groups["framenum"].Value) ? int.MinValue : Convert.ToInt32(matchAlreadySymbolized.Groups["framenum"].Value, 16);
-                                            if (frameNumFromInput != int.MinValue && runningFrameNum == int.MinValue) runningFrameNum = frameNumFromInput;
-                                            string processedFrame = ProcessFrameModuleOffset(_diautils, moduleNamesMap, frameNumFromInput, ref runningFrameNum, matchedModuleName, $"{effectiveRVA:X}", includeSourceInfo, includeOffsets, showInlineFrames);
-                                            processedFrame += (foundMatch ? $" {WARNING_PREFIX}: ambiguous symbol; relookup might be incorrect -- " : String.Empty);
-                                            if (!string.IsNullOrEmpty(processedFrame)) finalCallstack.AppendLine(processedFrame);
-                                            else finalCallstack.AppendLine(currentFrame);
-
-                                            foundMatch = true;
-                                            Marshal.FinalReleaseComObject(enumAllLineNums.Item(tmpOrdinalInner));
-                                        }
-                                    } else finalCallstack.AppendLine(currentFrame.Trim());
-                                    Marshal.FinalReleaseComObject(enumAllLineNums);
-                                    Marshal.FinalReleaseComObject(tmpSym);
+                                myDIAsession.findLinesByAddr(tmpSym.addressSection, currAddress, 0, out IDiaEnumLineNumbers enumAllLineNums);
+                                for (uint tmpOrdinalInner = 0; tmpOrdinalInner < enumAllLineNums.count; tmpOrdinalInner++) {
+                                    var effectiveRVA = currAddress - enumAllLineNums.Item(tmpOrdinalInner).addressOffset + enumAllLineNums.Item(tmpOrdinalInner).relativeVirtualAddress;
+                                    int frameNumFromInput = string.IsNullOrWhiteSpace(matchAlreadySymbolized.Groups["framenum"].Value) ? int.MinValue : Convert.ToInt32(matchAlreadySymbolized.Groups["framenum"].Value, 16);
+                                    if (frameNumFromInput != int.MinValue && runningFrameNum == int.MinValue) runningFrameNum = frameNumFromInput;
+                                    string processedFrame = ProcessFrameModuleOffset(_diautils, moduleNamesMap, frameNumFromInput, ref runningFrameNum, matchedModuleName, $"{effectiveRVA:X}", includeSourceInfo, includeOffsets, showInlineFrames);
+                                    processedFrame += (foundMatch ? $" {WARNING_PREFIX}: ambiguous symbol; relookup might be incorrect -- " : String.Empty);
+                                    if (!string.IsNullOrEmpty(processedFrame)) finalCallstack.AppendLine(processedFrame);
+                                    foundMatch = true;
+                                    Marshal.FinalReleaseComObject(enumAllLineNums.Item(tmpOrdinalInner));
                                 }
-                                Marshal.FinalReleaseComObject(matchedSyms);
-                            } else finalCallstack.AppendLine(currentFrame.Trim());
-                        } else finalCallstack.AppendLine(currentFrame.Trim());
-                    } else finalCallstack.AppendLine(currentFrame.Trim());
+                                Marshal.FinalReleaseComObject(enumAllLineNums);
+                                Marshal.FinalReleaseComObject(tmpSym);
+                            }
+                            Marshal.FinalReleaseComObject(matchedSyms);
+                        }
+                    }
                 } else {
                     var match = rgxModuleOffsetFrame.Match(currentFrame);
                     if (match.Success) {
@@ -146,10 +139,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         if (_diautils.ContainsKey(matchedModuleName)) {
                             string processedFrame = ProcessFrameModuleOffset(_diautils, moduleNamesMap, frameNumFromInput, ref runningFrameNum, matchedModuleName, match.Groups["offset"].Value, includeSourceInfo, includeOffsets, showInlineFrames);
                             if (!string.IsNullOrEmpty(processedFrame)) finalCallstack.AppendLine(processedFrame);   // typically this is because we could not find the offset in any known function range
-                            else finalCallstack.AppendLine(currentFrame);
-                        } else finalCallstack.AppendLine(currentFrame.Trim());
-                    } else finalCallstack.AppendLine(currentFrame.Trim());
+                        }
+                    }
                 }
+                if (initialSBLength == finalCallstack.Length) finalCallstack.AppendLine(currentFrame.Trim());
             }
 
             return finalCallstack.ToString();
