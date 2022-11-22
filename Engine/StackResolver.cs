@@ -62,10 +62,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         public bool IsInputSingleLine(string text, string patternsToTreatAsMultiline) {
             if (Regex.Match(text, patternsToTreatAsMultiline).Success) return false;
             text = System.Net.WebUtility.HtmlDecode(text);  // decode XML markup if present
-            if (!(Regex.Match(text, "Histogram").Success || Regex.Match(text, @"\<frame", RegexOptions.IgnoreCase).Success) && !text.Replace("\r", string.Empty).Trim().Contains('\n')) {
-                if (rgxAlreadySymbolizedFrame.Matches(text).Count > 1 || rgxModuleOffsetFrame.Matches(text).Count > 1)
-                    return true; // not a histogram, not already a single-line input frame, and does not have any newlines, so is single-line
-            }
+            if (!(Regex.Match(text, "Histogram").Success || Regex.Match(text, @"\<frame", RegexOptions.IgnoreCase).Success) && !text.Replace("\r", string.Empty).Trim().Contains('\n') && (rgxAlreadySymbolizedFrame.Matches(text).Count > 1 || rgxModuleOffsetFrame.Matches(text).Count > 1))
+                return true; // not a histogram, not already a single-line input frame, and does not have any newlines, so is single-line
+
             if (!Regex.Match(text, @"\<frame").Success) {   // input does not have "XML frames", so keep looking...
                 if (Regex.Match(text, @"\<Slot.+\<\/Slot\>").Success) return true;  // the content within a given histogram slot is on a single line, so is single-line
                 if (Regex.Match(text, @"0x.+0x.+").Success) return true;
