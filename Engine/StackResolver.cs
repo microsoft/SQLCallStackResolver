@@ -357,9 +357,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     relookupSource, includeOffsets, cachePDB, cts));
 
                 this.StatusMessage = "Waiting for tasks to finish...";
-                while (true) {
-                    if (Task.WaitAll(tasks.ToArray(), OperationWaitIntervalMilliseconds)) break;
-                }
+                while (true) if (Task.WaitAll(tasks.ToArray(), OperationWaitIntervalMilliseconds)) break;
+
                 if (cts.IsCancellationRequested) { StatusMessage = OperationCanceled; PercentComplete = 0; return OperationCanceled; }
                 this.StatusMessage = "Done with symbol resolution, finalizing output...";
                 this.globalCounter = 0;
@@ -550,10 +549,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 }
 
                 // cleanup any older COM objects
-                if (_diautils != null) {
-                    foreach (var diautil in _diautils.Values) diautil.Dispose();
-                    _diautils.Clear();
-                }
+                _diautils?.Values.ToList().ForEach(diautil => diautil.Dispose());
+                _diautils?.Clear();
 
                 SafeNativeMethods.DestroyActivationContext();
             });
