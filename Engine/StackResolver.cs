@@ -207,8 +207,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     }
                 }
 
-                if (mysym == null) // if all attempts to locate a matching symbol have failed, return null
-                    return null;
+                if (mysym == null) return null; // if all attempts to locate a matching symbol have failed, return null
 
                 string sourceInfo = string.Empty;   // try to find if we have source and line number info and include it based on the param
                 string inlineFrameAndSourceInfo = string.Empty; // Process inline functions, but only if private PDBs are in use

@@ -255,6 +255,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var pdbPath = @"..\..\..\Tests\TestCases\SourceInformation";
             var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync("Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143", false, true, cts), pdbPath, false, null, false, true, true, true, false, false, null, cts);
             Assert.AreEqual("Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143\t(minkernel\\wdf\\framework\\shared\\inc\\private\\common\\FxPkgPnp.hpp:4127)", ret.Trim());
+            ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync("01 Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143 03 Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143", true, true, cts), pdbPath, false, null, false, true, true, true, false, false, null, cts);
+            Assert.AreEqual("01 Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143\t(minkernel\\wdf\\framework\\shared\\inc\\private\\common\\FxPkgPnp.hpp:4127)\r\n02 Wdf01000!FxPkgPnp::PowerPolicyCanChildPowerUp+143\t(minkernel\\wdf\\framework\\shared\\inc\\private\\common\\FxPkgPnp.hpp:4127)", ret.Trim());
         }
 
         /// Validate importing callstack events from XEL files into histogram buckets.
