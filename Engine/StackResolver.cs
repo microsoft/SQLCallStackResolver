@@ -410,6 +410,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             });
         }
 
+        public async Task<List<StackDetails>> GetListofCallStacksAsync(string inputCallstackText, bool framesOnSingleLine, CancellationTokenSource cts) => await GetListofCallStacksAsync(inputCallstackText, framesOnSingleLine, false, cts);
+
         /// <summary>
         /// Gets a list of StackDetails objects based on the textual callstack input
         /// </summary>
