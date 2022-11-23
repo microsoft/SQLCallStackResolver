@@ -1,5 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
+using System.Collections.Generic;
+
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     public class StackResolver : IDisposable {
         public const string OperationCanceled = "Operation cancelled.";
@@ -292,7 +294,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// <summary>
         /// This is what the caller will invoke to resolve symbols
         /// </summary>
-        /// <param name="inputCallstackText">the input call stack text or XML</param>
+        /// <param name="listOfCallStacks">Input callstacks</param>
         /// <param name="userSuppliedSymPath">PDB search paths; separated by semi-colons. The first path containing a 'matching' PDB will be used.</param>
         /// <param name="searchPDBsRecursively">search for PDBs recursively in each path specified</param>
         /// <param name="dllPaths">DLL search paths. this is optional unless the call stack has frames of the form dll!OrdinalNNN+offset</param>
@@ -304,7 +306,13 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// <param name="showInlineFrames">Boolean, whether to resolve and show inline frames in the output</param>
         /// <param name="cachePDB">Boolean, whether to cache PDBs locally</param>
         /// <param name="outputFilePath">File path, used if output is directly written to a file</param>
+        /// <param name="cts">Cancellation token</param>
         /// <returns></returns>
+        public async Task<string> ResolveCallstacksAsync(List<StackDetails> listOfCallStacks, string userSuppliedSymPath, bool searchPDBsRecursively, List<string> dllPaths,
+            bool searchDLLRecursively, bool includeSourceInfo, bool relookupSource, bool includeOffsets,
+            bool showInlineFrames, bool cachePDB, string outputFilePath, CancellationTokenSource cts) => await ResolveCallstacksAsync(listOfCallStacks, userSuppliedSymPath, searchPDBsRecursively, dllPaths,
+            searchDLLRecursively, includeSourceInfo, relookupSource, includeOffsets, showInlineFrames, cachePDB, outputFilePath, false, cts);
+
         public async Task<string> ResolveCallstacksAsync(List<StackDetails> listOfCallStacks, string userSuppliedSymPath, bool searchPDBsRecursively, List<string> dllPaths,
             bool searchDLLRecursively, bool includeSourceInfo, bool relookupSource, bool includeOffsets,
             bool showInlineFrames, bool cachePDB, string outputFilePath, bool includeModOffset, CancellationTokenSource cts) {
