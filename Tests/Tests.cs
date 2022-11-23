@@ -782,31 +782,38 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             Assert.AreEqual(0, xelFieldsTask.Result.Item1.Count);
             Assert.AreEqual(0, xelFieldsTask.Result.Item2.Count);
 
-            using var cts3 = new CancellationTokenSource();
             Assert.IsTrue(csr.ProcessBaseAddresses(@"c:\mssql\binn\sqldk.dll 00000001`00400000"));
             var xeventInput = PrepareLargeXEventInput().ToString();
-            var xeStacks = await csr.GetListofCallStacksAsync(xeventInput, false, cts3);
-            var resolveStacksTask = csr.ResolveCallstacksAsync(xeStacks, @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, true, false, false, Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()), cts3);
+            using var cts3 = new CancellationTokenSource();
+            var xeStacksTask = csr.GetListofCallStacksAsync(xeventInput, false, cts3);
+            while (true) {
+                if (xeStacksTask.Wait(StackResolver.OperationWaitIntervalMilliseconds)) break;
+                cts3.Cancel();
+            }
+            Assert.AreEqual(null, xeStacksTask.Result);
+            using var cts4 = new CancellationTokenSource();
+            var xeStacks = await csr.GetListofCallStacksAsync(xeventInput, false, cts4);
+            var resolveStacksTask = csr.ResolveCallstacksAsync(xeStacks, @"..\..\..\Tests\TestCases\TestOrdinal", false, null, false, false, false, true, false, false, Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()), cts4);
             while (true) {
                 if (resolveStacksTask.Wait(StackResolver.OperationWaitIntervalMilliseconds)) break;
-                cts3.Cancel();
+                cts4.Cancel();
             }
             Assert.AreEqual(StackResolver.OperationCanceled, resolveStacksTask.Result);
 
-            using var cts4 = new CancellationTokenSource();
-            var parseModuleInfoXMLTask = ModuleInfoHelper.ParseModuleInfoXMLAsync(xeStacks, cts4);
+            using var cts5 = new CancellationTokenSource();
+            var parseModuleInfoXMLTask = ModuleInfoHelper.ParseModuleInfoXMLAsync(xeStacks, cts5);
             while (true) {
-                cts4.Cancel();  // because this method is quick, we need to simulate a cancel right away
+                cts5.Cancel();  // because this method is quick, we need to simulate a cancel right away
                 if (parseModuleInfoXMLTask.Wait(StackResolver.OperationWaitIntervalMilliseconds)) break;
             }
             Assert.AreEqual(0, parseModuleInfoXMLTask.Result.Item1.Count);
             Assert.AreEqual(0, parseModuleInfoXMLTask.Result.Item2.Count);
 
-            using var cts5 = new CancellationTokenSource();
-            var parseModuleInfoTask = ModuleInfoHelper.ParseModuleInfoAsync(xeStacks, cts5);
+            using var cts6 = new CancellationTokenSource();
+            var parseModuleInfoTask = ModuleInfoHelper.ParseModuleInfoAsync(xeStacks, cts6);
             while (true) {
                 if (parseModuleInfoTask.Wait(StackResolver.OperationWaitIntervalMilliseconds)) break;
-                cts5.Cancel();
+                cts6.Cancel();
             }
             Assert.AreEqual(0, parseModuleInfoTask.Result.Count);
             Assert.AreEqual(0, parseModuleInfoTask.Result.Count);
