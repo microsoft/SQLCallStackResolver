@@ -441,6 +441,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     var validElementNames = new List<string>() { "HistogramTarget", "event" };
                     this.StatusMessage = "WARNING: XML input was detected but it does not appear to be a known schema!";
                     while (reader.Read()) {
+                        if (cts.IsCancellationRequested) return null;
                         if (XmlNodeType.Element == reader.NodeType && validElementNames.Contains(reader.Name)) {
                             this.StatusMessage = "Input seems to be relevant XML, attempting to process...";
                             isXMLdoc = true;    // assume with reasonable confidence that we have a valid XML doc
