@@ -85,7 +85,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
             List<StackDetails> allStacks = null;
             using (BackgroundCTS = new CancellationTokenSource()) {
-                var allStacksTask = this._resolver.GetListofCallStacksAsync(callStackInput.Text, FramesOnSingleLine.Checked, BackgroundCTS);
+                var allStacksTask = this._resolver.GetListofCallStacksAsync(callStackInput.Text, FramesOnSingleLine.Checked, RelookupSource.Checked, BackgroundCTS);
                 this.MonitorBackgroundTask(allStacksTask);
                 allStacks = allStacksTask.Result;
             }

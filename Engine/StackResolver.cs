@@ -24,7 +24,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         internal int globalCounter = 0;
 
         private static readonly RegexOptions rgxOptions = RegexOptions.ExplicitCapture | RegexOptions.Compiled;
-        private static readonly Regex rgxModuleName = new(@"((?<framenum>[0-9a-fA-F]+)\s+)*(?<module>\w+)(\.(dll|exe))*\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*", rgxOptions);
+        private static readonly Regex rgxModuleOffsetFrame = new(@"((?<framenum>[0-9a-fA-F]+)\s+)*(?<module>\w+)(\.(dll|exe))*\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*", rgxOptions);
         private static readonly Regex rgxVAOnly = new (@"^\s*0[xX](?<vaddress>[0-9a-fA-F]+)\s*$", rgxOptions);
         private static readonly Regex rgxAlreadySymbolizedFrame = new (@"((?<framenum>\d+)\s+)*(?<module>\w+)(\.(dll|exe))*!(?<symbolizedfunc>.+?)\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*", rgxOptions);
         private static readonly Regex rgxmoduleaddress = new (@"^\s*(?<filepath>.+)(\t+| +)(?<baseaddress>(0x)?[0-9a-fA-F`]+)\s*$", RegexOptions.Multiline);
@@ -62,7 +62,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         public bool IsInputSingleLine(string text, string patternsToTreatAsMultiline) {
             if (Regex.Match(text, patternsToTreatAsMultiline).Success) return false;
             text = System.Net.WebUtility.HtmlDecode(text);  // decode XML markup if present
-            if (!(Regex.Match(text, "Histogram").Success || Regex.Match(text, @"\<frame", RegexOptions.IgnoreCase).Success) && !text.Replace("\r", string.Empty).Trim().Contains('\n')) return true; // not a histogram and does not have any newlines, so is single-line
+            if (!(Regex.Match(text, "Histogram").Success || Regex.Match(text, @"\<frame", RegexOptions.IgnoreCase).Success) && !text.Replace("\r", string.Empty).Trim().Contains('\n') && (rgxAlreadySymbolizedFrame.Matches(text).Count > 1 || rgxModuleOffsetFrame.Matches(text).Count > 1))
+                return true; // not a histogram, not already a single-line input frame, and does not have any newlines, so is single-line
+
             if (!Regex.Match(text, @"\<frame").Success) {   // input does not have "XML frames", so keep looking...
                 if (Regex.Match(text, @"\<Slot.+\<\/Slot\>").Success) return true;  // the content within a given histogram slot is on a single line, so is single-line
                 if (Regex.Match(text, @"0x.+0x.+").Success) return true;
@@ -77,6 +79,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             foreach (var iterFrame in callStackLines) {
                 if (cts.IsCancellationRequested) { StatusMessage = OperationCanceled; PercentComplete = 0; return OperationCanceled; }
                 var currentFrame = iterFrame;
+                var initialSBLength = finalCallstack.Length;
                 if (relookupSource && includeSourceInfo) {
                     // This is a rare case. Sometimes we get frames which are already resolved to their symbols but do not include source and line number information
                     // take for example     sqldk.dll!SpinlockBase::Sleep+0x2d0
@@ -95,56 +98,50 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                             myDIAsession.findChildrenEx(myDIAsession.globalScope, SymTagEnum.SymTagNull, matchAlreadySymbolized.Groups["symbolizedfunc"].Value, 0, out IDiaEnumSymbols matchedSyms);
 
                             var foundMatch = false;
-                            if (matchedSyms.count > 0) {
-                                for (uint tmpOrdinal = 0; tmpOrdinal < matchedSyms.count; tmpOrdinal++) {
-                                    IDiaSymbol tmpSym = matchedSyms.Item(tmpOrdinal);
-                                    string offsetString = matchAlreadySymbolized.Groups["offset"].Value;
-                                    int numberBase = offsetString.ToUpperInvariant().StartsWith("0X", StringComparison.CurrentCulture) ? 16 : 10;
-                                    var currAddress = tmpSym.addressOffset + Convert.ToUInt32(offsetString, numberBase);
+                            for (uint tmpOrdinal = 0; tmpOrdinal < matchedSyms.count; tmpOrdinal++) {
+                                IDiaSymbol tmpSym = matchedSyms.Item(tmpOrdinal);
+                                string offsetString = matchAlreadySymbolized.Groups["offset"].Value;
+                                int numberBase = offsetString.ToUpperInvariant().StartsWith("0X", StringComparison.CurrentCulture) ? 16 : 10;
+                                var currAddress = tmpSym.addressOffset + Convert.ToUInt32(offsetString, numberBase);
 
-                                    myDIAsession.findLinesByRVA(tmpSym.relativeVirtualAddress, (uint)tmpSym.length, out IDiaEnumLineNumbers enumAllLineNums);
-                                    if (enumAllLineNums.count > 0) {
-                                        for (uint tmpOrdinalInner = 0; tmpOrdinalInner < enumAllLineNums.count; tmpOrdinalInner++) {
-                                            // below, we search for a line of code whose address range covers the current address of interest, and if matched, we re-write the current line in the module+RVA format
-                                            if (enumAllLineNums.Item(tmpOrdinalInner).addressOffset <= currAddress
-                                                && currAddress < enumAllLineNums.Item(tmpOrdinalInner).addressOffset + enumAllLineNums.Item(tmpOrdinalInner).length) {
-                                                currentFrame = $"{matchedModuleName}+{currAddress - enumAllLineNums.Item(tmpOrdinalInner).addressOffset + enumAllLineNums.Item(tmpOrdinalInner).relativeVirtualAddress:X}" 
-                                                    + (foundMatch ? $" {WARNING_PREFIX}: ambiguous symbol; relookup might be incorrect -- " : String.Empty);
-                                                foundMatch = true;
-                                            }
-                                            Marshal.FinalReleaseComObject(enumAllLineNums.Item(tmpOrdinalInner));
-                                        }
-                                    }
-                                    Marshal.FinalReleaseComObject(enumAllLineNums);
-                                    Marshal.FinalReleaseComObject(tmpSym);
+                                myDIAsession.findLinesByAddr(tmpSym.addressSection, currAddress, 0, out IDiaEnumLineNumbers enumAllLineNums);
+                                for (uint tmpOrdinalInner = 0; tmpOrdinalInner < enumAllLineNums.count; tmpOrdinalInner++) {
+                                    var effectiveRVA = currAddress - enumAllLineNums.Item(tmpOrdinalInner).addressOffset + enumAllLineNums.Item(tmpOrdinalInner).relativeVirtualAddress;
+                                    int frameNumFromInput = string.IsNullOrWhiteSpace(matchAlreadySymbolized.Groups["framenum"].Value) ? int.MinValue : Convert.ToInt32(matchAlreadySymbolized.Groups["framenum"].Value, 16);
+                                    if (frameNumFromInput != int.MinValue && runningFrameNum == int.MinValue) runningFrameNum = frameNumFromInput;
+                                    string processedFrame = ProcessFrameModuleOffset(_diautils, moduleNamesMap, frameNumFromInput, ref runningFrameNum, matchedModuleName, $"{effectiveRVA:X}", includeSourceInfo, includeOffsets, showInlineFrames);
+                                    processedFrame += (foundMatch ? $" {WARNING_PREFIX}: ambiguous symbol; relookup might be incorrect -- " : String.Empty);
+                                    if (!string.IsNullOrEmpty(processedFrame)) finalCallstack.AppendLine(processedFrame);
+                                    foundMatch = true;
+                                    Marshal.FinalReleaseComObject(enumAllLineNums.Item(tmpOrdinalInner));
                                 }
-                                Marshal.FinalReleaseComObject(matchedSyms);
+                                Marshal.FinalReleaseComObject(enumAllLineNums);
+                                Marshal.FinalReleaseComObject(tmpSym);
                             }
+                            Marshal.FinalReleaseComObject(matchedSyms);
+                        }
+                    }
+                } else {
+                    var match = rgxModuleOffsetFrame.Match(currentFrame);
+                    if (match.Success) {
+                        var matchedModuleName = match.Groups["module"].Value;
+                        string pdbFileName;
+                        lock (moduleNamesMap) {
+                            if (!moduleNamesMap.ContainsKey(matchedModuleName)) moduleNamesMap.Add(matchedModuleName, matchedModuleName);
+                            pdbFileName = $"{moduleNamesMap[matchedModuleName]}.pdb";
+                        }
+                        if (!_diautils.ContainsKey(matchedModuleName) && !DiaUtil.LocateandLoadPDBs(matchedModuleName, pdbFileName, _diautils, userSuppliedSymPath, symSrvSymPath, searchPDBsRecursively, cachePDB, modulesToIgnore, out string errorDetails)) {
+                            currentFrame += $" {WARNING_PREFIX} could not load symbol file {errorDetails}. The file may possibly be corrupt.";
+                        }
+                        int frameNumFromInput = string.IsNullOrWhiteSpace(match.Groups["framenum"].Value) ? int.MinValue : Convert.ToInt32(match.Groups["framenum"].Value, 16);
+                        if (frameNumFromInput != int.MinValue && runningFrameNum == int.MinValue) runningFrameNum = frameNumFromInput;
+                        if (_diautils.ContainsKey(matchedModuleName)) {
+                            string processedFrame = ProcessFrameModuleOffset(_diautils, moduleNamesMap, frameNumFromInput, ref runningFrameNum, matchedModuleName, match.Groups["offset"].Value, includeSourceInfo, includeOffsets, showInlineFrames);
+                            if (!string.IsNullOrEmpty(processedFrame)) finalCallstack.AppendLine(processedFrame);   // typically this is because we could not find the offset in any known function range
                         }
                     }
                 }
-
-                var match = rgxModuleName.Match(currentFrame);
-                if (match.Success) {
-                    var matchedModuleName = match.Groups["module"].Value;
-                    string pdbFileName;
-                    lock (moduleNamesMap) {
-                        if (!moduleNamesMap.ContainsKey(matchedModuleName)) moduleNamesMap.Add(matchedModuleName, matchedModuleName);
-                        pdbFileName = $"{moduleNamesMap[matchedModuleName]}.pdb";
-                    }
-                    if (!_diautils.ContainsKey(matchedModuleName) && !DiaUtil.LocateandLoadPDBs(matchedModuleName, pdbFileName, _diautils, userSuppliedSymPath, symSrvSymPath, searchPDBsRecursively, cachePDB, modulesToIgnore, out string errorDetails)) {
-                        currentFrame += $" {WARNING_PREFIX} could not load symbol file {errorDetails}. The file may possibly be corrupt.";
-                    }
-                    int frameNumFromInput = string.IsNullOrWhiteSpace(match.Groups["framenum"].Value) ? int.MinValue : Convert.ToInt32(match.Groups["framenum"].Value, 16);
-                    if (frameNumFromInput != int.MinValue && runningFrameNum == int.MinValue) runningFrameNum = frameNumFromInput;
-                    if (_diautils.ContainsKey(matchedModuleName)) {
-                        string processedFrame = ProcessFrameModuleOffset(_diautils, moduleNamesMap, frameNumFromInput, ref runningFrameNum, matchedModuleName, match.Groups["offset"].Value, includeSourceInfo, includeOffsets, showInlineFrames);
-                        if (!string.IsNullOrEmpty(processedFrame)) finalCallstack.AppendLine(processedFrame);   // typically this is because we could not find the offset in any known function range
-                        else finalCallstack.AppendLine(currentFrame);
-                    }
-                    else finalCallstack.AppendLine(currentFrame.Trim());
-                }
-                else finalCallstack.AppendLine(currentFrame.Trim());
+                if (initialSBLength == finalCallstack.Length) finalCallstack.AppendLine(currentFrame.Trim());
             }
 
             return finalCallstack.ToString();
@@ -189,9 +186,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                     // if we did find a block symbol then we look for its parent till we find either a function or public symbol
                     // an addition check is on the name of the symbol being non-null and non-empty
-                    while (!(mysym.symTag == (uint)SymTagEnum.SymTagFunction || mysym.symTag == (uint)SymTagEnum.SymTagPublicSymbol) && string.IsNullOrEmpty(mysym.name)) {
+                    while (!(mysym.symTag == (uint)SymTagEnum.SymTagFunction || mysym.symTag == (uint)SymTagEnum.SymTagPublicSymbol) && string.IsNullOrEmpty(mysym.name))
                         mysym = mysym.lexicalParent;
-                    }
 
                     // Calculate offset into the function by assuming that the final lexical parent we found in the loop above
                     // is the actual start of the function. Then the difference between (the original block start function start + displacement) 
@@ -210,10 +206,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     }
                 }
 
-                if (mysym == null) {
-                    // if all attempts to locate a matching symbol have failed, return null
-                    return null;
-                }
+                if (mysym == null) return null; // if all attempts to locate a matching symbol have failed, return null
 
                 string sourceInfo = string.Empty;   // try to find if we have source and line number info and include it based on the param
                 string inlineFrameAndSourceInfo = string.Empty; // Process inline functions, but only if private PDBs are in use
@@ -224,9 +217,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     Marshal.FinalReleaseComObject(enumLineNums);
                 }
                 var originalModuleName = moduleNamesMap.TryGetValue(moduleName, out string existingModule) ? existingModule : moduleName;
-                if (showInlineFrames && pdbHasSourceInfo && !sourceInfo.Contains(WARNING_PREFIX)) {
+                if (showInlineFrames && pdbHasSourceInfo && !sourceInfo.Contains(WARNING_PREFIX))
                     inlineFrameAndSourceInfo = DiaUtil.ProcessInlineFrames(originalModuleName, useUndecorateLogic, includeOffset, includeSourceInfo, rva, mysym, pdbHasSourceInfo);
-                }
 
                 var symbolizedFrame = DiaUtil.GetSymbolizedFrame(originalModuleName, mysym, useUndecorateLogic, includeOffset, displacement, false);
 
@@ -235,9 +227,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 result = (inlineFrameAndSourceInfo + symbolizedFrame + "\t" + sourceInfo).Trim();
                 if (!resWasCached) {    // we only need to add to cache if it was not already cached.
                     this.rwLockCachedSymbols.AcquireWriterLock(-1);
-                    if (!this.cachedSymbols.ContainsKey(symKey)) {
-                        this.cachedSymbols.Add(symKey, result);
-                    }
+                    if (!this.cachedSymbols.ContainsKey(symKey)) this.cachedSymbols.Add(symKey, result);
                     this.rwLockCachedSymbols.ReleaseWriterLock();
                 }
             }
@@ -365,9 +355,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     relookupSource, includeOffsets, cachePDB, cts));
 
                 this.StatusMessage = "Waiting for tasks to finish...";
-                while (true) {
-                    if (Task.WaitAll(tasks.ToArray(), OperationWaitIntervalMilliseconds)) break;
-                }
+                while (true) if (Task.WaitAll(tasks.ToArray(), OperationWaitIntervalMilliseconds)) break;
+
                 if (cts.IsCancellationRequested) { StatusMessage = OperationCanceled; PercentComplete = 0; return OperationCanceled; }
                 this.StatusMessage = "Done with symbol resolution, finalizing output...";
                 this.globalCounter = 0;
@@ -418,6 +407,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             });
         }
 
+        public async Task<List<StackDetails>> GetListofCallStacksAsync(string inputCallstackText, bool framesOnSingleLine, CancellationTokenSource cts) => await GetListofCallStacksAsync(inputCallstackText, framesOnSingleLine, false, cts);
+
         /// <summary>
         /// Gets a list of StackDetails objects based on the textual callstack input
         /// </summary>
@@ -425,7 +416,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// <param name="framesOnSingleLine"></param>
         /// <param name="cts"></param>
         /// <returns>List of StackDetails objects</returns>
-        public async Task<List<StackDetails>> GetListofCallStacksAsync(string inputCallstackText, bool framesOnSingleLine, CancellationTokenSource cts) {
+        public async Task<List<StackDetails>> GetListofCallStacksAsync(string inputCallstackText, bool framesOnSingleLine, bool relookupSource, CancellationTokenSource cts) {
             return await Task.Run(() => {
                 this.StatusMessage = "Decoding any encoded XML input...";
                 inputCallstackText = System.Net.WebUtility.HtmlDecode(inputCallstackText);
@@ -460,7 +451,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                 var allStacks = new List<StackDetails>();
                 if (!isXMLdoc) {
-                    allStacks.Add(new StackDetails(inputCallstackText, framesOnSingleLine));
+                    if (relookupSource && framesOnSingleLine) inputCallstackText = rgxAlreadySymbolizedFrame.Replace(inputCallstackText, "${framenum} ${module}!${symbolizedfunc}+${offset}\n");
+                    allStacks.Add(new StackDetails(inputCallstackText, framesOnSingleLine, null, null, relookupSource));
                 } else {
                     try {
                         int stacknum = 0;
@@ -555,10 +547,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 }
 
                 // cleanup any older COM objects
-                if (_diautils != null) {
-                    foreach (var diautil in _diautils.Values) diautil.Dispose();
-                    _diautils.Clear();
-                }
+                _diautils?.Values.ToList().ForEach(diautil => diautil.Dispose());
+                _diautils?.Clear();
 
                 SafeNativeMethods.DestroyActivationContext();
             });
