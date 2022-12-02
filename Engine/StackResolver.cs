@@ -1,6 +1,10 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
 
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
     public class StackResolver : IDisposable {
@@ -99,6 +103,23 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                             var matchedFuncName = matchAlreadySymbolized.Groups["symbolizedfunc"].Value;
                             var myDIAsession = existingEntry._IDiaSession;
                             myDIAsession.findChildrenEx(myDIAsession.globalScope, SymTagEnum.SymTagFunction, $"{matchedFuncName}", 0, out IDiaEnumSymbols matchedSyms);
+                            //myDIAsession.getEnumTables(out IDiaEnumTables diaTables);
+                            //foreach (IDiaTable table in diaTables) {
+                            //    if (table is IDiaEnumSectionContribs) {
+                            //        foreach (IDiaSectionContrib sectionContrib in (table as IDiaEnumSectionContribs)) {
+                            //            if (sectionContrib.addressSection == 1/* && sectionContrib.addressOffset > 0x10000 && sectionContrib.addressOffset + sectionContrib.length < 0x11000*/) {
+                            //                var ao = sectionContrib.addressOffset;
+                            //                var al = sectionContrib.length;
+                            //                for (uint rvatmp = sectionContrib.relativeVirtualAddress; rvatmp < sectionContrib.relativeVirtualAddress + sectionContrib.length; rvatmp++) {
+                            //                    if (rvatmp == 0x861c) {
+                            //                        myDIAsession.addressForRVA(rvatmp, out uint seg, out uint offset);
+                            //                        var j = offset;
+                            //                    }
+                            //                }
+                            //            }
+                            //        }
+                            //    }
+                            //}
 
                             var foundMatch = false;
                             for (uint tmpOrdinal = 0; tmpOrdinal < matchedSyms.count; tmpOrdinal++) {
@@ -114,6 +135,73 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                                     if (frameNumFromInput != int.MinValue && runningFrameNum == int.MinValue) runningFrameNum = frameNumFromInput;
                                     string processedFrame = ProcessFrameModuleOffset(_diautils, moduleNamesMap, frameNumFromInput, ref runningFrameNum, matchedModuleName, $"{effectiveRVA:X}", includeSourceInfo, includeOffsets, showInlineFrames, includeModOffset);
                                     processedFrame += (foundMatch ? $" {WARNING_PREFIX}: ambiguous symbol; relookup might be incorrect -- " : String.Empty);
+                                    myDIAsession.getEnumDebugStreams(out IDiaEnumDebugStreams dbgstreams);
+
+                                    myDIAsession.getEnumTables(out IDiaEnumTables tables);
+
+                                    uint section_virtsize = 0, section_virtaddr = 0;
+                                    foreach (IDiaEnumDebugStreamData stream in dbgstreams) {
+                                        if (stream.name == "SECTIONHEADERS") {
+                                            for (var sectTmp = 1; sectTmp <= stream.count; sectTmp++) {
+                                                if (sectTmp == tmpSym.addressSection) {
+                                                    byte[] sectionheaderdata = new byte[40];
+                                                    stream.Next(1, (uint)sectionheaderdata.Length, out uint pcbdata, out sectionheaderdata[0], out uint celtfetched);
+                                                    section_virtsize = BitConverter.ToUInt32(sectionheaderdata, 40 * (sectTmp - 1) + 8);
+                                                    section_virtaddr = BitConverter.ToUInt32(sectionheaderdata, 40 * (sectTmp - 1) + 12);
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        Marshal.FinalReleaseComObject(stream);
+                                    }
+                                    
+                                    dbgstreams.Reset();
+                                    /*
+                                    Marshal.FinalReleaseComObject(dbgstreams);
+                                    myDIAsession.getEnumDebugStreams(out IDiaEnumDebugStreams dbgstreams);
+                                    */
+
+                                    foreach (IDiaEnumDebugStreamData stream in dbgstreams) {
+                                        if (stream.name == "OMAPFROM") {
+                                            uint i = (uint)stream.count;
+                                            byte[] data = new byte[i * 8];
+                                            stream.Next(i, i * 8, out uint pcbdata, out data[0], out uint celtfetched);
+
+                                            //IntPtr addr = (IntPtr)(&rva_src);
+                                            //byte b2 = (byte) (*(int*)(addr + 1));
+                                            //byte b3 = (byte) (*(int*)(addr + 2));
+                                            //byte b4 = (byte) (*(int*)(addr + 3));
+                                            //byte b5 = (byte) (*(int*)(addr + 4));
+                                            //byte b6 = (byte) (*(int*)(addr + 5));
+                                            //byte b7 = (byte) (*(int*)(addr + 6));
+                                            //byte b8 = (byte) (*(int*)(addr + 7));
+                                            //stream.Next(1, 4, out uint pcbdata2, out byte rva_img, out uint celtfetched2);
+                                            //OMAP_DATA entry = new OMAP_DATA();
+                                            //Marshal.PtrToStructure(pbdata, (object)entry);
+
+                                            for (int itmp = 0; itmp < i; itmp++) {
+                                                uint rva_src = BitConverter.ToUInt32(data, itmp * 8);
+                                                uint rva_img = BitConverter.ToUInt32(data, 4 + itmp * 8);
+
+                                                //if (rva_src == 0x010AF957 || rva_img == 0x010AF957 || rva_src == 0x861c || rva_img == 0x861c || rva_img == 0x47645) {
+                                                //    int z = 0;
+                                                //}
+
+                                                //using var pdbstream = new FileStream(@"C:\temp\13.0.4001.0.x64\sqlmin.pdb", FileMode.Open, FileAccess.Read);
+                                                //using var pdbimage = new PEReader(pdbstream);
+
+                                                if (rva_src == currAddress + section_virtaddr/*pdbimage.PEHeaders.SectionHeaders[1].VirtualAddress*/) { //    ) {
+                                                    processedFrame += $"\t {matchedModuleName}+{rva_img:X}";
+                                                    break;
+                                                }
+                                            }
+                                        } else processedFrame += $"\t {matchedModuleName}+{currAddress + section_virtaddr:X}";
+
+                                        Marshal.FinalReleaseComObject(stream);
+                                    }
+
+                                    Marshal.FinalReleaseComObject(dbgstreams);
+
                                     if (!string.IsNullOrEmpty(processedFrame)) finalCallstack.AppendLine(processedFrame);
                                     foundMatch = true;
                                     Marshal.FinalReleaseComObject(enumAllLineNums.Item(tmpOrdinalInner));
@@ -574,5 +662,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
+    }
+    class OMAP_DATA {
+        uint rva;
+        uint rvaTo;
     }
 }
