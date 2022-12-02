@@ -125,7 +125,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                                     continue;
                                 }
                             } catch (Exception ex) {
-                                if (!(ex is ArgumentNullException || ex is NullReferenceException || ex is XmlException)) { throw; }
+                                if (!(ex is ArgumentNullException || ex is NullReferenceException || ex is XmlException || ex is FormatException)) { throw; }
                             }
                         }
 

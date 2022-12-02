@@ -505,6 +505,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(input, false, cts), pdbPath, false, null, false, true, false, true, false, false, null, cts);
             var expected = @"00 ntdll!NtWaitForSingleObject+20";
             Assert.AreEqual(expected.Trim(), ret.Trim());
+            input = "<frame id=\"00\" pdb=\"ntdll.pdb\" age=\"1\" guid=\"C374E059-5793-9B92-A6525-386A66A2D3F5\" module=\"ntdll.dll\" rva=\"0x9F7E4\" />";
+            ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(input, false, cts), pdbPath, false, null, false, true, false, true, false, false, null, cts);
+            Assert.AreEqual(input.Trim(), ret.Trim());
         }
 
         /// End-to-end test with stacks being resolved based on symbols from symsrv.
