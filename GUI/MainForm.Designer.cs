@@ -52,6 +52,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.cancelButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.formToolTip = new System.Windows.Forms.ToolTip(this.components);
             this.genericSaveFileDlg = new System.Windows.Forms.SaveFileDialog();
+            this.ResolveCallStackFromClipboardButton = new System.Windows.Forms.Button();
+            this.orLabel = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer2)).BeginInit();
             this.splitContainer2.Panel1.SuspendLayout();
             this.splitContainer2.Panel2.SuspendLayout();
@@ -73,13 +75,15 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.splitContainer2.Name = "splitContainer2";
             this.splitContainer2.Orientation = System.Windows.Forms.Orientation.Horizontal;
             this.splitContainer2.Panel1.Controls.Add(this.splitContainer1);
+            this.splitContainer2.Panel2.Controls.Add(this.orLabel);
+            this.splitContainer2.Panel2.Controls.Add(this.ResolveCallStackFromClipboardButton);
             this.splitContainer2.Panel2.Controls.Add(this.groupBox4);
             this.splitContainer2.Panel2.Controls.Add(this.groupBox3);
             this.splitContainer2.Panel2.Controls.Add(this.groupBox2);
             this.splitContainer2.Panel2.Controls.Add(this.groupBox1);
             this.splitContainer2.Panel2.Controls.Add(this.ResolveCallStackButton);
             this.splitContainer2.Size = new System.Drawing.Size(979, 673);
-            this.splitContainer2.SplitterDistance = 361;
+            this.splitContainer2.SplitterDistance = 362;
             this.splitContainer2.SplitterWidth = 3;
             this.splitContainer2.TabIndex = 0;
             this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -88,7 +92,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.splitContainer1.Name = "splitContainer1";
             this.splitContainer1.Panel1.Controls.Add(this.callStackInput);
             this.splitContainer1.Panel2.Controls.Add(this.finalOutput);
-            this.splitContainer1.Size = new System.Drawing.Size(979, 361);
+            this.splitContainer1.Size = new System.Drawing.Size(979, 362);
             this.splitContainer1.SplitterDistance = 323;
             this.splitContainer1.SplitterWidth = 3;
             this.splitContainer1.TabIndex = 0;
@@ -102,7 +106,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.callStackInput.Multiline = true;
             this.callStackInput.Name = "callStackInput";
             this.callStackInput.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.callStackInput.Size = new System.Drawing.Size(323, 361);
+            this.callStackInput.Size = new System.Drawing.Size(323, 362);
             this.callStackInput.TabIndex = 0;
             this.callStackInput.Text = resources.GetString("callStackInput.Text");
             this.callStackInput.WordWrap = false;
@@ -117,7 +121,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.finalOutput.Multiline = true;
             this.finalOutput.Name = "finalOutput";
             this.finalOutput.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.finalOutput.Size = new System.Drawing.Size(653, 361);
+            this.finalOutput.Size = new System.Drawing.Size(653, 362);
             this.finalOutput.TabIndex = 0;
             this.finalOutput.WordWrap = false;
             this.groupBox4.Controls.Add(this.DLLrecurse);
@@ -378,7 +382,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.ResolveCallStackButton.Location = new System.Drawing.Point(11, 187);
             this.ResolveCallStackButton.Margin = new System.Windows.Forms.Padding(2);
             this.ResolveCallStackButton.Name = "ResolveCallStackButton";
-            this.ResolveCallStackButton.Size = new System.Drawing.Size(957, 45);
+            this.ResolveCallStackButton.Size = new System.Drawing.Size(453, 45);
             this.ResolveCallStackButton.TabIndex = 3;
             this.ResolveCallStackButton.Text = "STEP 3: Resolve callstacks!";
             this.ResolveCallStackButton.UseVisualStyleBackColor = true;
@@ -389,7 +393,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.progressBar,
             this.cancelButton});
             this.statusStrip.Location = new System.Drawing.Point(0, 643);
-            this.statusStrip.Name = "statusStrip1";
+            this.statusStrip.Name = "statusStrip";
             this.statusStrip.Size = new System.Drawing.Size(979, 30);
             this.statusStrip.TabIndex = 0;
             this.statusStrip.Text = "statusStrip1";
@@ -417,6 +421,23 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.cancelButton.TextImageRelation = System.Windows.Forms.TextImageRelation.TextBeforeImage;
             this.cancelButton.Visible = false;
             this.cancelButton.Click += new System.EventHandler(this.CancelButton_Click);
+            this.ResolveCallStackFromClipboardButton.AccessibleDescription = "Paste clipboard contents and resolve callstacks!";
+            this.ResolveCallStackFromClipboardButton.AccessibleName = "ResolveCallStackFromClipboardButton";
+            this.ResolveCallStackFromClipboardButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.ResolveCallStackFromClipboardButton.Location = new System.Drawing.Point(504, 187);
+            this.ResolveCallStackFromClipboardButton.Margin = new System.Windows.Forms.Padding(2);
+            this.ResolveCallStackFromClipboardButton.Name = "ResolveCallStackFromClipboardButton";
+            this.ResolveCallStackFromClipboardButton.Size = new System.Drawing.Size(464, 45);
+            this.ResolveCallStackFromClipboardButton.TabIndex = 5;
+            this.ResolveCallStackFromClipboardButton.Text = "STEP 3: Paste clipboard contents and resolve callstacks!";
+            this.ResolveCallStackFromClipboardButton.UseVisualStyleBackColor = true;
+            this.ResolveCallStackFromClipboardButton.Click += new System.EventHandler(this.ResolveCallStackFromClipboardButton_Click);
+            this.orLabel.AutoSize = true;
+            this.orLabel.Location = new System.Drawing.Point(473, 203);
+            this.orLabel.Name = "orLabel";
+            this.orLabel.Size = new System.Drawing.Size(23, 13);
+            this.orLabel.TabIndex = 6;
+            this.orLabel.Text = "OR";
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
@@ -431,6 +452,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.Load += new System.EventHandler(this.MainForm_Load);
             this.splitContainer2.Panel1.ResumeLayout(false);
             this.splitContainer2.Panel2.ResumeLayout(false);
+            this.splitContainer2.Panel2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer2)).EndInit();
             this.splitContainer2.ResumeLayout(false);
             this.splitContainer1.Panel1.ResumeLayout(false);
@@ -491,5 +513,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         private System.Windows.Forms.ToolStripProgressBar progressBar;
         private System.Windows.Forms.ToolStripDropDownButton cancelButton;
         private System.Windows.Forms.CheckBox showInlineFrames;
+        private Label orLabel;
+        private Button ResolveCallStackFromClipboardButton;
     }
 }

@@ -21,18 +21,53 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         internal static readonly string LatestReleaseTimestampCulture = "en-US";
 
         private void ResolveCallstacks_Click(object sender, EventArgs e) {
+            if (!ValidateInputs()) return;
+            ProcessCallstacks();
+        }
+
+        private void ResolveCallStackFromClipboardButton_Click(object sender, EventArgs e) {
+            callStackInput.Clear();
+            finalOutput.Clear();
+            callStackInput.Text = Clipboard.GetText();
+            if (!ValidateInputs()) return;
+            ProcessCallstacks();
+        }
+
+        private void ProcessCallstacks() {
+            List<StackDetails> allStacks = null;
+            using (BackgroundCTS = new CancellationTokenSource()) {
+                var allStacksTask = this._resolver.GetListofCallStacksAsync(callStackInput.Text, FramesOnSingleLine.Checked, RelookupSource.Checked, BackgroundCTS);
+                this.MonitorBackgroundTask(allStacksTask);
+                allStacks = allStacksTask.Result;
+            }
+            if (allStacks.Any()) using (BackgroundCTS = new CancellationTokenSource()) {
+                    var resolverTask = this._resolver.ResolveCallstacksAsync(allStacks, pdbPaths.Text, pdbRecurse.Checked, string.IsNullOrEmpty(binaryPaths.Text) ? null : binaryPaths.Text.Split(';').ToList(),
+                        DLLrecurse.Checked, IncludeLineNumbers.Checked, RelookupSource.Checked,
+                        includeOffsets.Checked, showInlineFrames.Checked, cachePDB.Checked, outputFilePath.Text, BackgroundCTS);
+                    this.MonitorBackgroundTask(resolverTask);
+                    finalOutput.Text = resolverTask.Result;
+                }
+
+            if (finalOutput.Text.Contains(StackResolver.WARNING_PREFIX)) {
+                MessageBox.Show(this,
+                    "One or more potential issues exist in the output. This is sometimes due to mismatched symbols, so please double-check symbol paths and re-run if needed.",
+                    "Potential issues with the output", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        private bool ValidateInputs() {
             if (string.IsNullOrWhiteSpace(pdbPaths.Text)) {
                 MessageBox.Show(this,
                     "Please specify path(s) to PDB files!",
                     "No symbol path(s) specified", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
+                return false;
             }
 
             var res = this._resolver.ProcessBaseAddresses(this._baseAddressesString);
             if (!res) {
                 MessageBox.Show(this, "Cannot interpret the module base address information. Make sure you just have the output of the following query (no column headers, no other columns) copied from SSMS using the Grid Results\r\n\r\nselect name, base_address from sys.dm_os_loaded_modules where name not like '%.rll'",
                             "Unable to load base address information", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
+                return false;
             }
 
             bool isSingleLineInput = this._resolver.IsInputSingleLine(callStackInput.Text, ConfigurationManager.AppSettings["PatternsToTreatAsMultiline"]);
@@ -80,28 +115,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     "It is recommended that you first do that. Do you want to exit (select Yes in that case) or continue at your own risk (select No in that case)?",
                     "Input is large, risk of truncation or errors",
                     MessageBoxButtons.YesNo)) {
-                return;
+                return false;
             }
-
-            List<StackDetails> allStacks = null;
-            using (BackgroundCTS = new CancellationTokenSource()) {
-                var allStacksTask = this._resolver.GetListofCallStacksAsync(callStackInput.Text, FramesOnSingleLine.Checked, RelookupSource.Checked, BackgroundCTS);
-                this.MonitorBackgroundTask(allStacksTask);
-                allStacks = allStacksTask.Result;
-            }
-            if (allStacks.Any()) using (BackgroundCTS = new CancellationTokenSource()) {
-                    var resolverTask = this._resolver.ResolveCallstacksAsync(allStacks, pdbPaths.Text, pdbRecurse.Checked, string.IsNullOrEmpty(binaryPaths.Text) ? null : binaryPaths.Text.Split(';').ToList(),
-                        DLLrecurse.Checked, IncludeLineNumbers.Checked, RelookupSource.Checked,
-                        includeOffsets.Checked, showInlineFrames.Checked, cachePDB.Checked, outputFilePath.Text, BackgroundCTS);
-                    this.MonitorBackgroundTask(resolverTask);
-                    finalOutput.Text = resolverTask.Result;
-                }
-
-            if (finalOutput.Text.Contains(StackResolver.WARNING_PREFIX)) {
-                MessageBox.Show(this,
-                    "One or more potential issues exist in the output. This is sometimes due to mismatched symbols, so please double-check symbol paths and re-run if needed.",
-                    "Potential issues with the output", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
+            return true;
         }
 
         private void DisableCancelButton() {
