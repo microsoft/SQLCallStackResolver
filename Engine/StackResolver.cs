@@ -29,8 +29,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         private static readonly Regex rgxAlreadySymbolizedFrame = new (@"((?<framenum>\d+)\s+)*(?<module>\w+)(\.(dll|exe))*!(?<symbolizedfunc>.+?)\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*", rgxOptions);
         private static readonly Regex rgxmoduleaddress = new (@"^\s*(?<filepath>.+)(\t+| +)(?<baseaddress>(0x)?[0-9a-fA-F`]+)\s*$", RegexOptions.Multiline);
 
-        public Task<Tuple<List<string>, List<string>>> GetDistinctXELFieldsAsync(string[] xelFiles, int eventsToSample, CancellationTokenSource cts) {
-            return XELHelper.GetDistinctXELActionsFieldsAsync(xelFiles, eventsToSample, cts);
+        public Task<Tuple<List<string>, List<string>>> GetDistinctXELFieldsAsync(string[] xelFiles, int eventsToSample) {
+            return XELHelper.GetDistinctXELActionsFieldsAsync(xelFiles, eventsToSample);
         }
 
         /// Public method which to help import XEL files
