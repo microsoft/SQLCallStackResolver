@@ -78,29 +78,27 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             });
         }
 
-        internal async static Task<Tuple<List<string>, List<string>>> GetDistinctXELActionsFieldsAsync(string[] xelFiles, int eventsToSampleFromEachFile, CancellationTokenSource cts) {
+        internal async static Task<Tuple<List<string>, List<string>>> GetDistinctXELActionsFieldsAsync(string[] xelFiles, int eventsToSampleFromEachFile) {
             return await Task.Run(async () => {
                 Contract.Requires(xelFiles != null && eventsToSampleFromEachFile > 0);
                 var allActions = new HashSet<string>();
                 var allFields = new HashSet<string>();
-                bool internalCancel = false;
                 foreach (var file in xelFiles) {
                     var numEvents = 0;
                     var xeStream = new XEFileEventStreamer(file);
                     try {
+                        // If preceeding file had issued an "internal cancel" (due to number of sampled events reached)
+                        // then create a new CTS to ensure subsequent files (if any) are also sampled correctly.
+                        using var cts = new CancellationTokenSource();
                         await xeStream.ReadEventStream(evt => {
-                                if (Interlocked.Increment(ref numEvents) > eventsToSampleFromEachFile) {
-                                    internalCancel = true;
-                                    cts.Cancel();
-                                }
+                                if (Interlocked.Increment(ref numEvents) > eventsToSampleFromEachFile) cts.Cancel();
                                 lock (allActions) evt.Actions.Select(action => allActions.Add(action.Key)).Count();
                                 lock (allFields) evt.Fields.Select(field => allFields.Add(field.Key)).Count();
                                 return Task.CompletedTask;
                             }, cts.Token);
                     } catch (AggregateException e) {
-                        if (e.InnerException is OperationCanceledException) if (!internalCancel) return new Tuple<List<string>, List<string>>(new List<string>(), new List<string>());
-                            else throw;
-                    } catch (OperationCanceledException) { if (!internalCancel) return new Tuple<List<string>, List<string>>(new List<string>(), new List<string>()); }
+                        if (e.InnerException is not OperationCanceledException) throw;
+                    } catch (OperationCanceledException) { /* nothing to do, as cancel the operation at the end of sampling */ }
                 }
 
                 return new Tuple<List<string>, List<string>>(allActions.OrderBy(k => k).ToList(), allFields.OrderBy(k => k).ToList());

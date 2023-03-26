@@ -223,9 +223,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         private async Task<List<string>> GetUserSelectedXEFieldsAsync(string[] fileNames) {
             using var fieldsListDialog = new FieldSelection();
-            using var cts = new CancellationTokenSource();
             fieldsListDialog.Text = "Select relevant XEvent fields";
-            var xeEventItems = await this._resolver.GetDistinctXELFieldsAsync(fileNames, 1000, cts);
+            var xeEventItems = await this._resolver.GetDistinctXELFieldsAsync(fileNames, 1000);
             if (xeEventItems.Item1.Count + xeEventItems.Item2.Count == 0) return new List<string>();
             fieldsListDialog.AllActions = xeEventItems.Item1;
             fieldsListDialog.AllFields = xeEventItems.Item2;

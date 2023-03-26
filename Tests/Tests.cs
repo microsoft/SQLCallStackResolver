@@ -305,8 +305,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         [TestMethod][TestCategory("Unit")] public async Task XELActionsAndFieldsAsync() {
             using var csr = new StackResolver();
-            using var cts = new CancellationTokenSource();
-            var ret = await csr.GetDistinctXELFieldsAsync(new[] { @"..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, 1000, cts);
+            var ret = await csr.GetDistinctXELFieldsAsync(new[] { @"..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel" }, 5);
             Assert.AreEqual(1, ret.Item1.Count);   // just the callstack action
             Assert.AreEqual("callstack", ret.Item1.First());    // verify the name
             Assert.AreEqual(5, ret.Item2.Count);   // 5 fields
@@ -316,8 +315,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         [TestMethod][TestCategory("Unit")] public async Task XELActionsAndFieldsAsyncMultipleFiles() {
             using var csr = new StackResolver();
-            using var cts = new CancellationTokenSource();
-            var ret = await csr.GetDistinctXELFieldsAsync(new[] { @"..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel", @"..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, 1000, cts);
+            var ret = await csr.GetDistinctXELFieldsAsync(new[] { @"..\..\..\Tests\TestCases\ImportXEL\xe_wait_completed_0_132353446563350000.xel", @"..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, 5);
             Assert.AreEqual(1, ret.Item1.Count);   // just the callstack action
             Assert.AreEqual("callstack", ret.Item1.First());    // verify the name
             Assert.AreEqual(9, ret.Item2.Count);   // 9 fields in total across the 2 XEL files
@@ -775,15 +773,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             }
             Assert.AreEqual(0, xelTask.Result.Item1);
             Assert.AreEqual(StackResolver.OperationCanceled, xelTask.Result.Item2);
-
-            using var cts2 = new CancellationTokenSource();
-            var xelFieldsTask = csr.GetDistinctXELFieldsAsync(new[] { @"..\..\..\Tests\TestCases\ImportXEL\XESpins_0_131627061603030000.xel" }, int.MaxValue, cts2);
-            while (true) {
-                if (xelFieldsTask.Wait(StackResolver.OperationWaitIntervalMilliseconds)) break;
-                cts2.Cancel();
-            }
-            Assert.AreEqual(0, xelFieldsTask.Result.Item1.Count);
-            Assert.AreEqual(0, xelFieldsTask.Result.Item2.Count);
 
             Assert.IsTrue(csr.ProcessBaseAddresses(@"c:\mssql\binn\sqldk.dll 00000001`00400000"));
             var xeventInput = PrepareLargeXEventInput().ToString();
