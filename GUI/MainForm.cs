@@ -316,10 +316,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             if (lastUpdDateTimeServer > lastUpdDateTimeLocal) { // if the server timestamp > local timestamp, prompt to download
                 var res = MessageBox.Show(this,
                     "The SQLBuildInfo.json file was updated recently on GitHub. Do you wish to update your copy with the newer version?",
-                    "SQL Build info updated", MessageBoxButtons.YesNo);
+                    "SQL build info updated", MessageBoxButtons.YesNo);
 
                 if (DialogResult.Yes == res) {
                     t = sqlBuildInfoURLs.Select(jsonURL => Utils.GetTextFromUrl(jsonURL)).ToArray();
+                    this.UpdateStatus("Trying to update SQL build info from GitHub...");
                     taskRes = (await Task.WhenAll(t)).Where(s => !string.IsNullOrWhiteSpace(s));
                     if (taskRes.Any()) { // update local copy of build info file
                         using var writer = new StreamWriter(SqlBuildInfoFileName);
@@ -328,9 +329,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         writer.Close();
                         using var wr = new StreamWriter(LastUpdatedTimestampFileName, false);  // update local last updated timestamp
                         wr.Write(lastUpdDateTimeServer.ToString(LastUpdatedTimestampFormat, new CultureInfo(LastUpdatedTimestampCulture)));
+                        this.UpdateStatus("Successfully updated SQL build info!");
                         wr.Flush();
                         wr.Close();
-                    } else MessageBox.Show(this, "Could not download the SQL Build Info file.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    } else MessageBox.Show(this, "Could not download the SQL build Info file.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
