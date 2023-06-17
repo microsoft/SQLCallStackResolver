@@ -41,7 +41,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 using var req = new HttpRequestMessage(HttpMethod.Get, url);
                 using var res = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
                 res.EnsureSuccessStatusCode();
-                return await res.Content.ReadAsStringAsync();
+                using var ms = new MemoryStream();
+                await res.Content.CopyToAsync(ms);
+                ms.Seek(0, SeekOrigin.Begin);
+                using var sr = new StreamReader(ms);
+                return sr.ReadToEnd();
             } catch (HttpRequestException) { /* this will fall through to the return false so it is okay to leave blank */ } catch (NotSupportedException) { /* this will fall through to the return false so it is okay to leave blank */ }
             return null;
         }
