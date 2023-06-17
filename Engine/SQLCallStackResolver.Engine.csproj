@@ -65,8 +65,8 @@
     <Reference Include="System.Numerics.Vectors, Version=4.1.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
     </Reference>
-    <Reference Include="System.Reflection.Metadata, Version=7.0.0.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Reflection.Metadata.7.0.1\lib\net462\System.Reflection.Metadata.dll</HintPath>
+    <Reference Include="System.Reflection.Metadata, Version=7.0.0.2, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Reflection.Metadata.7.0.2\lib\net462\System.Reflection.Metadata.dll</HintPath>
     </Reference>
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Xml" />
@@ -104,12 +104,12 @@
     </ContentWithTargetPath>
   </ItemGroup>
   <ItemGroup>
-    <ContentWithTargetPath Include="..\packages\Microsoft.Debugging.Platform.DbgEng.20230328.919.0\content\amd64\dbghelp.dll">
+    <ContentWithTargetPath Include="..\packages\Microsoft.Debugging.Platform.DbgEng.20230602.930.0\content\amd64\dbghelp.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>dbghelp.dll</TargetPath>
       <Link>DebuggerFiles\dbghelp.dll</Link>
     </ContentWithTargetPath>
-    <ContentWithTargetPath Include="..\packages\Microsoft.Debugging.Platform.SymSrv.20230328.919.0\content\amd64\symsrv.dll">
+    <ContentWithTargetPath Include="..\packages\Microsoft.Debugging.Platform.SymSrv.20230602.930.0\content\amd64\symsrv.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>symsrv.dll</TargetPath>
       <Link>DebuggerFiles\symsrv.dll</Link>
