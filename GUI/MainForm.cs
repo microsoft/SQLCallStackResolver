@@ -26,6 +26,20 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         private void ResolveCallStackFromClipboardButton_Click(object sender, EventArgs e) {
+            if (Properties.Settings.Default.promptForClipboardPaste) {
+                var resProceed = MessageBox.Show(this, "Proceeding will paste the contents of your clipboard and attempt to resolve them. Are you sure?", "Proceed with paste from clipboard", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                var resRememberChoice = MessageBox.Show(this, "Should we remember your choice for the future?", "Save your choice?", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                Properties.Settings.Default.promptForClipboardPaste = (resRememberChoice == DialogResult.No);
+                Properties.Settings.Default.choiceForClipboardPaste = (resProceed == DialogResult.Yes);
+                Properties.Settings.Default.Save();
+            }
+
+            if (!Properties.Settings.Default.choiceForClipboardPaste) {
+                this.UpdateStatus((Properties.Settings.Default.promptForClipboardPaste ? "You chose to not" : "You have chosen never to") + " paste clipboard contents. Nothing to do!");
+                return;
+            }
+
             callStackInput.Clear();
             finalOutput.Clear();
             callStackInput.Text = Clipboard.GetText();
