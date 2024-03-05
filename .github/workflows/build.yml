@@ -12,17 +12,17 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Add msbuild to PATH
-      uses: microsoft/setup-msbuild@v1.1
+      uses: microsoft/setup-msbuild@v2
     - name: Setup NuGet
-      uses: NuGet/setup-nuget@v1.1.1
+      uses: NuGet/setup-nuget@v2
     - name: Restore NuGet Packages
       run: nuget restore SQLCallStackResolver.sln
     - name: Build SQLCallStackResolver
       run: msbuild SQLCallStackResolver.sln /p:Configuration=Release
     - name: Upload Artifact
-      uses: actions/upload-artifact@v3.1.0
+      uses: actions/upload-artifact@v4
       with:
         name: SQLCallStackResolver
         path: |
