@@ -7,6 +7,8 @@ SQLCallStackResolver is a sample tool provided for users who want to resolve the
 Please refer to the [Releases](../../releases) section for a ready-to-run set of binaries. This sample tool does not have any other requirements other than .NET Framework 4.7.2 or above. SQLCallStackResolver requires Windows 10, Windows Server 2016, or higher. Other Microsoft components used, and their associated terms of use are documented in the [Building](./BUILDING.md) file.
 
 # Usage
+For a practical example of how SQLCallStackResolver can be used to quickly investigate hard problems, see Bob Ward's demos in this [Data Exposed episode](https://www.youtube.com/watch?v=Vw86u05SDjc).
+
 SQLCallStackResolver takes raw call stack text as input. These call stacks can be obtained from a variety of SQL Server sources:
 
 * Individual call stack extracted from XML output from the XEvents DMVs or .XEL files. These represent individual call stack frames in the with `module+offset` notation
