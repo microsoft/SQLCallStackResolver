@@ -22,6 +22,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             var retval = new List<string>();
             Contract.Requires(null != syms);
             Contract.Requires(null != parent);
+
+            if (!SafeNativeMethods.SymSetParentWindow(System.Diagnostics.Process.GetCurrentProcess().MainWindowHandle)) return retval;
+
             if (!SafeNativeMethods.SymInitialize((IntPtr)(-1), symPath, false)) return retval;
             int progress = 0;
             foreach (var sym in syms) {
