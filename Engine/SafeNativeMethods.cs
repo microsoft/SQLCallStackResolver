@@ -62,5 +62,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         [DllImport("dbghelp.dll")] public static extern bool SymCleanup(IntPtr hProcess);
 
         [DllImport("dbghelp.dll", CharSet = CharSet.Unicode)] public static extern bool SymInitialize(IntPtr hProcess, [MarshalAs(UnmanagedType.LPWStr)] string UserSearchPath, bool fInvadeProcess);
+
+        [DllImport("dbghelp.dll")] public static extern bool SymSetParentWindow(IntPtr hWnd);
     }
 }
