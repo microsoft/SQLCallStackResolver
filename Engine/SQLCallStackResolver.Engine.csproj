@@ -107,12 +107,12 @@
     </ContentWithTargetPath>
   </ItemGroup>
   <ItemGroup>
-    <ContentWithTargetPath Include="..\packages\Microsoft.Debugging.Platform.DbgEng.20240722.1449.0\content\amd64\dbghelp.dll">
+    <ContentWithTargetPath Include="..\packages\Microsoft.Debugging.Platform.DbgEng.20240911.1650.0\content\amd64\dbghelp.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>dbghelp.dll</TargetPath>
       <Link>DebuggerFiles\dbghelp.dll</Link>
     </ContentWithTargetPath>
-    <ContentWithTargetPath Include="..\packages\Microsoft.Debugging.Platform.SymSrv.20240722.1449.0\content\amd64\symsrv.dll">
+    <ContentWithTargetPath Include="..\packages\Microsoft.Debugging.Platform.SymSrv.20240911.1650.0\content\amd64\symsrv.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>symsrv.dll</TargetPath>
       <Link>DebuggerFiles\symsrv.dll</Link>
