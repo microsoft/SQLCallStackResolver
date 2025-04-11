@@ -1,5 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License - see LICENSE file in this repo.
+Remove-Item -force "DIA/*"
 if (-not (Test-Path DIA/Dia2Lib.dll)) {
     pushd "$env:TEMP"
     midl.exe /x64 /I "$env:VSINSTALLDIR/DIA SDK/include" "$env:VSINSTALLDIR/DIA SDK/idl/dia2.idl" /tlb dia2.tlb
@@ -18,5 +19,5 @@ if ((dir "DIA/*").Length -ne 3)
 $diaManifestPath = "DIA/msdia140.dll.manifest"
 (Get-Content $diaManifestPath).Replace("DIA/msdia140.dll", "msdia140.dll") -Replace " description", " threadingModel=`"Both`" description " | Set-Content $diaManifestPath
 
-@(dir "../packages/Microsoft.Debugging.Platform.DbgEng.20240911.1650.0/content/amd64/dbghelp.dll").VersionInfo.ToString()
-@(dir "../packages/Microsoft.Debugging.Platform.SymSrv.20240911.1650.0/content/amd64/symsrv.dll").VersionInfo.ToString()
+@(dir "../packages/Microsoft.Debugging.Platform.DbgEng.20250211.1226.0/content/amd64/dbghelp.dll").VersionInfo.ToString()
+@(dir "../packages/Microsoft.Debugging.Platform.SymSrv.20250211.1226.0/content/amd64/symsrv.dll").VersionInfo.ToString()
