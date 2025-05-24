@@ -96,15 +96,15 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                                     var pdbGuid = reader.GetAttribute("guid");
                                     var pdbAge = reader.GetAttribute("age");
                                     string uniqueModuleName;
-                                    // createe a map of the last mapped module names to handle cases when the frame is "truncated" and the above PDB details are not available
+                                    // Create a map of the last mapped module names to handle cases when the frame is "truncated" and the above PDB details are not available
                                     if (pdbGuid != null && pdbAge != null) {
                                         uniqueModuleName = $"{pdbGuid.Replace("-", string.Empty).ToUpper()}{pdbAge}";
                                         if (latestMappedModuleNames.ContainsKey(moduleName)) latestMappedModuleNames[moduleName] = uniqueModuleName;
                                         else latestMappedModuleNames.Add(moduleName, uniqueModuleName);
                                     } else {
                                         if (!latestMappedModuleNames.TryGetValue(moduleName, out uniqueModuleName)) {
-                                            anyTaskFailed = true;
-                                            return;
+                                            outCallstack.AppendLine(line);
+                                            continue;
                                         }
                                     }
                                     lock (syms) {
