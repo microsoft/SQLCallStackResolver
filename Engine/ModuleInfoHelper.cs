@@ -83,7 +83,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                                 using var sreader = new StringReader(line);
                                 using var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null });
                                 if (reader.Read()) {
-                                    // seems to be XML; process attributes only if all 3 are there
+                                    // seems to be XML; start reading attributes
                                     var moduleNameAttributeVal = reader.GetAttribute("module");
                                     if (string.IsNullOrEmpty(moduleNameAttributeVal)) moduleNameAttributeVal = reader.GetAttribute("name");
                                     var moduleName = Path.GetFileNameWithoutExtension(moduleNameAttributeVal);
@@ -96,15 +96,17 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                                     var pdbGuid = reader.GetAttribute("guid");
                                     var pdbAge = reader.GetAttribute("age");
                                     string uniqueModuleName;
-                                    // createe a map of the last mapped module names to handle cases when the frame is "truncated" and the above PDB details are not available
+                                    // Create a map of the last mapped module names to handle future cases when the frame is "truncated" and the above PDB details are not available
                                     if (pdbGuid != null && pdbAge != null) {
+                                        // PDB GUID and age are valid
                                         uniqueModuleName = $"{pdbGuid.Replace("-", string.Empty).ToUpper()}{pdbAge}";
                                         if (latestMappedModuleNames.ContainsKey(moduleName)) latestMappedModuleNames[moduleName] = uniqueModuleName;
                                         else latestMappedModuleNames.Add(moduleName, uniqueModuleName);
                                     } else {
+                                        // This frame / line is incomplete to the extent that we don't even have the PDB GUID and / or the PDB age - return the input as-is
                                         if (!latestMappedModuleNames.TryGetValue(moduleName, out uniqueModuleName)) {
-                                            anyTaskFailed = true;
-                                            return;
+                                            outCallstack.AppendLine(line);
+                                            continue;
                                         }
                                     }
                                     lock (syms) {
