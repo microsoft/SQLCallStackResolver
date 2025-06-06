@@ -651,6 +651,18 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             Assert.AreEqual(expected.Trim(), ret.Trim());
         }
 
+        /// End-to-end test with XE histogram target and module+offset frames.
+        [TestMethod][TestCategory("Unit")]
+        public async Task E2EHistogramOffsets() {
+            using var csr = new StackResolver();
+            using var cts = new CancellationTokenSource();
+            var pdbPath = @"..\..\..\Tests\TestCases\TestOrdinal";
+            var input = "<HistogramTarget truncated=\"0\" buckets=\"256\">\r\n  <Slot count=\"108633\">\r\n    <value>sqldk.dll+40609\r\nsqldk.dll+40609</value>\r\n  </Slot>\r\n<Slot count=\"108631\">\r\n    <value>sqldk.dll+40609\r\nsqldk.dll+40609</value>\r\n  </Slot>\r\n</HistogramTarget>";
+            var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(input, true, cts), pdbPath, false, null, true, false, false, true, false, false, null, cts);
+            var expected = "Slot_0	[count:108633]:\r\n\r\nsqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644\r\nsqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644\r\n\r\nSlot_1\t[count:108631]:\r\n\r\nsqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644\r\nsqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644";
+            Assert.AreEqual(expected.Trim(), ret.Trim());
+        }
+
         [TestMethod][TestCategory("Unit")] public async Task E2ESymSrvXMLFramesMultiHistogram() {
             using var csr = new StackResolver();
             using var cts = new CancellationTokenSource();
@@ -678,7 +690,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 "Annotation for histogram #2    <HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value>0x00007FFEAC0F80CF  0x00007FFEAC1EE447  0x00007FFEAC1EE6F5</value></Slot></HistogramTarget>";
 
             var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(input, true, cts), pdbPath, false, null, false, false, false, true, false, false, null, cts);
-            var expected = "Annotation for histogram #1\r\nSlot_0	[count:5]:\r\n\r\nsqldk!XeSosPkg::spinlock_backoff::Publish+425\r\nsqldk!SpinlockBase::Sleep+182\r\nsqlmin!Spinlock<143,7,1>::SpinToAcquireWithExponentialBackoff+363\r\nsqlmin!lck_lockInternal+2042\r\nAnnotation for histogram #2\r\nSlot_1	[count:5]:\r\n\r\nsqlmin!lck_lockInternal+2042\r\nsqlmin!MDL::LockGenericLocal+382\r\nsqlmin!MDL::LockGenericIdsLocal+101";
+            var expected = "Annotation for histogram #1\r\nSlot_0	[count:5]:\r\n\r\nsqldk!XeSosPkg::spinlock_backoff::Publish+425\r\nsqldk!SpinlockBase::Sleep+182\r\nsqlmin!Spinlock<143,7,1>::SpinToAcquireWithExponentialBackoff+363\r\nsqlmin!lck_lockInternal+2042\r\n\r\nAnnotation for histogram #2\r\nSlot_1	[count:5]:\r\n\r\nsqlmin!lck_lockInternal+2042\r\nsqlmin!MDL::LockGenericLocal+382\r\nsqlmin!MDL::LockGenericIdsLocal+101";
             Assert.AreEqual(expected.Trim(), ret.Trim());
         }
 
