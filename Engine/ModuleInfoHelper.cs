@@ -134,7 +134,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         // pass-through this line as it is either non-XML, 0-length or whitespace-only
                         outCallstack.AppendLine(line);
                     }
-                    currItem.Callstack = outCallstack.ToString();
+                    currItem.Callstack = outCallstack.ToString().Trim();
                 }
             }));
 

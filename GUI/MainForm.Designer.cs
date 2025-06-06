@@ -360,6 +360,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             this.includeOffsets.AccessibleDescription = "Whether to include offsets into functions in the output";
             this.includeOffsets.AccessibleName = "includeOffsets";
             this.includeOffsets.AutoSize = true;
+            this.includeOffsets.Checked = true;
+            this.includeOffsets.CheckState = System.Windows.Forms.CheckState.Checked;
             this.includeOffsets.Location = new System.Drawing.Point(462, 41);
             this.includeOffsets.Margin = new System.Windows.Forms.Padding(2);
             this.includeOffsets.Name = "includeOffsets";

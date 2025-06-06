@@ -382,7 +382,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                     foreach (var currstack in listOfCallStacks) {
                         if (cts.IsCancellationRequested) { StatusMessage = OperationCanceled; PercentComplete = 0; return OperationCanceled; }
-                        if (!string.IsNullOrEmpty(currstack.Resolvedstack)) finalCallstack.Append(currstack.Resolvedstack);
+                        if (!string.IsNullOrEmpty(currstack.Resolvedstack)) finalCallstack.AppendLine(currstack.Resolvedstack);
                         else if (!string.IsNullOrEmpty(currstack.Callstack)) {
                             finalCallstack = new StringBuilder("WARNING: No output to show. This may indicate an internal error!");
                             break;
@@ -477,7 +477,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                                             string callstackText = string.Empty;
                                             if (reader.ReadToDescendant("value")) {
                                                 reader.Read();
-                                                if (XmlNodeType.Text == reader.NodeType || XmlNodeType.CDATA == reader.NodeType) callstackText = reader.Value;
+                                                if (XmlNodeType.Text == reader.NodeType || XmlNodeType.CDATA == reader.NodeType) callstackText = reader.Value.Trim();
                                             }
                                             if (string.IsNullOrEmpty(callstackText)) throw new XmlException();
                                             allStacks.Add(new StackDetails(callstackText, framesOnSingleLine, annotation, $"Slot_{stacknum}\t[count:{slotcount}]:"));
