@@ -25,7 +25,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         private static readonly RegexOptions rgxOptions = RegexOptions.ExplicitCapture | RegexOptions.Compiled;
         private static readonly Regex rgxModuleOffsetFrame = new(@"((?<framenum>[0-9a-fA-F]+)\s+)*(?<module>\w+)(\.(dll|exe))*\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*", rgxOptions);
-        private static readonly Regex rgxVAOnly = new (@"^\s*0[xX](?<vaddress>[0-9a-fA-F]+)\s*$", rgxOptions);
+        private static readonly Regex rgxVAOnly = new (@"\s*0[xX](?<vaddress>[0-9a-fA-F]+)\s*", rgxOptions);
         private static readonly Regex rgxAlreadySymbolizedFrame = new (@"((?<framenum>\d+)\s+)*(?<module>\w+)(\.(dll|exe))*!(?<symbolizedfunc>.+?)\s*\+\s*(0[xX])*(?<offset>[0-9a-fA-F]+)\s*", rgxOptions);
         private static readonly Regex rgxmoduleaddress = new (@"^\s*(?<filepath>.+)(\t+| +)(?<baseaddress>(0x)?[0-9a-fA-F`]+)\s*$", RegexOptions.Multiline);
 
@@ -69,6 +69,16 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 if (Regex.Match(text, @"\<Slot.+\<\/Slot\>").Success) return true;  // the content within a given histogram slot is on a single line, so is single-line
                 if (Regex.Match(text, @"0x.+0x.+").Success) return true;
             }
+            return false;
+        }
+
+        public bool IsInputVAOnly(string text) {
+            text = System.Net.WebUtility.HtmlDecode(text);  // decode XML markup if present
+            if (Regex.Match(text, @"\<frame", RegexOptions.IgnoreCase).Success || rgxAlreadySymbolizedFrame.Matches(text).Count > 0 || rgxModuleOffsetFrame.Matches(text).Count > 0)
+                return false;
+
+            if (rgxVAOnly.Matches(text).Count > 0) return true;
+
             return false;
         }
 
@@ -250,7 +260,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         /// </summary>
         public bool ProcessBaseAddresses(string baseAddressesString) {
             bool retVal = true;
-            if (string.IsNullOrEmpty(baseAddressesString)) return true; // not a true error condition so we are okay
+            LoadedModules.Clear();  // regardless of user input, we always clear the loaded modules list first
+
+            if (string.IsNullOrEmpty(baseAddressesString)) return true;
+
             LoadedModules.Clear();
             var mcmodules = rgxmoduleaddress.Matches(baseAddressesString);
             if (!mcmodules.Cast<Match>().Any()) return false; // it is likely that we have malformed input, cannot ignore this so return false.
