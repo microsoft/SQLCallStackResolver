@@ -77,6 +77,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 return false;
             }
 
+            if (this._resolver.IsInputVAOnly(callStackInput.Text) && string.IsNullOrEmpty(this._baseAddressesString) && DialogResult.No == MessageBox.Show(this,
+                    "The input provided seems to be comprised entirely of virtual addresses only, but the required corresponding module information has not been provided. Do you still want to attempt to process this input?",
+                    "Missing module base information", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)) return false;
+
             var res = this._resolver.ProcessBaseAddresses(this._baseAddressesString);
             if (!res) {
                 MessageBox.Show(this, "Cannot interpret the module base address information. Make sure you just have the output of the following query (no column headers, no other columns) copied from SSMS using the Grid Results\r\n\r\nselect name, base_address from sys.dm_os_loaded_modules where name not like '%.rll'",
@@ -284,7 +288,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         private async void MainForm_Load(object sender, EventArgs e) {
-            MessageBox.Show(this, "Copyright (c) 2022 Microsoft Corporation. All rights reserved.\r\n\r\nTHIS SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\r\n\r\nUSAGE OF THE MICROSOFT SYMBOL SERVER IS COVERED BY THE LICENSE TERMS PUBLISHED AT https://docs.microsoft.com/legal/windows-sdk/microsoft-symbol-server-license-terms.", "SQLCallStackResolver - Legal Notice", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(this, "Copyright (c) 2025 Microsoft Corporation. All rights reserved.\r\n\r\nTHIS SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\r\n\r\nUSAGE OF THE MICROSOFT SYMBOL SERVER IS COVERED BY THE LICENSE TERMS PUBLISHED AT https://docs.microsoft.com/legal/windows-sdk/microsoft-symbol-server-license-terms.", "SQLCallStackResolver - Legal Notice", MessageBoxButtons.OK, MessageBoxIcon.Information);
             DateTime latestReleaseDateTimeServer = DateTime.MinValue;
             DateTime latestReleaseDateTimeLocal = DateTime.MinValue;
             var latestReleaseURLs = ConfigurationManager.AppSettings["LatestReleaseURLs"].Split(';');
