@@ -665,6 +665,24 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             Assert.AreEqual(expected.Trim(), ret.Trim());
         }
 
+        /// End-to-end test with XE histogram target and XML frames with no CDATA section and the <frame> elements directly inside.
+        [TestMethod][TestCategory("Unit")]
+        public async Task E2ESymSrvXMLFramesHistogramNoCDATA() {
+            using var csr = new StackResolver();
+            using var cts = new CancellationTokenSource();
+            var pdbPath = @"srv*https://msdl.microsoft.com/download/symbols";
+            var input = "<HistogramTarget truncated=\"0\" buckets=\"256\"><Slot count=\"5\"><value><frame id=\"00\" pdb=\"ntdll.pdb\" age=\"1\" guid=\"C374E059-5793-9B92-6525-386A66A2D3F5\" module=\"ntdll.dll\" rva=\"0x9F7E4\" />" +
+"<frame id=\"01\" pdb=\"kernelbase.pdb\" age=\"1\" guid=\"E77E26E7-D1C4-72BB-2C05-DD17624A9E58\" module=\"KERNELBASE.dll\" rva=\"0x38973\" />" +
+"<frame id=\"02\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x40609\" />" +
+"</value></Slot><Slot count=\"3\"><value><frame id=\"00\" pdb=\"vcruntime140.amd64.pdb\" age=\"1\" guid=\"AF138C3F-2933-4097-8883-C1071B13375E\" module=\"VCRUNTIME140.dll\" rva=\"0xB8F0\" />" +
+"<frame id=\"01\" pdb=\"SqlDK.pdb\" age=\"2\" guid=\"6a193443-3512-464b-8b8e-d905ad930ee6\" module=\"sqldk.dll\" rva=\"0x2249f\" />" +
+"</value></Slot></HistogramTarget>";
+
+            var ret = await csr.ResolveCallstacksAsync(await csr.GetListofCallStacksAsync(input, false, cts), pdbPath, false, null, false, true, false, true, false, false, null, cts);
+            var expected = "Slot_0	[count:5]:\r\n\r\n00 ntdll!NtWaitForSingleObject+20\r\n01 KERNELBASE!WaitForSingleObjectEx+147\r\n02 sqldk!MemoryClerkInternal::AllocatePagesWithFailureMode+644\r\n\r\nSlot_1	[count:3]:\r\n\r\n00 VCRUNTIME140!__C_specific_handler+160	(d:\\agent\\_work\\2\\s\\src\\vctools\\crt\\vcruntime\\src\\eh\\riscchandler.cpp:290)\r\n01 sqldk!Spinlock<244,2,1>::SpinToAcquireWithExponentialBackoff+349";
+            Assert.AreEqual(expected.Trim(), ret.Trim());
+        }
+
         /// End-to-end test with XE histogram target and module+offset frames.
         [TestMethod][TestCategory("Unit")] public async Task E2EHistogramAddresses() {
             using var csr = new StackResolver();

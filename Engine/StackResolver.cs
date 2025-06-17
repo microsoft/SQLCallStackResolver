@@ -440,6 +440,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                         inputCallstackText = Regex.Replace(inputCallstackText, @"(?<prefix>.*?)(?<starttag>\<HistogramTarget)(?<trailing>.+?\<\/HistogramTarget\>)",
                             (Match m) => { return $"{m.Groups["starttag"].Value} annotation=\"{System.Net.WebUtility.HtmlEncode(m.Groups["prefix"].Value.Replace("\r", string.Empty).Replace("\n", string.Empty).Trim())}\" {m.Groups["trailing"].Value}"; }
                             , RegexOptions.Singleline);
+
+                        // handle the case seen in SQL Server 2022+ where there is no CDATA section in the HistogramTarget XML
+                        if (!inputCallstackText.Contains("<![CDATA[")) inputCallstackText = inputCallstackText.Replace("<value><frame", "<value><![CDATA[<frame").Replace(" /></value>", " />]]></value>");
+
                         inputCallstackText = $"<Histograms>{inputCallstackText}</Histograms>";
                     }
                 }
