@@ -112,12 +112,12 @@
     </ContentWithTargetPath>
   </ItemGroup>
   <ItemGroup>
-    <ContentWithTargetPath Include="..\packages\Microsoft.Debugging.Platform.DbgEng.20250411.1210.0\content\amd64\dbghelp.dll">
+    <ContentWithTargetPath Include="..\packages\Microsoft.Debugging.Platform.DbgEng.20250611.1057.0\content\amd64\dbghelp.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>dbghelp.dll</TargetPath>
       <Link>DebuggerFiles\dbghelp.dll</Link>
     </ContentWithTargetPath>
-    <ContentWithTargetPath Include="..\packages\Microsoft.Debugging.Platform.SymSrv.20250411.1210.0\content\amd64\symsrv.dll">
+    <ContentWithTargetPath Include="..\packages\Microsoft.Debugging.Platform.SymSrv.20250611.1057.0\content\amd64\symsrv.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>symsrv.dll</TargetPath>
       <Link>DebuggerFiles\symsrv.dll</Link>
@@ -128,6 +128,8 @@
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Microsoft.Debugging.Platform.DbgEng.20250611.1057.0\build\Microsoft.Debugging.Platform.DbgEng.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Debugging.Platform.DbgEng.20250611.1057.0\build\Microsoft.Debugging.Platform.DbgEng.targets'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Debugging.Platform.SymSrv.20250611.1057.0\build\Microsoft.Debugging.Platform.SymSrv.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Debugging.Platform.SymSrv.20250611.1057.0\build\Microsoft.Debugging.Platform.SymSrv.targets'))" />
   </Target>
   <PropertyGroup>
     <PreBuildEvent>cd $(ProjectDir)
@@ -138,4 +140,6 @@ type ..\utils\import-vsenv.ps1 ..\utils\getBuildPreReqs.ps1 2&gt;nul | powershel
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
   </PropertyGroup>
+  <Import Project="..\packages\Microsoft.Debugging.Platform.DbgEng.20250611.1057.0\build\Microsoft.Debugging.Platform.DbgEng.targets" Condition="Exists('..\packages\Microsoft.Debugging.Platform.DbgEng.20250611.1057.0\build\Microsoft.Debugging.Platform.DbgEng.targets')" />
+  <Import Project="..\packages\Microsoft.Debugging.Platform.SymSrv.20250611.1057.0\build\Microsoft.Debugging.Platform.SymSrv.targets" Condition="Exists('..\packages\Microsoft.Debugging.Platform.SymSrv.20250611.1057.0\build\Microsoft.Debugging.Platform.SymSrv.targets')" />
 </Project>
