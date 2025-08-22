@@ -81,6 +81,20 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     "The input provided seems to be comprised entirely of virtual addresses only, but the required corresponding module information has not been provided. Do you still want to attempt to process this input?",
                     "Missing module base information", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)) return false;
 
+            if (!this._resolver.IsInputVAOnly(callStackInput.Text) && !string.IsNullOrEmpty(this._baseAddressesString)) {
+                var dlgRes = MessageBox.Show(this,
+                    "Module base address information has been provided, but the input format probably does not need that information. Do you still want to attempt to process this input?",
+                    "Module base address information not needed", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (DialogResult.No == dlgRes) {
+                    dlgRes = MessageBox.Show(this,
+                    "Would you like to clear out the module base address info to avoid any confusion?",
+                    "Clear module base address information", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                    if (DialogResult.Yes == dlgRes) this._baseAddressesString = string.Empty;
+                    else return false;
+                }
+                ;
+            }
+
             var res = this._resolver.ProcessBaseAddresses(this._baseAddressesString);
             if (!res) {
                 MessageBox.Show(this, "Cannot interpret the module base address information. Make sure you just have the output of the following query (no column headers, no other columns) copied from SSMS using the Grid Results\r\n\r\nselect name, base_address from sys.dm_os_loaded_modules where name not like '%.rll'",
