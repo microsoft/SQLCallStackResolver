@@ -39,22 +39,22 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Convert virtual-address only type frames to their module+offset format
-        private string[] PreProcessVAs(string[] callStackLines, CancellationTokenSource cts) {
-            string[] retval = new string[callStackLines.Length];
-            int frameNum = 0;
+        private List<string> PreProcessVAs(List<string> callStackLines, CancellationTokenSource cts) {
+            var retval = new List<string>(callStackLines.Count);
             foreach (var currentFrame in callStackLines) {
                 if (cts.IsCancellationRequested) return callStackLines;
-                // let's see if this is an VA-only address
+                // Check if the frame is a VA-only address
                 var matchVA = rgxVAOnly.Match(currentFrame);
                 if (matchVA.Success) {
                     ulong virtAddress = Convert.ToUInt64(matchVA.Groups["vaddress"].Value, 16);
-                    retval[frameNum] = TryObtainModuleOffset(virtAddress, out string moduleName, out uint offset)
-                        ? string.Format(CultureInfo.CurrentCulture, "{0}+0x{1:X}", moduleName, offset)
-                        : currentFrame.Trim();
+                    if (TryObtainModuleOffset(virtAddress, out string moduleName, out uint offset)) {
+                        retval.Add(string.Format(CultureInfo.CurrentCulture, "{0}+0x{1:X}", moduleName, offset));
+                    } else {
+                        retval.Add(currentFrame.Trim());
+                    }
+                } else {
+                    retval.Add(currentFrame.Trim());
                 }
-                else retval[frameNum] = currentFrame.Trim();
-
-                frameNum++;
             }
             return retval;
         }
@@ -83,7 +83,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// Runs through each of the frames in a call stack and looks up symbols for each
-        private string ResolveSymbols(Dictionary<string, DiaUtil> _diautils, Dictionary<string, string> moduleNamesMap, string[] callStackLines, string userSuppliedSymPath, string symSrvSymPath, bool searchPDBsRecursively, bool cachePDB, bool includeSourceInfo, bool relookupSource, bool includeOffsets, bool showInlineFrames, List<string> modulesToIgnore, CancellationTokenSource cts) {
+        private string ResolveSymbols(Dictionary<string, DiaUtil> _diautils, Dictionary<string, string> moduleNamesMap, List<string> callStackLines, string userSuppliedSymPath, string symSrvSymPath, bool searchPDBsRecursively, bool cachePDB, bool includeSourceInfo, bool relookupSource, bool includeOffsets, bool showInlineFrames, List<string> modulesToIgnore, CancellationTokenSource cts) {
             var finalCallstack = new StringBuilder();
             int runningFrameNum = int.MinValue;
             foreach (var iterFrame in callStackLines) {

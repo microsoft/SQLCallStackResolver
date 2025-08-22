@@ -13,12 +13,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
         }
 
         /// This function loads DLLs from a specified path, so that we can then build the DLL export's ordinal / address map
-        internal string[] LoadDllsIfApplicable(string[] callstackFrames, bool recurse, List<string> dllPaths) {
+        internal List<string> LoadDllsIfApplicable(List<string> callstackFrames, bool recurse, List<string> dllPaths) {
             if (dllPaths == null) return callstackFrames;
-
-            var processedFrames = new string[callstackFrames.Length];
-            for (var idx = 0; idx < callstackFrames.Length; idx++) {
-                var callstack = callstackFrames[idx];
+            var processedFrames = new List<string>(callstackFrames.Count);
+            foreach (var callstack in callstackFrames) {
                 // first we seek out distinct module names in this call stack
                 // note that such frames will only be seen in the call stack when trace flag 3656 is enabled, but there were no PDBs in the BINN folder
                 // sample frames are given below
@@ -47,7 +45,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                 // finally do a pattern based replace the replace method calls a delegate (ReplaceOrdinalWithRealOffset) which figures
                 // out the start address of the ordinal and then computes the actual offset
-                processedFrames[idx] = fullpattern.Replace(callstack, ReplaceOrdinalWithRealOffset);
+                processedFrames.Add(fullpattern.Replace(callstack, ReplaceOrdinalWithRealOffset));
             }
             return processedFrames;
         }
