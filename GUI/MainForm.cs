@@ -181,7 +181,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
         private void UpdateOperationProgress() {
             this.statusLabel.Text = _resolver.StatusMessage;
-            this.progressBar.Value = _resolver.PercentComplete;
+            this.progressBar.Value = Math.Min(StackResolver.Operation100Percent, _resolver.PercentComplete);
             this.statusStrip.Refresh();
             Application.DoEvents();
         }
