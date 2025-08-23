@@ -24,14 +24,21 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             set { this._callStack = value; }
         }
 
-        public string[] CallstackFrames {
+        public List<string> CallstackFrames {
             get {
                 // sometimes we see call stacks which are arranged horizontally (this typically is seen when copy-pasting directly
                 // from the SSMS XEvent window (copying the callstack field without opening it in its own viewer)
                 // in that case, space is a valid delimiter, and we need to support that as an option
                 var delims = this._framesOnSingleLine ? new char[] { '\t', '\n' } : new char[] { '\n' };
                 if (!this._relookupSource && this._framesOnSingleLine) delims = delims.Append(' ').ToArray();
-                return this._callStack.Replace("\r", string.Empty).Split(delims);
+                var result = new List<string>();
+                using (var reader = new StringReader(this._callStack.Replace("\r", string.Empty))) {
+                    string line;
+                    while ((line = reader.ReadLine()) != null) {
+                        result.AddRange(line.Split(delims, StringSplitOptions.RemoveEmptyEntries));
+                    }
+                }
+                return result;
             }
         }
         public string Resolvedstack {

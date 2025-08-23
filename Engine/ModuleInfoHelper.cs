@@ -13,7 +13,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             bool anyTaskFailed = false;
             await Task.Run(() => Parallel.ForEach(listOfCallStacks.Where(c => c.Callstack.Contains(",")).Select(c => c.CallstackFrames), lines => {
                 if (cts.IsCancellationRequested) return;
-                Contract.Requires(lines.Length > 0);
+                Contract.Requires(lines.Count > 0);
                 foreach (var line in lines) {
                     if (cts.IsCancellationRequested) return;
                     string moduleName = null, pdbName = null;
@@ -75,26 +75,27 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                     // next, replace any pre-post stuff from the XML frame lines
                     currItem.Callstack = Regex.Replace(currItem.Callstack, @"(?<prefix>.*?)(?<retain>\<frame.+\/\>)(?<suffix>.*?)", "${retain}");
                     if (cts.IsCancellationRequested) return;
-
-                    foreach (var line in currItem.Callstack.Split('\n')) {
+                    using var reader = new StringReader(currItem.Callstack);
+                    string line;
+                    while ((line = reader.ReadLine()) != null) {
                         if (cts.IsCancellationRequested) return;
                         if (!string.IsNullOrWhiteSpace(line) && line.StartsWith("<frame")) { // only attempt further formal XML parsing if a simple text check works
                             try {
                                 using var sreader = new StringReader(line);
-                                using var reader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null });
-                                if (reader.Read()) {
+                                using var xmlReader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null });
+                                if (xmlReader.Read()) {
                                     // seems to be XML; start reading attributes
-                                    var moduleNameAttributeVal = reader.GetAttribute("module");
-                                    if (string.IsNullOrEmpty(moduleNameAttributeVal)) moduleNameAttributeVal = reader.GetAttribute("name");
+                                    var moduleNameAttributeVal = xmlReader.GetAttribute("module");
+                                    if (string.IsNullOrEmpty(moduleNameAttributeVal)) moduleNameAttributeVal = xmlReader.GetAttribute("name");
                                     var moduleName = Path.GetFileNameWithoutExtension(moduleNameAttributeVal);
-                                    var addressAttributeVal = reader.GetAttribute("address");
+                                    var addressAttributeVal = xmlReader.GetAttribute("address");
                                     ulong addressIfPresent = string.IsNullOrEmpty(addressAttributeVal) ? ulong.MinValue : Convert.ToUInt64(addressAttributeVal, 16);
-                                    var rvaAttributeVal = reader.GetAttribute("rva");
+                                    var rvaAttributeVal = xmlReader.GetAttribute("rva");
                                     ulong rvaIfPresent = string.IsNullOrEmpty(rvaAttributeVal) ? ulong.MinValue : Convert.ToUInt64(rvaAttributeVal, 16);
                                     ulong calcBaseAddress = ulong.MinValue;
                                     if (rvaIfPresent != ulong.MinValue && addressIfPresent != ulong.MinValue) calcBaseAddress = addressIfPresent - rvaIfPresent;
-                                    var pdbGuid = reader.GetAttribute("guid");
-                                    var pdbAge = reader.GetAttribute("age");
+                                    var pdbGuid = xmlReader.GetAttribute("guid");
+                                    var pdbAge = xmlReader.GetAttribute("age");
                                     string uniqueModuleName;
                                     // Create a map of the last mapped module names to handle future cases when the frame is "truncated" and the above PDB details are not available
                                     if (pdbGuid != null && pdbAge != null) {
@@ -112,7 +113,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                                     lock (syms) {
                                         if (syms.TryGetValue(uniqueModuleName, out var existingEntry)) {
                                             if (ulong.MinValue == existingEntry.CalculatedModuleBaseAddress) existingEntry.CalculatedModuleBaseAddress = calcBaseAddress;
-                                        } else syms.Add(uniqueModuleName, new Symbol() { PDBName = reader.GetAttribute("pdb").ToLower(), ModuleName = moduleName, PDBAge = int.Parse(pdbAge), PDBGuid = Guid.Parse(pdbGuid).ToString("N").ToUpper(), CalculatedModuleBaseAddress = calcBaseAddress });
+                                        } else syms.Add(uniqueModuleName, new Symbol() { PDBName = xmlReader.GetAttribute("pdb").ToLower(), ModuleName = moduleName, PDBAge = int.Parse(pdbAge), PDBGuid = Guid.Parse(pdbGuid).ToString("N").ToUpper(), CalculatedModuleBaseAddress = calcBaseAddress });
                                     }
                                     string rvaAsIsOrDerived = null;
                                     if (ulong.MinValue != rvaIfPresent) rvaAsIsOrDerived = rvaAttributeVal;
@@ -121,7 +122,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
 
                                     if (string.IsNullOrEmpty(rvaAsIsOrDerived)) { throw new NullReferenceException(); }
 
-                                    var frameNumHex = string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:x2}", int.Parse(reader.GetAttribute("id")));
+                                    var frameNumHex = string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:x2}", int.Parse(xmlReader.GetAttribute("id")));
                                     // transform the XML into a simple module+offset notation
                                     outCallstack.AppendFormat($"{frameNumHex} {uniqueModuleName}+{rvaAsIsOrDerived}{Environment.NewLine}");
                                     continue;
