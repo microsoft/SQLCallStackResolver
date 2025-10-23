@@ -28,7 +28,6 @@ jobs:
         path: |
           Target/Release
           !Target/Release/*.xml
-          !Target/Release/Tests
     - name: Prep for running tests
       run: ./downloadsyms.ps1
       working-directory: Tests/TestCases
