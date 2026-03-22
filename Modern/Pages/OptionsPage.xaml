@@ -1,0 +1,45 @@
+<UserControl x:Class="Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.OptionsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4"
+                   Text="Step 3: Output Options"/>
+        <TextBlock Grid.Row="0" FontSize="11" Foreground="Gray" Margin="0,24,0,8"
+                   Text="Configure how the resolved callstacks should be formatted."/>
+
+        <GroupBox Grid.Row="1" Header="Output Formatting" Padding="6" Margin="0,0,0,8">
+            <StackPanel>
+                <CheckBox Content="Include source file and line numbers (requires private PDBs)" Margin="0,0,0,6"
+                          IsChecked="{Binding IncludeLineNumbers}"/>
+                <CheckBox Content="Include function offsets" Margin="0,0,0,6"
+                          IsChecked="{Binding IncludeOffsets}"/>
+                <CheckBox Content="Show inline frames" Margin="0,0,0,6"
+                          IsChecked="{Binding ShowInlineFrames}"/>
+            </StackPanel>
+        </GroupBox>
+
+        <GroupBox Grid.Row="2" Header="Output Destination" Padding="6" Margin="0,0,0,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="Save to file:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBox Grid.Column="1" Text="{Binding OutputFilePath, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip="Leave empty to display output in the results area"/>
+                <Button Grid.Column="2" Content="Browse..." Width="80" Margin="4,0,0,0" Click="BrowseOutputPath_Click"/>
+            </Grid>
+        </GroupBox>
+
+        <TextBlock Grid.Row="3" FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap"
+                   Text="Tip: For very large inputs, saving output to a file is recommended to avoid truncation. Leave the file path empty to display results in the application."/>
+    </Grid>
+</UserControl>

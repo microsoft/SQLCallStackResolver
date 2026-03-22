@@ -1,0 +1,64 @@
+<UserControl x:Class="Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.WizardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern">
+    <UserControl.Resources>
+        <local:StepToBoldConverter x:Key="StepToBold"/>
+        <local:StepToBrushConverter x:Key="StepToBrush"/>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="180"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Left sidebar: Step indicators -->
+        <Border Grid.Column="0" Background="#F0F0F0" Padding="12,16" CornerRadius="0">
+            <StackPanel>
+                <TextBlock Text="Steps" FontSize="14" FontWeight="Bold" Margin="0,0,0,12"/>
+
+                <TextBlock Text="1. Provide Input" Margin="0,0,0,10" Cursor="Hand"
+                           FontWeight="{Binding CurrentStep, Converter={StaticResource StepToBold}, ConverterParameter=0}"
+                           Foreground="{Binding CurrentStep, Converter={StaticResource StepToBrush}, ConverterParameter=0}"
+                           MouseLeftButtonDown="StepLabel_Click" Tag="0"/>
+
+                <TextBlock Text="2. Configure Symbols" Margin="0,0,0,10" Cursor="Hand"
+                           FontWeight="{Binding CurrentStep, Converter={StaticResource StepToBold}, ConverterParameter=1}"
+                           Foreground="{Binding CurrentStep, Converter={StaticResource StepToBrush}, ConverterParameter=1}"
+                           MouseLeftButtonDown="StepLabel_Click" Tag="1"/>
+
+                <TextBlock Text="3. Output Options" Margin="0,0,0,10" Cursor="Hand"
+                           FontWeight="{Binding CurrentStep, Converter={StaticResource StepToBold}, ConverterParameter=2}"
+                           Foreground="{Binding CurrentStep, Converter={StaticResource StepToBrush}, ConverterParameter=2}"
+                           MouseLeftButtonDown="StepLabel_Click" Tag="2"/>
+
+                <TextBlock Text="4. Resolve" Margin="0,0,0,10" Cursor="Hand"
+                           FontWeight="{Binding CurrentStep, Converter={StaticResource StepToBold}, ConverterParameter=3}"
+                           Foreground="{Binding CurrentStep, Converter={StaticResource StepToBrush}, ConverterParameter=3}"
+                           MouseLeftButtonDown="StepLabel_Click" Tag="3"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Right content: Current page + navigation -->
+        <DockPanel Grid.Column="1" Margin="12,0,0,0">
+            <!-- Bottom navigation -->
+            <Grid DockPanel.Dock="Bottom" Margin="0,8,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" Content="&lt; Back" Width="80" Padding="4,6"
+                        Command="{Binding PreviousStepCommand}"/>
+                <Button Grid.Column="2" Content="Next &gt;" Width="80" Padding="4,6" Margin="0,0,8,0"
+                        Command="{Binding NextStepCommand}"/>
+                <Button Grid.Column="3" Content="Resolve!" Width="90" Padding="4,6" FontWeight="Bold"
+                        Command="{Binding ResolveCommand}"/>
+            </Grid>
+
+            <!-- Page content area -->
+            <ContentControl x:Name="PageContent"/>
+        </DockPanel>
+    </Grid>
+</UserControl>

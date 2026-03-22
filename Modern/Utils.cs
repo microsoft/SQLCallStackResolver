@@ -1,0 +1,54 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License - see LICENSE file in this repo.
+namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
+    internal class Utils {
+        internal static async Task<bool> DownloadFromUrl(string url, string outFilename, DownloadProgress progress, CancellationTokenSource cts) {
+            if (string.IsNullOrEmpty(url)) return false;
+            try {
+                using var client = new HttpClient();
+                using var req = new HttpRequestMessage(HttpMethod.Get, url);
+                using var res = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+                res.EnsureSuccessStatusCode();
+                using var httpStream = await res.Content.ReadAsStreamAsync();
+                double totalBytesRead = 0;
+                var expectedTotalBytes = res.Content.Headers.ContentLength;
+                if (httpStream is not null && expectedTotalBytes > 0) {
+                    using var outFS = new FileStream(outFilename, FileMode.OpenOrCreate);
+                    outFS.SetLength(0);
+                    var buffer = new byte[4096];
+                    while (true) {
+                        if (cts.IsCancellationRequested) break;
+                        var bytesRead = await httpStream.ReadAsync(buffer, 0, buffer.Length);
+                        if (bytesRead == 0) break;
+                        outFS.Write(buffer, 0, bytesRead);
+                        totalBytesRead += bytesRead;
+                        progress.Percent = expectedTotalBytes > 0 ? (int)(totalBytesRead / expectedTotalBytes * 100.0) : 0;
+                    }
+                    await outFS.FlushAsync();
+                }
+                return true;
+            } catch (IOException) { } catch (HttpRequestException) { } catch (NotSupportedException) { }
+            return false;
+        }
+
+        internal static async Task<string> GetTextFromUrl(string url) {
+            if (string.IsNullOrEmpty(url)) return null;
+            try {
+                using var client = new HttpClient();
+                using var req = new HttpRequestMessage(HttpMethod.Get, url);
+                using var res = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+                res.EnsureSuccessStatusCode();
+                using var ms = new MemoryStream();
+                await res.Content.CopyToAsync(ms);
+                ms.Seek(0, SeekOrigin.Begin);
+                using var sr = new StreamReader(ms);
+                return sr.ReadToEnd();
+            } catch (HttpRequestException) { } catch (NotSupportedException) { }
+            return null;
+        }
+    }
+
+    internal class DownloadProgress {
+        internal int Percent;
+    }
+}
