@@ -9,10 +9,20 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
             DataContext = _viewModel;
             WizardRadio.IsChecked = _viewModel.IsWizardMode;
             ClassicRadio.IsChecked = !_viewModel.IsWizardMode;
+
+            // Initialize theme from system setting
+            bool isDark = DwmInterop.IsSystemDarkTheme();
+            ApplyTheme(isDark);
+            ThemeToggle.IsChecked = isDark;
+
             Loaded += MainWindow_Loaded;
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e) {
+            // Apply DWM effects after window handle is available
+            DwmInterop.ApplyRoundedCorners(this);
+            DwmInterop.ApplyMicaOrAcrylic(this);
+
             MessageBox.Show(this,
                 "Copyright (c) 2025 Microsoft Corporation. All rights reserved.\r\n\r\n" +
                 "THIS SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, " +
@@ -30,6 +40,22 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
             }
 
             await _viewModel.CheckForUpdatesAsync();
+        }
+
+        private void ApplyTheme(bool isDark) {
+            ModernWpf.ThemeManager.Current.ApplicationTheme = isDark
+                ? ModernWpf.ApplicationTheme.Dark
+                : ModernWpf.ApplicationTheme.Light;
+            DwmInterop.ApplyImmersiveDarkMode(this, isDark);
+            // Sun icon for light mode, Moon for dark mode
+            ThemeIcon.Text = isDark ? "\uE706" : "\uE708";
+        }
+
+        private void ThemeToggle_Click(object sender, RoutedEventArgs e) {
+            bool isDark = ThemeToggle.IsChecked == true;
+            ApplyTheme(isDark);
+            // Re-apply backdrop after theme change
+            DwmInterop.ApplyMicaOrAcrylic(this);
         }
 
         private void WizardRadio_Checked(object sender, RoutedEventArgs e) {

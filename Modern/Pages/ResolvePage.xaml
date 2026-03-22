@@ -19,11 +19,21 @@
                    Text="Click Resolve to symbolize the callstacks. Results will appear below."/>
 
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
-            <Button Content="Resolve Callstacks!" FontWeight="Bold" Padding="16,6"
-                    Command="{Binding ResolveCommand}" Margin="0,0,8,0"/>
-            <Button Content="Cancel" Padding="16,6"
+            <Button FontWeight="Bold" Padding="16,6"
+                    Command="{Binding ResolveCommand}" Margin="0,0,8,0">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock Text="Resolve Callstacks!" FontWeight="Bold"/>
+                </StackPanel>
+            </Button>
+            <Button Padding="16,6"
                     Command="{Binding CancelCommand}"
-                    Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVis}}"/>
+                    Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVis}}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock Text="Cancel"/>
+                </StackPanel>
+            </Button>
         </StackPanel>
 
         <TextBox Grid.Row="2" IsReadOnly="True" AcceptsReturn="True"

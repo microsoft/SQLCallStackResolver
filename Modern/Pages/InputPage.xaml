@@ -22,10 +22,20 @@
                  AllowDrop="True" PreviewDragOver="CallStackInput_DragOver" Drop="CallStackInput_Drop"/>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,0">
-            <Button Content="Import XEL file(s)..." Width="130" Margin="0,0,8,0" Click="LoadXEL_Click"
-                    IsEnabled="{Binding IsNotProcessing}"/>
-            <Button Content="Paste from clipboard" Width="140" Margin="0,0,8,0"
-                    Command="{Binding PasteFromClipboardCommand}"/>
+            <Button Margin="0,0,8,0" Click="LoadXEL_Click" Padding="8,4"
+                    IsEnabled="{Binding IsNotProcessing}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xED25;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock Text="Import XEL file(s)..."/>
+                </StackPanel>
+            </Button>
+            <Button Margin="0,0,8,0" Padding="8,4"
+                    Command="{Binding PasteFromClipboardCommand}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE77F;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock Text="Paste from clipboard"/>
+                </StackPanel>
+            </Button>
         </StackPanel>
 
         <GroupBox Grid.Row="3" Header="Input Options" Margin="0,8,0,0" Padding="6">

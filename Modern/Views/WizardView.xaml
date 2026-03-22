@@ -13,29 +13,45 @@
         </Grid.ColumnDefinitions>
 
         <!-- Left sidebar: Step indicators -->
-        <Border Grid.Column="0" Background="#F0F0F0" Padding="12,16" CornerRadius="0">
+        <Border Grid.Column="0" Background="{DynamicResource SystemControlPageBackgroundAltHighBrush}" Padding="12,16" CornerRadius="4,0,0,4">
             <StackPanel>
                 <TextBlock Text="Steps" FontSize="14" FontWeight="Bold" Margin="0,0,0,12"/>
 
-                <TextBlock Text="1. Provide Input" Margin="0,0,0,10" Cursor="Hand"
-                           FontWeight="{Binding CurrentStep, Converter={StaticResource StepToBold}, ConverterParameter=0}"
-                           Foreground="{Binding CurrentStep, Converter={StaticResource StepToBrush}, ConverterParameter=0}"
-                           MouseLeftButtonDown="StepLabel_Click" Tag="0"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10" Cursor="Hand"
+                            MouseLeftButtonDown="StepLabel_Click" Tag="0">
+                    <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"
+                               Foreground="{Binding CurrentStep, Converter={StaticResource StepToBrush}, ConverterParameter=0}"/>
+                    <TextBlock Text="1. Provide Input"
+                               FontWeight="{Binding CurrentStep, Converter={StaticResource StepToBold}, ConverterParameter=0}"
+                               Foreground="{Binding CurrentStep, Converter={StaticResource StepToBrush}, ConverterParameter=0}"/>
+                </StackPanel>
 
-                <TextBlock Text="2. Configure Symbols" Margin="0,0,0,10" Cursor="Hand"
-                           FontWeight="{Binding CurrentStep, Converter={StaticResource StepToBold}, ConverterParameter=1}"
-                           Foreground="{Binding CurrentStep, Converter={StaticResource StepToBrush}, ConverterParameter=1}"
-                           MouseLeftButtonDown="StepLabel_Click" Tag="1"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10" Cursor="Hand"
+                            MouseLeftButtonDown="StepLabel_Click" Tag="1">
+                    <TextBlock Text="&#xE71C;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"
+                               Foreground="{Binding CurrentStep, Converter={StaticResource StepToBrush}, ConverterParameter=1}"/>
+                    <TextBlock Text="2. Configure Symbols"
+                               FontWeight="{Binding CurrentStep, Converter={StaticResource StepToBold}, ConverterParameter=1}"
+                               Foreground="{Binding CurrentStep, Converter={StaticResource StepToBrush}, ConverterParameter=1}"/>
+                </StackPanel>
 
-                <TextBlock Text="3. Output Options" Margin="0,0,0,10" Cursor="Hand"
-                           FontWeight="{Binding CurrentStep, Converter={StaticResource StepToBold}, ConverterParameter=2}"
-                           Foreground="{Binding CurrentStep, Converter={StaticResource StepToBrush}, ConverterParameter=2}"
-                           MouseLeftButtonDown="StepLabel_Click" Tag="2"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10" Cursor="Hand"
+                            MouseLeftButtonDown="StepLabel_Click" Tag="2">
+                    <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"
+                               Foreground="{Binding CurrentStep, Converter={StaticResource StepToBrush}, ConverterParameter=2}"/>
+                    <TextBlock Text="3. Output Options"
+                               FontWeight="{Binding CurrentStep, Converter={StaticResource StepToBold}, ConverterParameter=2}"
+                               Foreground="{Binding CurrentStep, Converter={StaticResource StepToBrush}, ConverterParameter=2}"/>
+                </StackPanel>
 
-                <TextBlock Text="4. Resolve" Margin="0,0,0,10" Cursor="Hand"
-                           FontWeight="{Binding CurrentStep, Converter={StaticResource StepToBold}, ConverterParameter=3}"
-                           Foreground="{Binding CurrentStep, Converter={StaticResource StepToBrush}, ConverterParameter=3}"
-                           MouseLeftButtonDown="StepLabel_Click" Tag="3"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10" Cursor="Hand"
+                            MouseLeftButtonDown="StepLabel_Click" Tag="3">
+                    <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"
+                               Foreground="{Binding CurrentStep, Converter={StaticResource StepToBrush}, ConverterParameter=3}"/>
+                    <TextBlock Text="4. Resolve"
+                               FontWeight="{Binding CurrentStep, Converter={StaticResource StepToBold}, ConverterParameter=3}"
+                               Foreground="{Binding CurrentStep, Converter={StaticResource StepToBrush}, ConverterParameter=3}"/>
+                </StackPanel>
             </StackPanel>
         </Border>
 
@@ -49,12 +65,27 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Button Grid.Column="0" Content="&lt; Back" Width="80" Padding="4,6"
-                        Command="{Binding PreviousStepCommand}"/>
-                <Button Grid.Column="2" Content="Next &gt;" Width="80" Padding="4,6" Margin="0,0,8,0"
-                        Command="{Binding NextStepCommand}"/>
-                <Button Grid.Column="3" Content="Resolve!" Width="90" Padding="4,6" FontWeight="Bold"
-                        Command="{Binding ResolveCommand}"/>
+                <Button Grid.Column="0" Width="90" Padding="4,6"
+                        Command="{Binding PreviousStepCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock Text="Back"/>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="2" Width="90" Padding="4,6" Margin="0,0,8,0"
+                        Command="{Binding NextStepCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Next"/>
+                        <TextBlock Text="&#xE72A;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="3" Width="100" Padding="4,6" FontWeight="Bold"
+                        Command="{Binding ResolveCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock Text="Resolve!" FontWeight="Bold"/>
+                    </StackPanel>
+                </Button>
             </Grid>
 
             <!-- Page content area -->
