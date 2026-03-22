@@ -1,0 +1,36 @@
+<Window x:Class="Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.SQLBuildsDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="SQL Server Builds - Download Public PDBs" Height="550" Width="700"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResizeWithGrip">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+            <TextBlock Text="Search:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <TextBox x:Name="searchText" Width="200" Margin="0,0,8,0"/>
+            <Button Content="Find Next" Width="80" Click="FindNext_Click"/>
+        </StackPanel>
+
+        <TreeView Grid.Row="1" x:Name="treeviewSyms" Margin="0,0,0,8"/>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,8">
+            <Button Content="Check PDB availability" Width="150" Margin="0,0,8,0" Click="CheckPDBAvail_Click"/>
+            <Button x:Name="dnldButton" Content="Download PDBs" Width="120" Margin="0,0,8,0" Click="DownloadPDBs_Click"/>
+        </StackPanel>
+
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="downloadStatus" Grid.Column="0" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+            <ProgressBar x:Name="downloadProgress" Grid.Column="1" Width="150" Height="18" Margin="8,0,0,0"/>
+        </Grid>
+    </Grid>
+</Window>

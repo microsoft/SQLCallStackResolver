@@ -1,0 +1,123 @@
+<UserControl x:Class="Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.ClassicView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern">
+    <UserControl.Resources>
+        <local:BoolToVisibilityConverter x:Key="BoolToVis"/>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" MinHeight="100"/>
+            <RowDefinition Height="5"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top: Input / Output split -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="100"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="*" MinWidth="100"/>
+            </Grid.ColumnDefinitions>
+
+            <DockPanel Grid.Column="0">
+                <TextBlock DockPanel.Dock="Top" Text="Input" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                <TextBox AcceptsReturn="True" AcceptsTab="True"
+                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                         FontFamily="Consolas" FontSize="11" TextWrapping="NoWrap"
+                         MaxLength="999999999"
+                         Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
+                         AllowDrop="True" PreviewDragOver="CallStackInput_DragOver" Drop="CallStackInput_Drop"/>
+            </DockPanel>
+
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="LightGray"/>
+
+            <DockPanel Grid.Column="2">
+                <TextBlock DockPanel.Dock="Top" Text="Output" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                <TextBox IsReadOnly="True" AcceptsReturn="True"
+                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                         FontFamily="Consolas" FontSize="11" TextWrapping="NoWrap"
+                         Text="{Binding OutputText, Mode=OneWay}"/>
+            </DockPanel>
+        </Grid>
+
+        <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" Background="LightGray"/>
+
+        <!-- Bottom: Configuration panels -->
+        <Grid Grid.Row="2" Margin="0,4,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Step 0: Input and Output Options -->
+            <GroupBox Grid.Column="0" Header="Step 0: Input and Output Options" Margin="0,0,4,0" Padding="4">
+                <StackPanel>
+                    <CheckBox Content="INPUT: Frames on single line" Margin="0,0,0,3"
+                              IsChecked="{Binding FramesOnSingleLine}"/>
+                    <CheckBox Content="INPUT: Re-lookup source" Margin="0,0,0,3"
+                              IsChecked="{Binding RelookupSource}"/>
+                    <CheckBox Content="OUTPUT: Source lines (private PDBs)" Margin="0,0,0,3"
+                              IsChecked="{Binding IncludeLineNumbers}"/>
+                    <CheckBox Content="OUTPUT: Func offsets" Margin="0,0,0,3"
+                              IsChecked="{Binding IncludeOffsets}"/>
+                    <CheckBox Content="OUTPUT: Inline frames" Margin="0,0,0,3"
+                              IsChecked="{Binding ShowInlineFrames}"/>
+                    <Button Content="Enter base addresses..." Margin="0,4,0,3" Click="EnterBaseAddresses_Click"
+                            HorizontalAlignment="Left" Padding="6,2"/>
+                    <DockPanel Margin="0,2,0,0">
+                        <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowseOutputPath_Click"/>
+                        <TextBox Text="{Binding OutputFilePath, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="Output file path (optional)" Margin="0,0,2,0"/>
+                    </DockPanel>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- Step 1: Import callstacks -->
+            <GroupBox Grid.Column="1" Header="Step 1: Paste or import callstacks" Margin="2,0,4,0" Padding="4">
+                <StackPanel>
+                    <Button Content="Select XEL files and import..." Margin="0,0,0,4" Click="LoadXEL_Click"
+                            Padding="4,3" IsEnabled="{Binding IsNotProcessing}"/>
+                    <CheckBox Content="Group events from XEL files" IsChecked="{Binding GroupXEvents}"/>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- Step 2: Symbol paths -->
+            <GroupBox Grid.Column="2" Header="Step 2: Symbol / PDB paths" Margin="2,0,4,0" Padding="4">
+                <StackPanel>
+                    <Button Content="Use public PDBs for SQL build..." Margin="0,0,0,4" Click="SelectSQLPDB_Click"
+                            Padding="4,3"/>
+                    <DockPanel Margin="0,0,0,4">
+                        <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowsePdbPath_Click"/>
+                        <TextBox Text="{Binding PdbPaths, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,2,0"
+                                 ToolTip="PDB paths (semicolon-separated)"/>
+                    </DockPanel>
+                    <CheckBox Content="Search PDBs recursively" Margin="0,0,0,3" IsChecked="{Binding PdbRecurse}"/>
+                    <CheckBox Content="Cache PDBs" Margin="0,0,0,3" IsChecked="{Binding CachePDB}"/>
+                    <DockPanel Margin="0,2,0,4">
+                        <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowseBinaryPath_Click"/>
+                        <TextBox Text="{Binding BinaryPaths, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,2,0"
+                                 ToolTip="Binary paths for ordinal resolution (semicolon-separated)"/>
+                    </DockPanel>
+                    <CheckBox Content="Search DLLs recursively" IsChecked="{Binding DllRecurse}"/>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- Step 3: Resolve -->
+            <GroupBox Grid.Column="3" Header="Step 3: Resolve!" Margin="2,0,0,0" Padding="4">
+                <StackPanel>
+                    <Button Content="Resolve Callstacks!" FontWeight="Bold" Padding="6,6" Margin="0,0,0,4"
+                            Command="{Binding ResolveCommand}"/>
+                    <Button Content="Paste clipboard &amp; resolve" Padding="6,6" Margin="0,0,0,4"
+                            Command="{Binding PasteFromClipboardCommand}"/>
+                    <Button Content="Cancel" Padding="6,4"
+                            Command="{Binding CancelCommand}"
+                            Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVis}}"/>
+                </StackPanel>
+            </GroupBox>
+        </Grid>
+    </Grid>
+</UserControl>
