@@ -1,6 +1,8 @@
 <Window x:Class="Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.BaseAddressDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        ui:WindowHelper.UseModernWindowStyle="True"
         Title="Enter Module Base Addresses" Height="450" Width="600"
         WindowStartupLocation="CenterOwner" ResizeMode="CanResizeWithGrip">
     <Grid Margin="10">

@@ -44,61 +44,82 @@
 
         <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" Background="LightGray"/>
 
-        <!-- Bottom: Configuration panels -->
+        <!-- Bottom: Configuration panels in 2x2 grid -->
         <Grid Grid.Row="2" Margin="0,4,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-            <!-- Step 0: Input and Output Options -->
-            <GroupBox Grid.Column="0" Header="Step 0: Input and Output Options" Margin="0,0,4,0" Padding="4">
-                <StackPanel>
-                    <CheckBox Content="INPUT: Frames on single line" Margin="0,0,0,3"
-                              IsChecked="{Binding FramesOnSingleLine}"/>
-                    <CheckBox Content="INPUT: Re-lookup source" Margin="0,0,0,3"
-                              IsChecked="{Binding RelookupSource}"/>
-                    <CheckBox Content="OUTPUT: Source lines (private PDBs)" Margin="0,0,0,3"
-                              IsChecked="{Binding IncludeLineNumbers}"/>
-                    <CheckBox Content="OUTPUT: Func offsets" Margin="0,0,0,3"
-                              IsChecked="{Binding IncludeOffsets}"/>
-                    <CheckBox Content="OUTPUT: Inline frames" Margin="0,0,0,3"
-                              IsChecked="{Binding ShowInlineFrames}"/>
-                    <Button Content="Enter base addresses..." Margin="0,4,0,3" Click="EnterBaseAddresses_Click"
-                            HorizontalAlignment="Left" Padding="6,2"/>
-                    <DockPanel Margin="0,2,0,0">
-                        <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowseOutputPath_Click"/>
-                        <TextBox Text="{Binding OutputFilePath, UpdateSourceTrigger=PropertyChanged}"
-                                 ToolTip="Output file path (optional)" Margin="0,0,2,0"/>
-                    </DockPanel>
-                </StackPanel>
+            <!-- Top-left: Input/Output Options + Import -->
+            <GroupBox Grid.Row="0" Grid.Column="0" Header="Input / Output Options" Margin="0,0,4,4" Padding="6">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <CheckBox Content="Frames on single line" Margin="0,0,0,3"
+                                  IsChecked="{Binding FramesOnSingleLine}"/>
+                        <CheckBox Content="Re-lookup source" Margin="0,0,0,3"
+                                  IsChecked="{Binding RelookupSource}"/>
+                        <CheckBox Content="Source lines (private PDBs)" Margin="0,0,0,3"
+                                  IsChecked="{Binding IncludeLineNumbers}"/>
+                        <CheckBox Content="Function offsets" Margin="0,0,0,3"
+                                  IsChecked="{Binding IncludeOffsets}"/>
+                        <CheckBox Content="Inline frames" Margin="0,0,0,3"
+                                  IsChecked="{Binding ShowInlineFrames}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <Button Click="LoadXEL_Click" Padding="8,3" Margin="0,0,8,0"
+                                    IsEnabled="{Binding IsNotProcessing}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xED25;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBlock Text="Import XEL..."/>
+                                </StackPanel>
+                            </Button>
+                            <CheckBox Content="Group XEL events" VerticalAlignment="Center"
+                                      IsChecked="{Binding GroupXEvents}"/>
+                        </StackPanel>
+                        <Button Content="Enter base addresses..." Margin="0,0,0,6" Click="EnterBaseAddresses_Click"
+                                HorizontalAlignment="Left" Padding="8,3"/>
+                        <TextBlock Text="Save output to file:" FontSize="10.5" Foreground="Gray" Margin="0,0,0,2"/>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowseOutputPath_Click"
+                                    ToolTip="Browse for output file location"/>
+                            <TextBox Text="{Binding OutputFilePath, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="Output file path (optional)" Margin="0,0,2,0"/>
+                        </DockPanel>
+                    </StackPanel>
+                </Grid>
             </GroupBox>
 
-            <!-- Step 1: Import callstacks -->
-            <GroupBox Grid.Column="1" Header="Step 1: Paste or import callstacks" Margin="2,0,4,0" Padding="4">
+            <!-- Top-right: Symbol / PDB paths -->
+            <GroupBox Grid.Row="0" Grid.Column="1" Header="Symbol / PDB Paths" Margin="4,0,0,4" Padding="6">
                 <StackPanel>
-                    <Button Content="Select XEL files and import..." Margin="0,0,0,4" Click="LoadXEL_Click"
-                            Padding="4,3" IsEnabled="{Binding IsNotProcessing}"/>
-                    <CheckBox Content="Group events from XEL files" IsChecked="{Binding GroupXEvents}"/>
-                </StackPanel>
-            </GroupBox>
-
-            <!-- Step 2: Symbol paths -->
-            <GroupBox Grid.Column="2" Header="Step 2: Symbol / PDB paths" Margin="2,0,4,0" Padding="4">
-                <StackPanel>
-                    <Button Content="Use public PDBs for SQL build..." Margin="0,0,0,4" Click="SelectSQLPDB_Click"
-                            Padding="4,3"/>
+                    <Button Content="Use public PDBs for a known SQL Server build..." Margin="0,0,0,6" Click="SelectSQLPDB_Click"
+                            HorizontalAlignment="Left" Padding="8,3"/>
+                    <TextBlock Text="PDB search paths:" FontSize="10.5" Foreground="Gray" Margin="0,0,0,2"/>
                     <DockPanel Margin="0,0,0,4">
-                        <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowsePdbPath_Click"/>
+                        <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowsePdbPath_Click"
+                                ToolTip="Browse for PDB folder"/>
                         <TextBox Text="{Binding PdbPaths, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,2,0"
                                  ToolTip="PDB paths (semicolon-separated)"/>
                     </DockPanel>
-                    <CheckBox Content="Search PDBs recursively" Margin="0,0,0,3" IsChecked="{Binding PdbRecurse}"/>
-                    <CheckBox Content="Cache PDBs" Margin="0,0,0,3" IsChecked="{Binding CachePDB}"/>
-                    <DockPanel Margin="0,2,0,4">
-                        <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowseBinaryPath_Click"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                        <CheckBox Content="Search recursively" Margin="0,0,16,0" IsChecked="{Binding PdbRecurse}"/>
+                        <CheckBox Content="Cache PDBs locally" IsChecked="{Binding CachePDB}"
+                                  ToolTip="Copies PDBs to %TEMP%\SymCache"/>
+                    </StackPanel>
+                    <TextBlock Text="Binary paths (for OrdinalNNN resolution):" FontSize="10.5" Foreground="Gray" Margin="0,0,0,2"/>
+                    <DockPanel Margin="0,0,0,4">
+                        <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowseBinaryPath_Click"
+                                ToolTip="Browse for binary folder"/>
                         <TextBox Text="{Binding BinaryPaths, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,2,0"
                                  ToolTip="Binary paths for ordinal resolution (semicolon-separated)"/>
                     </DockPanel>
@@ -106,33 +127,37 @@
                 </StackPanel>
             </GroupBox>
 
-            <!-- Step 3: Resolve -->
-            <GroupBox Grid.Column="3" Header="Step 3: Resolve!" Margin="2,0,0,0" Padding="4">
-                <StackPanel>
-                    <Button FontWeight="Bold" Padding="6,6" Margin="0,0,0,4"
-                            Command="{Binding ResolveCommand}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                            <TextBlock Text="Resolve Callstacks!" FontWeight="Bold"/>
-                        </StackPanel>
-                    </Button>
-                    <Button Padding="6,6" Margin="0,0,0,4"
-                            Command="{Binding PasteFromClipboardCommand}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE77F;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                            <TextBlock Text="Paste clipboard &amp; resolve"/>
-                        </StackPanel>
-                    </Button>
-                    <Button Padding="6,4"
-                            Command="{Binding CancelCommand}"
-                            Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVis}}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                            <TextBlock Text="Cancel"/>
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
-            </GroupBox>
+            <!-- Bottom row: Resolve spanning full width -->
+            <Grid Grid.Row="1" Grid.ColumnSpan="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" FontWeight="Bold" Padding="14,6" Margin="0,0,8,0"
+                        Command="{Binding ResolveCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBlock Text="Resolve Callstacks!" FontWeight="Bold"/>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="1" Padding="10,6" Margin="0,0,8,0"
+                        Command="{Binding PasteFromClipboardCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE77F;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBlock Text="Paste clipboard &amp; resolve"/>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="3" Padding="10,6"
+                        Command="{Binding CancelCommand}"
+                        Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVis}}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBlock Text="Cancel"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
         </Grid>
     </Grid>
 </UserControl>

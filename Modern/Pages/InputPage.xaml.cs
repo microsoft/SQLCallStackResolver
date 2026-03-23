@@ -6,34 +6,44 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
 
         public InputPage() {
             InitializeComponent();
-        }
-
-        private async void LoadXEL_Click(object sender, RoutedEventArgs e) {
-            var dlg = new Microsoft.Win32.OpenFileDialog {
-                Multiselect = true,
-                CheckPathExists = true,
-                CheckFileExists = true,
-                Filter = "XEL files (*.xel)|*.xel|All files (*.*)|*.*",
-                Title = "Select XEL file(s)"
+            DataContextChanged += (s, e) => {
+                if (DataContext is ResolverViewModel vm) {
+                    vm.PropertyChanged += (_, args) => {
+                        if (args.PropertyName == nameof(ResolverViewModel.InputText)
+                            || args.PropertyName == nameof(ResolverViewModel.FramesOnSingleLine))
+                            CheckSingleLineMismatch();
+                    };
+                }
             };
-            if (dlg.ShowDialog(Window.GetWindow(this)) == true) {
-                var fields = await ViewModel.GetDistinctXELFieldsAsync(dlg.FileNames);
-                if (fields.Item1.Count + fields.Item2.Count == 0) {
-                    ViewModel.StatusMessage = "No fields found in XEL files.";
-                    return;
-                }
-                var fieldDialog = new FieldSelectionDialog(fields.Item1, fields.Item2) { Owner = Window.GetWindow(this) };
-                if (fieldDialog.ShowDialog() == true) {
-                    await ViewModel.LoadXELFilesAsync(dlg.FileNames, fieldDialog.SelectedEventItems);
-                }
+        }
+
+        internal void CheckSingleLineMismatch() {
+            if (ViewModel == null || string.IsNullOrWhiteSpace(ViewModel.InputText)) {
+                SingleLineWarningBanner.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            bool isSingleLine = ViewModel._resolver.IsInputSingleLine(
+                ViewModel.InputText, ConfigurationManager.AppSettings["PatternsToTreatAsMultiline"]);
+
+            if (isSingleLine && !ViewModel.FramesOnSingleLine) {
+                SingleLineWarningText.Text = "Your input appears to have all frames on a single line, but 'Frames on single line' is not checked.";
+                SingleLineWarningBanner.Visibility = Visibility.Visible;
+                AdvancedOptionsExpander.IsExpanded = true;
+            } else if (!isSingleLine && ViewModel.FramesOnSingleLine) {
+                SingleLineWarningText.Text = "Your input appears to have multiple lines, but 'Frames on single line' is checked.";
+                SingleLineWarningBanner.Visibility = Visibility.Visible;
+                AdvancedOptionsExpander.IsExpanded = true;
+            } else {
+                SingleLineWarningBanner.Visibility = Visibility.Collapsed;
             }
         }
 
-        private void EnterBaseAddresses_Click(object sender, RoutedEventArgs e) {
-            var dialog = new BaseAddressDialog(ViewModel.BaseAddressesString) { Owner = Window.GetWindow(this) };
-            if (dialog.ShowDialog() == true) {
-                ViewModel.BaseAddressesString = dialog.BaseAddressesString;
-            }
+        private void AutoFixSingleLine_Click(object sender, RoutedEventArgs e) {
+            if (ViewModel == null) return;
+            bool isSingleLine = ViewModel._resolver.IsInputSingleLine(
+                ViewModel.InputText, ConfigurationManager.AppSettings["PatternsToTreatAsMultiline"]);
+            ViewModel.FramesOnSingleLine = isSingleLine;
         }
 
         private void CallStackInput_DragOver(object sender, DragEventArgs e) {
@@ -41,27 +51,21 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
             e.Handled = true;
         }
 
-        private async void CallStackInput_Drop(object sender, DragEventArgs e) {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop)) {
-                var files = (string[])e.Data.GetData(DataFormats.FileDrop);
-                if (files == null || files.Length == 0) return;
+        private void CallStackInput_Drop(object sender, DragEventArgs e) {
+            if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
+            var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+            if (files == null || files.Length == 0) return;
 
-                if (files.All(f => Path.GetExtension(f).Equals(".xel", StringComparison.OrdinalIgnoreCase))) {
-                    ViewModel.StatusMessage = "XEL file(s) dragged; extracting events...";
-                    var fields = await ViewModel.GetDistinctXELFieldsAsync(files);
-                    if (fields.Item1.Count + fields.Item2.Count == 0) {
-                        ViewModel.StatusMessage = "No fields found in XEL files.";
-                        return;
-                    }
-                    var fieldDialog = new FieldSelectionDialog(fields.Item1, fields.Item2) { Owner = Window.GetWindow(this) };
-                    if (fieldDialog.ShowDialog() == true) {
-                        await ViewModel.LoadXELFilesAsync(files, fieldDialog.SelectedEventItems);
-                    }
-                } else {
-                    var sb = new StringBuilder();
-                    foreach (var file in files) sb.AppendLine(File.ReadAllText(file));
-                    ViewModel.InputText = sb.ToString();
+            if (files.All(f => Path.GetExtension(f).Equals(".xel", StringComparison.OrdinalIgnoreCase))) {
+                // Switch to XEL import path
+                if (ViewModel != null) {
+                    ViewModel.PendingXELFileNames = files;
+                    ViewModel.RaiseSubStepAction("ChooseXELImport");
                 }
+            } else {
+                var sb = new StringBuilder();
+                foreach (var file in files) sb.AppendLine(File.ReadAllText(file));
+                ViewModel.InputText = sb.ToString();
             }
         }
     }

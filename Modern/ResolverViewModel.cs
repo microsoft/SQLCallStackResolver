@@ -1,8 +1,20 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
+using System.Collections.ObjectModel;
 using System.Windows.Threading;
 
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
+    /// <summary>Describes a single wizard step (core or conditional sub-step).</summary>
+    public class WizardStep : BaseViewModel {
+        public string Id { get; set; }
+        public string Label { get; set; }
+        public string Icon { get; set; }
+        public bool IsConditional { get; set; }
+
+        /// <summary>For conditional steps: the Id of the core step this follows.</summary>
+        public string ParentStepId { get; set; }
+    }
+
     public class ResolverViewModel : BaseViewModel {
         internal readonly StackResolver _resolver = new StackResolver();
         private CancellationTokenSource _cts;
@@ -16,13 +28,49 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         internal static readonly string LatestReleaseTimestampFormat = "yyyy-MM-dd HH:mm";
         internal static readonly string LatestReleaseTimestampCulture = "en-US";
 
+        // -- Core step definitions (always present) --
+        internal static readonly WizardStep StepInputSource = new WizardStep { Id = "InputSource", Label = "Choose Input", Icon = "\uE8A5" };
+        internal static readonly WizardStep StepSymbols = new WizardStep { Id = "Symbols", Label = "Configure Symbols", Icon = "\uE71C" };
+        internal static readonly WizardStep StepOptions = new WizardStep { Id = "Options", Label = "Output Options", Icon = "\uE713" };
+        internal static readonly WizardStep StepResolve = new WizardStep { Id = "Resolve", Label = "Resolve", Icon = "\uE768" };
+
+        // -- Conditional sub-step definitions (inserted after InputSource based on user choice) --
+        internal static readonly WizardStep StepInput = new WizardStep {
+            Id = "Input", Label = "Provide Input", Icon = "\uE8B7",
+            IsConditional = true, ParentStepId = "InputSource"
+        };
+        internal static readonly WizardStep StepFieldSelection = new WizardStep {
+            Id = "FieldSelection", Label = "Import XEL", Icon = "\uE762",
+            IsConditional = true, ParentStepId = "InputSource"
+        };
+        internal static readonly WizardStep StepBaseAddress = new WizardStep {
+            Id = "BaseAddress", Label = "Base Addresses", Icon = "\uE81C",
+            IsConditional = true, ParentStepId = "InputSource"
+        };
+
+        /// <summary>The ordered list of wizard steps, including any dynamically inserted sub-steps.</summary>
+        public ObservableCollection<WizardStep> WizardSteps { get; } = new ObservableCollection<WizardStep>();
+
+        /// <summary>Raised when a sub-step requests the WizardView to perform an action (e.g. load XEL fields).</summary>
+        public event Action<string> SubStepAction;
+
+        /// <summary>Invoke the SubStepAction event from outside the class (e.g. from pages).</summary>
+        internal void RaiseSubStepAction(string action) => SubStepAction?.Invoke(action);
+
         internal ResolverViewModel() {
             _dispatcher = Dispatcher.CurrentDispatcher;
-            ResolveCommand = new RelayCommand(_ => Resolve(), _ => !IsProcessing && !string.IsNullOrWhiteSpace(PdbPaths));
+
+            WizardSteps.Add(StepInputSource);
+            WizardSteps.Add(StepSymbols);
+            WizardSteps.Add(StepOptions);
+            WizardSteps.Add(StepResolve);
+
+            ResolveCommand = new RelayCommand(_ => Resolve(), _ => !IsProcessing);
             CancelCommand = new RelayCommand(_ => Cancel(), _ => IsProcessing);
-            NextStepCommand = new RelayCommand(_ => CurrentStep++, _ => CurrentStep < TotalSteps - 1);
-            PreviousStepCommand = new RelayCommand(_ => CurrentStep--, _ => CurrentStep > 0);
+            NextStepCommand = new RelayCommand(_ => AdvanceStep(), _ => CurrentStep < WizardSteps.Count - 1);
+            PreviousStepCommand = new RelayCommand(_ => RetreatStep(), _ => CurrentStep > 0);
             PasteFromClipboardCommand = new RelayCommand(_ => PasteFromClipboard());
+            StartOverCommand = new RelayCommand(_ => StartOver(), _ => !IsProcessing);
         }
 
         // -- Mode --
@@ -33,15 +81,23 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         }
 
         // -- Wizard Navigation --
-        public int TotalSteps => 4;
+        public int TotalSteps => WizardSteps.Count;
         private int _currentStep;
         public int CurrentStep {
             get => _currentStep;
-            set { SetField(ref _currentStep, value, nameof(CurrentStep)); OnPropertyChanged(nameof(CanGoBack)); OnPropertyChanged(nameof(CanGoNext)); OnPropertyChanged(nameof(IsOnResolvePage)); }
+            set { SetField(ref _currentStep, value, nameof(CurrentStep)); OnPropertyChanged(nameof(CanGoBack)); OnPropertyChanged(nameof(CanGoNext)); OnPropertyChanged(nameof(IsOnResolvePage)); OnPropertyChanged(nameof(IsOnStepBeforeResolve)); OnPropertyChanged(nameof(ShowNextButton)); OnPropertyChanged(nameof(CurrentStepId)); }
         }
         public bool CanGoBack => _currentStep > 0;
-        public bool CanGoNext => _currentStep < TotalSteps - 1;
-        public bool IsOnResolvePage => _currentStep == TotalSteps - 1;
+        public bool CanGoNext => _currentStep < WizardSteps.Count - 1;
+        public bool IsOnResolvePage => _currentStep == WizardSteps.Count - 1;
+        public bool IsOnStepBeforeResolve => _currentStep == WizardSteps.Count - 2;
+        public bool ShowNextButton => _currentStep < WizardSteps.Count - 2 && CurrentStepId != "InputSource";
+        public string CurrentStepId => _currentStep < WizardSteps.Count ? WizardSteps[_currentStep].Id : string.Empty;
+
+        // -- Pending XEL data (for field selection sub-step) --
+        public string[] PendingXELFileNames { get; set; }
+        public List<string> PendingXELActions { get; set; }
+        public List<string> PendingXELFields { get; set; }
 
         // -- Input --
         private string _inputText = string.Empty;
@@ -109,6 +165,95 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         public ICommand NextStepCommand { get; }
         public ICommand PreviousStepCommand { get; }
         public ICommand PasteFromClipboardCommand { get; }
+        public ICommand StartOverCommand { get; }
+
+        // -- Dynamic step management --
+        internal bool HasSubStep(string stepId) => WizardSteps.Any(s => s.Id == stepId);
+
+        internal void InsertSubStepAfter(string parentStepId, WizardStep subStep) {
+            if (HasSubStep(subStep.Id)) return; // already present
+            int parentIdx = -1;
+            for (int i = 0; i < WizardSteps.Count; i++) {
+                if (WizardSteps[i].Id == parentStepId) { parentIdx = i; break; }
+            }
+            if (parentIdx < 0) return;
+            // Insert after parent and any existing sub-steps of the same parent
+            int insertIdx = parentIdx + 1;
+            while (insertIdx < WizardSteps.Count && WizardSteps[insertIdx].IsConditional && WizardSteps[insertIdx].ParentStepId == parentStepId)
+                insertIdx++;
+            WizardSteps.Insert(insertIdx, subStep);
+            // Refresh navigation properties since TotalSteps changed
+            OnPropertyChanged(nameof(TotalSteps));
+            OnPropertyChanged(nameof(CanGoNext));
+            OnPropertyChanged(nameof(IsOnResolvePage));
+            OnPropertyChanged(nameof(IsOnStepBeforeResolve));
+            OnPropertyChanged(nameof(ShowNextButton));
+        }
+
+        internal void RemoveSubStep(string stepId) {
+            var step = WizardSteps.FirstOrDefault(s => s.Id == stepId);
+            if (step == null) return;
+            WizardSteps.Remove(step);
+            if (_currentStep >= WizardSteps.Count) _currentStep = WizardSteps.Count - 1;
+            OnPropertyChanged(nameof(CurrentStep));
+            OnPropertyChanged(nameof(CurrentStepId));
+            OnPropertyChanged(nameof(TotalSteps));
+            OnPropertyChanged(nameof(CanGoBack));
+            OnPropertyChanged(nameof(CanGoNext));
+            OnPropertyChanged(nameof(IsOnResolvePage));
+            OnPropertyChanged(nameof(IsOnStepBeforeResolve));
+            OnPropertyChanged(nameof(ShowNextButton));
+        }
+
+        /// <summary>Advance to next step with validation hooks.</summary>
+        private void AdvanceStep() {
+            // InputSource: cards handle navigation, Next is hidden
+            if (CurrentStepId == "InputSource") return;
+
+            // When leaving the Input step, check if base address sub-step is needed
+            if (CurrentStepId == "Input" && !string.IsNullOrWhiteSpace(InputText)) {
+                if (_resolver.IsInputVAOnly(InputText) && string.IsNullOrEmpty(BaseAddressesString)) {
+                    if (!HasSubStep("BaseAddress"))
+                        InsertSubStepAfter("InputSource", StepBaseAddress);
+                } else {
+                    RemoveSubStep("BaseAddress");
+                }
+            }
+
+            // When leaving the FieldSelection step, trigger XEL import and let the handler manage navigation
+            if (CurrentStepId == "FieldSelection") {
+                SubStepAction?.Invoke("ImportXEL");
+                return;
+            }
+
+            CurrentStep++;
+        }
+
+        /// <summary>Go back one step, cleaning up conditional sub-steps if appropriate.</summary>
+        private void RetreatStep() {
+            CurrentStep--;
+        }
+
+        /// <summary>Reset all inputs and navigate back to the first step.</summary>
+        private void StartOver() {
+            InputText = string.Empty;
+            OutputText = string.Empty;
+            BaseAddressesString = string.Empty;
+            FramesOnSingleLine = false;
+            RelookupSource = false;
+            StatusMessage = "Ready";
+            ProgressPercent = 0;
+            PendingXELFileNames = null;
+            PendingXELActions = null;
+            PendingXELFields = null;
+
+            // Remove any conditional sub-steps
+            RemoveSubStep("BaseAddress");
+            RemoveSubStep("FieldSelection");
+            RemoveSubStep("Input");
+
+            CurrentStep = 0;
+        }
 
         // -- Validate inputs (returns error message or null if valid) --
         internal string ValidateInputs() {
@@ -135,13 +280,18 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         internal async void Resolve() {
             var validationError = ValidateInputs();
             if (validationError != null) {
-                MessageBox.Show(validationError, "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                await MainWindow.ShowContentDialogAsync("Validation Error", validationError);
                 return;
             }
 
             IsProcessing = true;
             OutputText = string.Empty;
             StatusMessage = "Parsing input...";
+
+            // Navigate to the Resolve/output page so the user sees progress and results
+            int resolveIdx = WizardSteps.IndexOf(StepResolve);
+            if (resolveIdx >= 0 && CurrentStep != resolveIdx) CurrentStep = resolveIdx;
+
             try {
                 List<StackDetails> allStacks;
                 using (_cts = new CancellationTokenSource()) {
@@ -162,9 +312,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
                 }
 
                 if (OutputText.Contains(StackResolver.WARNING_PREFIX)) {
-                    MessageBox.Show(
-                        "One or more potential issues exist in the output. This is sometimes due to mismatched symbols; please double-check symbol paths and re-run if needed.",
-                        "Potential issues with the output", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    await MainWindow.ShowContentDialogAsync(
+                        "Potential issues with the output",
+                        "One or more potential issues exist in the output. This is sometimes due to mismatched symbols; please double-check symbol paths and re-run if needed.");
                 }
                 StatusMessage = "Resolution complete.";
             } catch (OperationCanceledException) {
@@ -195,15 +345,19 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
             StatusMessage = "Cancellation requested...";
         }
 
-        private void PasteFromClipboard() {
+        private async void PasteFromClipboard() {
             if (Properties.Settings.Default.promptForClipboardPaste) {
-                var resProceed = MessageBox.Show("Proceeding will paste the contents of your clipboard and attempt to resolve them. Are you sure?",
-                    "Proceed with paste from clipboard", MessageBoxButton.YesNo, MessageBoxImage.Information);
-                var resRememberChoice = MessageBox.Show("Should we remember your choice for the future?",
-                    "Save your choice?", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                var proceed = await MainWindow.ShowConfirmDialogAsync(
+                    "Proceed with paste from clipboard",
+                    "Proceeding will paste the contents of your clipboard and attempt to resolve them. Are you sure?",
+                    "Yes", "No");
+                var remember = await MainWindow.ShowConfirmDialogAsync(
+                    "Save your choice?",
+                    "Should we remember your choice for the future?",
+                    "Yes", "No");
 
-                Properties.Settings.Default.promptForClipboardPaste = (resRememberChoice == MessageBoxResult.No);
-                Properties.Settings.Default.choiceForClipboardPaste = (resProceed == MessageBoxResult.Yes);
+                Properties.Settings.Default.promptForClipboardPaste = !remember;
+                Properties.Settings.Default.choiceForClipboardPaste = proceed;
                 Properties.Settings.Default.Save();
             }
 
@@ -260,9 +414,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
                 }
 
                 if (latestReleaseDateTimeServer > latestReleaseDateTimeLocal) {
-                    MessageBox.Show(
-                        $"You are currently on release: {latestReleaseDateStringLocal} of SQLCallStackResolver. There is a newer release ({latestReleaseDateTimeServer.ToString(LatestReleaseTimestampFormat)}) available.\nYou should exit, then download the latest release from https://aka.ms/SQLStack/releases.",
-                        "New release available.", MessageBoxButton.OK, MessageBoxImage.Information);
+                    await MainWindow.ShowContentDialogAsync(
+                        "New release available",
+                        $"You are currently on release: {latestReleaseDateStringLocal} of SQLCallStackResolver. There is a newer release ({latestReleaseDateTimeServer.ToString(LatestReleaseTimestampFormat)}) available.\nYou should exit, then download the latest release from https://aka.ms/SQLStack/releases.");
                 }
 
                 DateTime lastUpdDateTimeServer = DateTime.MinValue;
@@ -280,9 +434,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
                 }
 
                 if (lastUpdDateTimeServer > lastUpdDateTimeLocal) {
-                    var res = MessageBox.Show("The SQLBuildInfo.json file was updated recently on GitHub. Do you wish to update your copy with the newer version?",
-                        "SQL build info updated", MessageBoxButton.YesNo);
-                    if (MessageBoxResult.Yes == res) {
+                    var res = await MainWindow.ShowConfirmDialogAsync(
+                        "SQL build info updated",
+                        "The SQLBuildInfo.json file was updated recently on GitHub. Do you wish to update your copy with the newer version?",
+                        "Yes", "No");
+                    if (res) {
                         StatusMessage = "Trying to update SQL build info from GitHub...";
                         t = sqlBuildInfoURLs.Select(jsonURL => Utils.GetTextFromUrl(jsonURL)).ToArray();
                         taskRes = (await Task.WhenAll(t)).Where(s => !string.IsNullOrWhiteSpace(s));
@@ -297,7 +453,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
                             wr.Close();
                             StatusMessage = "Successfully updated SQL build info!";
                         } else {
-                            MessageBox.Show("Could not download the SQL build Info file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                            await MainWindow.ShowContentDialogAsync("Error", "Could not download the SQL build Info file.");
                         }
                     }
                 }

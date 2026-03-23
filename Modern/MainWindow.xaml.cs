@@ -1,5 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
+using System.Windows.Media.Animation;
+
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
     public partial class MainWindow : Window {
         private readonly ResolverViewModel _viewModel = new ResolverViewModel();
@@ -15,31 +17,67 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
             ApplyTheme(isDark);
             ThemeToggle.IsChecked = isDark;
 
+            // Disable main content while splash is showing
+            MainContent.IsEnabled = false;
+
             Loaded += MainWindow_Loaded;
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e) {
-            // Apply DWM effects after window handle is available
-            DwmInterop.ApplyRoundedCorners(this);
-            DwmInterop.ApplyMicaOrAcrylic(this);
+            // Apply DWM dark mode title bar if needed
+            DwmInterop.ApplyImmersiveDarkMode(this, ThemeToggle.IsChecked == true);
 
-            MessageBox.Show(this,
-                "Copyright (c) 2025 Microsoft Corporation. All rights reserved.\r\n\r\n" +
-                "THIS SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, " +
-                "INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. " +
-                "IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, " +
-                "WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\r\n\r\n" +
-                "USAGE OF THE MICROSOFT SYMBOL SERVER IS COVERED BY THE LICENSE TERMS PUBLISHED AT https://docs.microsoft.com/legal/windows-sdk/microsoft-symbol-server-license-terms.",
-                "SQLCallStackResolver - Legal Notice", MessageBoxButton.OK, MessageBoxImage.Information);
-
-            // update title with release info
+            // Populate splash version text
             if (File.Exists(ResolverViewModel.LatestReleaseTimestampFileName)) {
                 using var sr = new StreamReader(ResolverViewModel.LatestReleaseTimestampFileName);
                 var releaseDate = (await sr.ReadToEndAsync()).Trim();
+                SplashVersion.Text = $"Release: {releaseDate}";
                 Title += $" (release: {releaseDate})";
             }
 
+            // The splash overlay is visible by default; user must click Accept
+        }
+
+        private async void SplashAccept_Click(object sender, RoutedEventArgs e) {
+            // Fade out the splash overlay
+            var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(250));
+            fadeOut.Completed += (s, _) => {
+                SplashOverlay.Visibility = Visibility.Collapsed;
+                MainContent.IsEnabled = true;
+            };
+            SplashOverlay.BeginAnimation(OpacityProperty, fadeOut);
+
             await _viewModel.CheckForUpdatesAsync();
+        }
+
+        /// <summary>Show a ModernWpf ContentDialog as a themed in-window dialog.</summary>
+        internal static async Task ShowContentDialogAsync(string title, string message, string closeButtonText = "OK") {
+            var dialog = new ModernWpf.Controls.ContentDialog {
+                Title = title,
+                Content = new TextBlock {
+                    Text = message,
+                    TextWrapping = TextWrapping.Wrap,
+                    MaxWidth = 450
+                },
+                CloseButtonText = closeButtonText
+            };
+            await dialog.ShowAsync();
+        }
+
+        /// <summary>Show a ModernWpf ContentDialog with Primary + Close buttons. Returns true if Primary was clicked.</summary>
+        internal static async Task<bool> ShowConfirmDialogAsync(string title, string message, string primaryText = "Yes", string closeText = "No") {
+            var dialog = new ModernWpf.Controls.ContentDialog {
+                Title = title,
+                Content = new TextBlock {
+                    Text = message,
+                    TextWrapping = TextWrapping.Wrap,
+                    MaxWidth = 450
+                },
+                PrimaryButtonText = primaryText,
+                CloseButtonText = closeText
+            };
+            var result = await dialog.ShowAsync();
+            return result == ModernWpf.Controls.ContentDialogResult.Primary;
         }
 
         private void ApplyTheme(bool isDark) {
@@ -54,8 +92,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         private void ThemeToggle_Click(object sender, RoutedEventArgs e) {
             bool isDark = ThemeToggle.IsChecked == true;
             ApplyTheme(isDark);
-            // Re-apply backdrop after theme change
-            DwmInterop.ApplyMicaOrAcrylic(this);
         }
 
         private void WizardRadio_Checked(object sender, RoutedEventArgs e) {

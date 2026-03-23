@@ -4,50 +4,61 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
-                   Text="Step 1: Provide Callstack Input"/>
-        <TextBlock Grid.Row="0" FontSize="11" Foreground="Gray" Margin="0,24,0,4"
-                   Text="Paste raw callstack(s) below, or import from XEL files, or drag and drop text/XEL files."/>
+        <StackPanel Grid.Row="0" Margin="0,0,0,8">
+            <TextBlock FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4"
+                       Text="Provide Callstack Input"/>
+            <TextBlock FontSize="11" Foreground="Gray"
+                       Text="Paste or type raw callstack text below, or drag and drop text files."/>
+        </StackPanel>
 
-        <TextBox Grid.Row="1" x:Name="callStackInput" AcceptsReturn="True" AcceptsTab="True"
+        <!-- Single-line mismatch warning banner (hidden by default) -->
+        <Border Grid.Row="1" x:Name="SingleLineWarningBanner" Visibility="Collapsed"
+                Background="#FFF3CD" BorderBrush="#FFD700" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,6">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="#856404"/>
+                    <TextBlock x:Name="SingleLineWarningText" Foreground="#856404" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                </StackPanel>
+                <Button Grid.Column="1" x:Name="AutoFixButton" Padding="8,4" Margin="8,0,0,0"
+                        VerticalAlignment="Center" Click="AutoFixSingleLine_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE90F;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock Text="Fix automatically"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+
+        <TextBox Grid.Row="2" x:Name="callStackInput" AcceptsReturn="True" AcceptsTab="True"
                  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
                  FontFamily="Consolas" FontSize="12" TextWrapping="NoWrap"
                  MaxLength="999999999"
                  Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
                  AllowDrop="True" PreviewDragOver="CallStackInput_DragOver" Drop="CallStackInput_Drop"/>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,0">
-            <Button Margin="0,0,8,0" Click="LoadXEL_Click" Padding="8,4"
-                    IsEnabled="{Binding IsNotProcessing}">
+        <Expander Grid.Row="3" x:Name="AdvancedOptionsExpander" Margin="0,8,0,0" IsExpanded="False">
+            <Expander.Header>
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="&#xED25;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <TextBlock Text="Import XEL file(s)..."/>
+                    <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                               VerticalAlignment="Center" Margin="0,0,6,0" Foreground="Gray"/>
+                    <TextBlock Text="Advanced input options" Foreground="Gray" FontSize="12"/>
                 </StackPanel>
-            </Button>
-            <Button Margin="0,0,8,0" Padding="8,4"
-                    Command="{Binding PasteFromClipboardCommand}">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="&#xE77F;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <TextBlock Text="Paste from clipboard"/>
-                </StackPanel>
-            </Button>
-        </StackPanel>
-
-        <GroupBox Grid.Row="3" Header="Input Options" Margin="0,8,0,0" Padding="6">
-            <WrapPanel>
+            </Expander.Header>
+            <WrapPanel Margin="24,6,0,0">
                 <CheckBox Content="Callstack frames are on a single line" Margin="0,0,16,4"
                           IsChecked="{Binding FramesOnSingleLine}"/>
                 <CheckBox Content="Re-lookup source (rare, needs private PDBs)" Margin="0,0,16,4"
                           IsChecked="{Binding RelookupSource}"/>
-                <CheckBox Content="Group events from XEL files" Margin="0,0,16,4"
-                          IsChecked="{Binding GroupXEvents}"/>
-                <Button Content="Enter base addresses..." Margin="0,0,16,4" Padding="8,2" Click="EnterBaseAddresses_Click"/>
             </WrapPanel>
-        </GroupBox>
+        </Expander>
     </Grid>
 </UserControl>

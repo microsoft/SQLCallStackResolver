@@ -6,60 +6,74 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4"
-                   Text="Step 2: Configure Symbol Paths"/>
-        <TextBlock Grid.Row="0" FontSize="11" Foreground="Gray" Margin="0,24,0,8"
-                   Text="Either use preset symbol downloads for a known SQL Server build, or set custom PDB search paths."/>
+        <StackPanel Grid.Row="0" Margin="0,0,0,8">
+            <TextBlock FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4"
+                       Text="Configure Symbol Paths"/>
+            <TextBlock FontSize="11" Foreground="Gray"
+                       Text="Use preset symbol downloads for a known SQL Server build, or set custom PDB search paths."/>
+        </StackPanel>
+
+        <!-- Quick action: known SQL build -->
+        <Button Grid.Row="1" HorizontalAlignment="Left" Padding="10,6" Margin="0,0,0,12" Click="SelectSQLPDB_Click">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                <TextBlock Text="Use public PDBs for a known SQL Server build..."/>
+            </StackPanel>
+        </Button>
 
         <!-- PDB Paths -->
-        <GroupBox Grid.Row="1" Header="PDB Symbol Paths" Padding="6" Margin="0,0,0,8">
+        <GroupBox Grid.Row="2" Header="PDB Symbol Paths" Padding="6" Margin="0,0,0,8">
             <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBox Grid.Row="0" Grid.Column="0" Text="{Binding PdbPaths, UpdateSourceTrigger=PropertyChanged}"
-                         Margin="0,0,4,4" ToolTip="Semicolon-separated paths to PDB files"/>
-                <Button Grid.Row="0" Grid.Column="1" Content="Browse..." Width="80" Click="BrowsePdbPath_Click"/>
-                <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,4,0,4">
+                <TextBox Grid.Column="0" Text="{Binding PdbPaths, UpdateSourceTrigger=PropertyChanged}"
+                         Margin="0,0,4,0" ToolTip="Semicolon-separated paths to PDB files"/>
+                <Button Grid.Column="1" Content="Browse..." Width="80" Click="BrowsePdbPath_Click"/>
+            </Grid>
+        </GroupBox>
+
+        <!-- Advanced options (collapsed by default) -->
+        <Expander Grid.Row="3" Margin="0,4,0,0" IsExpanded="False">
+            <Expander.Header>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                               VerticalAlignment="Center" Margin="0,0,6,0" Foreground="Gray"/>
+                    <TextBlock Text="Advanced symbol options" Foreground="Gray" FontSize="12"/>
+                </StackPanel>
+            </Expander.Header>
+            <StackPanel Margin="24,8,0,0">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                     <CheckBox Content="Search PDBs recursively" Margin="0,0,16,0" IsChecked="{Binding PdbRecurse}"/>
-                    <CheckBox Content="Cache PDBs locally" Margin="0,0,16,0" IsChecked="{Binding CachePDB}"
+                    <CheckBox Content="Cache PDBs locally" Margin="0,0,0,0" IsChecked="{Binding CachePDB}"
                               ToolTip="Copies PDBs to %TEMP%\SymCache. Recommended for UNC paths."/>
                 </StackPanel>
-                <Button Grid.Row="2" Grid.ColumnSpan="2" Content="Use public PDBs for a known SQL Server build..."
-                        HorizontalAlignment="Left" Padding="10,4" Click="SelectSQLPDB_Click"/>
-            </Grid>
-        </GroupBox>
 
-        <!-- Binary Paths (for ordinal values) -->
-        <GroupBox Grid.Row="2" Header="Binary Paths (only needed when frames have OrdinalNNN values)" Padding="6" Margin="0,0,0,8">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <TextBox Grid.Row="0" Grid.Column="0" Text="{Binding BinaryPaths, UpdateSourceTrigger=PropertyChanged}"
-                         Margin="0,0,4,4" ToolTip="Semicolon-separated paths to SQL Server binaries (DLL/EXE)"/>
-                <Button Grid.Row="0" Grid.Column="1" Content="Browse..." Width="80" Click="BrowseBinaryPath_Click"/>
-                <CheckBox Grid.Row="1" Grid.ColumnSpan="2" Content="Search for DLLs and EXEs recursively"
-                          IsChecked="{Binding DllRecurse}"/>
-            </Grid>
-        </GroupBox>
+                <GroupBox Header="Binary Paths (only needed when frames have OrdinalNNN values)" Padding="6" Margin="0,0,0,8">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBox Grid.Row="0" Grid.Column="0" Text="{Binding BinaryPaths, UpdateSourceTrigger=PropertyChanged}"
+                                 Margin="0,0,4,4" ToolTip="Semicolon-separated paths to SQL Server binaries (DLL/EXE)"/>
+                        <Button Grid.Row="0" Grid.Column="1" Content="Browse..." Width="80" Click="BrowseBinaryPath_Click"/>
+                        <CheckBox Grid.Row="1" Grid.ColumnSpan="2" Content="Search for DLLs and EXEs recursively"
+                                  IsChecked="{Binding DllRecurse}"/>
+                    </Grid>
+                </GroupBox>
 
-        <TextBlock Grid.Row="3" FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap"
-                   Text="Tip: If using UNC paths for PDBs, enabling 'Cache PDBs locally' can significantly speed up resolution over WAN connections."/>
+                <TextBlock FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap"
+                           Text="Tip: If using UNC paths for PDBs, enabling 'Cache PDBs locally' can significantly speed up resolution over WAN connections."/>
+            </StackPanel>
+        </Expander>
     </Grid>
 </UserControl>
