@@ -14,18 +14,11 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4"
-                   Text="Step 4: Resolve Callstacks"/>
+                   Text="Resolved Output"/>
         <TextBlock Grid.Row="0" FontSize="11" Foreground="Gray" Margin="0,24,0,8"
-                   Text="Click Resolve to symbolize the callstacks. Results will appear below."/>
+                   Text="Symbolized callstack output is shown below."/>
 
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
-            <Button FontWeight="Bold" Padding="16,6"
-                    Command="{Binding ResolveCommand}" Margin="0,0,8,0">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <TextBlock Text="Resolve Callstacks!" FontWeight="Bold"/>
-                </StackPanel>
-            </Button>
             <Button Padding="16,6"
                     Command="{Binding CancelCommand}"
                     Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVis}}">

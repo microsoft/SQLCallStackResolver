@@ -1,0 +1,42 @@
+<UserControl x:Class="Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.BaseAddressPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4"
+                   Text="Provide Module Base Addresses"/>
+
+        <Border Grid.Row="1" Background="#FFF3CD" BorderBrush="#FFD700" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,8">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="#856404"/>
+                <TextBlock Foreground="#856404" TextWrapping="Wrap" VerticalAlignment="Center"
+                           Text="Your input appears to contain only virtual addresses. Module base address information is required to resolve these. Paste the output of the query shown below, or load from a file."/>
+            </StackPanel>
+        </Border>
+
+        <DockPanel Grid.Row="2">
+            <TextBlock DockPanel.Dock="Top" TextWrapping="Wrap" Margin="0,0,0,8" Foreground="Gray" FontStyle="Italic"
+                       Text="Paste the output of:  SELECT name, base_address FROM sys.dm_os_loaded_modules WHERE name NOT LIKE '%.rll'"/>
+            <TextBox x:Name="InputAddresses" AcceptsReturn="True" AcceptsTab="True"
+                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                     FontFamily="Consolas" FontSize="12" TextWrapping="NoWrap"
+                     Text="{Binding BaseAddressesString, UpdateSourceTrigger=PropertyChanged}"
+                     AllowDrop="True" PreviewDragOver="InputAddresses_DragOver" Drop="InputAddresses_Drop"/>
+        </DockPanel>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,8,0,0">
+            <Button Margin="0,0,8,0" Padding="8,4" Click="LoadFromFile_Click">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xED25;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock Text="Load from file..."/>
+                </StackPanel>
+            </Button>
+        </StackPanel>
+    </Grid>
+</UserControl>

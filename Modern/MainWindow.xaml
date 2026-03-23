@@ -10,7 +10,8 @@
         <local:BoolToVisibilityConverter x:Key="BoolToVis"/>
         <local:InverseBoolToVisibilityConverter x:Key="InvBoolToVis"/>
     </Window.Resources>
-    <DockPanel>
+    <Grid>
+        <DockPanel x:Name="MainContent">
         <!-- Top toolbar: Mode toggle -->
         <Border DockPanel.Dock="Top" Padding="12,8">
             <Grid>
@@ -64,5 +65,46 @@
             <local:WizardView x:Name="wizardView" Visibility="{Binding IsWizardMode, Converter={StaticResource BoolToVis}}"/>
             <local:ClassicView x:Name="classicView" Visibility="{Binding IsWizardMode, Converter={StaticResource InvBoolToVis}}"/>
         </Grid>
-    </DockPanel>
+        </DockPanel>
+
+        <!-- Splash overlay -->
+        <Border x:Name="SplashOverlay" Background="{DynamicResource SystemControlPageBackgroundChromeLowBrush}"
+                Visibility="Visible" Panel.ZIndex="100">
+            <Grid HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="600">
+                <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                        CornerRadius="8" Padding="40,36" BorderThickness="1"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="30" ShadowDepth="6" Opacity="0.3"/>
+                    </Border.Effect>
+                    <StackPanel>
+                        <!-- App icon and title -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,20">
+                            <TextBlock Text="&#xE7B8;" FontFamily="Segoe MDL2 Assets" FontSize="36"
+                                       VerticalAlignment="Center" Margin="0,0,14,0"
+                                       Foreground="{DynamicResource SystemControlForegroundAccentBrush}"/>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="SQL Call Stack Resolver" FontSize="22" FontWeight="Bold"/>
+                                <TextBlock x:Name="SplashVersion" Text="" FontSize="12" Foreground="Gray"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Legal notice -->
+                        <TextBlock TextWrapping="Wrap" FontSize="11.5" Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                   Margin="0,0,0,10" LineHeight="18"
+                                   Text="Copyright &#169; 2025 Microsoft Corporation. All rights reserved."/>
+                        <TextBlock TextWrapping="Wrap" FontSize="10.5" Opacity="0.8" Margin="0,0,0,10" LineHeight="16"
+                                   Text="THIS SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE."/>
+                        <TextBlock TextWrapping="Wrap" FontSize="10.5" Opacity="0.8" Margin="0,0,0,24" LineHeight="16"
+                                   Text="Usage of the Microsoft Symbol Server is covered by the license terms published at https://docs.microsoft.com/legal/windows-sdk/microsoft-symbol-server-license-terms."/>
+
+                        <!-- Accept button -->
+                        <Button x:Name="SplashAcceptButton" Content="I Accept" HorizontalAlignment="Center"
+                                Padding="32,8" FontWeight="SemiBold" Click="SplashAccept_Click"
+                                Style="{DynamicResource AccentButtonStyle}"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
 </Window>
