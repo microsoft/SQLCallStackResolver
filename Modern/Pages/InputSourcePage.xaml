@@ -12,7 +12,7 @@
         <StackPanel Grid.Row="0" Margin="0,0,0,16">
             <TextBlock FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4"
                        Text="How would you like to provide input?"/>
-            <TextBlock FontSize="11" Foreground="Gray"
+            <TextBlock FontSize="12" Foreground="Gray"
                        Text="Choose an input method to get started."/>
         </StackPanel>
 
@@ -29,7 +29,7 @@
                     <TextBlock Text="Enter / Paste Callstacks" FontSize="14" FontWeight="SemiBold"
                                HorizontalAlignment="Center" Margin="0,0,0,8"/>
                     <TextBlock Text="Type or paste raw callstack text directly, or drag and drop text files."
-                               FontSize="11" Foreground="Gray" TextWrapping="Wrap" TextAlignment="Center"
+                               FontSize="12" Foreground="Gray" TextWrapping="Wrap" TextAlignment="Center"
                                MaxWidth="220"/>
                 </StackPanel>
             </Border>
@@ -46,13 +46,13 @@
                     <TextBlock Text="Import from XEL Files" FontSize="14" FontWeight="SemiBold"
                                HorizontalAlignment="Center" Margin="0,0,0,8"/>
                     <TextBlock Text="Load callstacks from Extended Event (XEL) trace files."
-                               FontSize="11" Foreground="Gray" TextWrapping="Wrap" TextAlignment="Center"
+                               FontSize="12" Foreground="Gray" TextWrapping="Wrap" TextAlignment="Center"
                                MaxWidth="220"/>
                 </StackPanel>
             </Border>
         </UniformGrid>
 
-        <TextBlock Grid.Row="2" FontSize="11" Foreground="Gray" HorizontalAlignment="Center" Margin="0,16,0,0"
+        <TextBlock Grid.Row="2" FontSize="12" Foreground="Gray" HorizontalAlignment="Center" Margin="0,16,0,0"
                    Text="Tip: You can also drag and drop .xel or text files here."/>
     </Grid>
 </UserControl>

@@ -15,7 +15,7 @@
                    Text="Paste the output of: select name, base_address from sys.dm_os_loaded_modules where name not like '%.rll'"/>
         <TextBox Grid.Row="1" x:Name="InputAddresses" AcceptsReturn="True" AcceptsTab="True"
                  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                 FontFamily="Consolas" FontSize="12" TextWrapping="NoWrap"
+                 FontFamily="Consolas" FontSize="13" TextWrapping="NoWrap"
                  AllowDrop="True" PreviewDragOver="InputAddresses_DragOver" Drop="InputAddresses_Drop"/>
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
             <Button Content="Load from file..." Width="100" Margin="0,0,8,0" Click="LoadFromFile_Click"/>

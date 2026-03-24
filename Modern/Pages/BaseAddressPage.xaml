@@ -25,7 +25,7 @@
                        Text="Paste the output of:  SELECT name, base_address FROM sys.dm_os_loaded_modules WHERE name NOT LIKE '%.rll'"/>
             <TextBox x:Name="InputAddresses" AcceptsReturn="True" AcceptsTab="True"
                      VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                     FontFamily="Consolas" FontSize="12" TextWrapping="NoWrap"
+                     FontFamily="Consolas" FontSize="13" TextWrapping="NoWrap"
                      Text="{Binding BaseAddressesString, UpdateSourceTrigger=PropertyChanged}"
                      AllowDrop="True" PreviewDragOver="InputAddresses_DragOver" Drop="InputAddresses_Drop"/>
         </DockPanel>

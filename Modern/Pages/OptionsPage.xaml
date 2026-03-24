@@ -11,7 +11,7 @@
 
         <TextBlock Grid.Row="0" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4"
                    Text="Step 3: Output Options"/>
-        <TextBlock Grid.Row="0" FontSize="11" Foreground="Gray" Margin="0,24,0,8"
+        <TextBlock Grid.Row="0" FontSize="12" Foreground="Gray" Margin="0,24,0,8"
                    Text="Configure how the resolved callstacks should be formatted."/>
 
         <GroupBox Grid.Row="1" Header="Output Formatting" Padding="6" Margin="0,0,0,8">
