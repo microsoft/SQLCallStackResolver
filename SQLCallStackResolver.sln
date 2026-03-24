@@ -23,6 +23,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SQLCalLStackResolver.Tests"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SQLCallstackResolver.Modern", "Modern\SQLCallstackResolver.Modern.csproj", "{D7E8F9A0-B1C2-4D3E-A5F6-7890ABCDEF12}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SQLCallStackResolver.ModernTests", "ModernTests\SQLCallStackResolver.ModernTests.csproj", "{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B89FBCCD-DEB5-47C4-BF0F-5448A17B82A4}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
@@ -56,6 +58,10 @@ Global
 		{D7E8F9A0-B1C2-4D3E-A5F6-7890ABCDEF12}.Debug|x64.Build.0 = Debug|x64
 		{D7E8F9A0-B1C2-4D3E-A5F6-7890ABCDEF12}.Release|x64.ActiveCfg = Release|x64
 		{D7E8F9A0-B1C2-4D3E-A5F6-7890ABCDEF12}.Release|x64.Build.0 = Release|x64
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|x64.ActiveCfg = Debug|x64
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|x64.Build.0 = Debug|x64
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|x64.ActiveCfg = Release|x64
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
