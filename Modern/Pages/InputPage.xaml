@@ -12,7 +12,7 @@
         <StackPanel Grid.Row="0" Margin="0,0,0,8">
             <TextBlock FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4"
                        Text="Provide Callstack Input"/>
-            <TextBlock FontSize="11" Foreground="Gray"
+            <TextBlock FontSize="12" Foreground="Gray"
                        Text="Paste or type raw callstack text below, or drag and drop text files."/>
         </StackPanel>
 
@@ -40,7 +40,7 @@
 
         <TextBox Grid.Row="2" x:Name="callStackInput" AcceptsReturn="True" AcceptsTab="True"
                  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                 FontFamily="Consolas" FontSize="12" TextWrapping="NoWrap"
+                 FontFamily="Consolas" FontSize="13" TextWrapping="NoWrap"
                  MaxLength="999999999"
                  Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
                  AllowDrop="True" PreviewDragOver="CallStackInput_DragOver" Drop="CallStackInput_Drop"/>

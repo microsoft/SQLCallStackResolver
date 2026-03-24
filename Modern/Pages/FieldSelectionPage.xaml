@@ -14,7 +14,7 @@
         <StackPanel Grid.Row="0" Margin="0,0,0,8">
             <TextBlock FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4"
                        Text="Import from XEL Files"/>
-            <TextBlock FontSize="11" Foreground="Gray"
+            <TextBlock FontSize="12" Foreground="Gray"
                        Text="Select XEL file(s), choose the fields to extract, then click Next to import callstacks."/>
         </StackPanel>
 
@@ -50,21 +50,24 @@
                       IsChecked="{Binding GroupXEvents}"/>
         </Grid>
 
-        <ListView Grid.Row="3" x:Name="FieldsListView" SelectionMode="Multiple">
-            <ListView.View>
-                <GridView>
-                    <GridViewColumn Width="40">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <CheckBox IsChecked="{Binding IsChecked}" />
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="Type" Width="70" DisplayMemberBinding="{Binding Category}"/>
-                    <GridViewColumn Header="Name" Width="400" DisplayMemberBinding="{Binding Name}"/>
-                </GridView>
-            </ListView.View>
-        </ListView>
+        <ListBox Grid.Row="3" x:Name="FieldsListView" SelectionMode="Extended"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            <ListBox.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Columns="2"/>
+                </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <CheckBox IsChecked="{Binding IsChecked}" Margin="2,2">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Category}" Foreground="Gray" Width="55" FontSize="12"/>
+                            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </CheckBox>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
 
         <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,8,0,0">
             <Button Content="Add Item" Padding="8,4" Margin="0,0,8,0" Click="AddItem_Click"/>

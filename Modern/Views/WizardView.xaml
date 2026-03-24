@@ -25,7 +25,7 @@
                                         MouseLeftButtonDown="StepItem_Click">
                                 <TextBlock Text="{Binding Icon}" FontFamily="Segoe MDL2 Assets" FontSize="14"
                                            VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock Text="{Binding Label}" FontSize="12"/>
+                                <TextBlock Text="{Binding Label}" FontSize="13"/>
                             </StackPanel>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>

@@ -88,7 +88,7 @@
                         </StackPanel>
                         <Button Content="Enter base addresses..." Margin="0,0,0,6" Click="EnterBaseAddresses_Click"
                                 HorizontalAlignment="Left" Padding="8,3"/>
-                        <TextBlock Text="Save output to file:" FontSize="10.5" Foreground="Gray" Margin="0,0,0,2"/>
+                        <TextBlock Text="Save output to file:" FontSize="11.5" Foreground="Gray" Margin="0,0,0,2"/>
                         <DockPanel>
                             <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowseOutputPath_Click"
                                     ToolTip="Browse for output file location"/>
@@ -104,7 +104,7 @@
                 <StackPanel>
                     <Button Content="Use public PDBs for a known SQL Server build..." Margin="0,0,0,6" Click="SelectSQLPDB_Click"
                             HorizontalAlignment="Left" Padding="8,3"/>
-                    <TextBlock Text="PDB search paths:" FontSize="10.5" Foreground="Gray" Margin="0,0,0,2"/>
+                    <TextBlock Text="PDB search paths:" FontSize="11.5" Foreground="Gray" Margin="0,0,0,2"/>
                     <DockPanel Margin="0,0,0,4">
                         <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowsePdbPath_Click"
                                 ToolTip="Browse for PDB folder"/>
@@ -116,7 +116,7 @@
                         <CheckBox Content="Cache PDBs locally" IsChecked="{Binding CachePDB}"
                                   ToolTip="Copies PDBs to %TEMP%\SymCache"/>
                     </StackPanel>
-                    <TextBlock Text="Binary paths (for OrdinalNNN resolution):" FontSize="10.5" Foreground="Gray" Margin="0,0,0,2"/>
+                    <TextBlock Text="Binary paths (for OrdinalNNN resolution):" FontSize="11.5" Foreground="Gray" Margin="0,0,0,2"/>
                     <DockPanel Margin="0,0,0,4">
                         <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowseBinaryPath_Click"
                                 ToolTip="Browse for binary folder"/>
@@ -131,30 +131,30 @@
             <Grid Grid.Row="1" Grid.ColumnSpan="2">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Button Grid.Column="0" FontWeight="Bold" Padding="14,6" Margin="0,0,8,0"
-                        Command="{Binding ResolveCommand}">
+                <Button Grid.Column="0" Padding="10,6"
+                        Command="{Binding CancelCommand}"
+                        Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVis}}">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                        <TextBlock Text="Resolve Callstacks!" FontWeight="Bold"/>
+                        <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBlock Text="Cancel"/>
                     </StackPanel>
                 </Button>
-                <Button Grid.Column="1" Padding="10,6" Margin="0,0,8,0"
+                <Button Grid.Column="2" Padding="10,6" Margin="0,0,8,0"
                         Command="{Binding PasteFromClipboardCommand}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xE77F;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0"/>
                         <TextBlock Text="Paste clipboard &amp; resolve"/>
                     </StackPanel>
                 </Button>
-                <Button Grid.Column="3" Padding="10,6"
-                        Command="{Binding CancelCommand}"
-                        Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVis}}">
+                <Button Grid.Column="3" FontWeight="Bold" Padding="14,6"
+                        Command="{Binding ResolveCommand}">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                        <TextBlock Text="Cancel"/>
+                        <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBlock Text="Resolve Callstacks!" FontWeight="Bold"/>
                     </StackPanel>
                 </Button>
             </Grid>

@@ -4,7 +4,7 @@
         xmlns:local="clr-namespace:Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
-        Title="SQL Call Stack Resolver" Height="700" Width="1050" MinHeight="500" MinWidth="750"
+        Title="SQLCallStackResolver (https://aka.ms/sqlstack)" Height="700" Width="1050" MinHeight="500" MinWidth="750"
         WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <local:BoolToVisibilityConverter x:Key="BoolToVis"/>
@@ -19,21 +19,15 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0" Orientation="Horizontal">
-                    <TextBlock Text="&#xE7B8;" FontFamily="Segoe MDL2 Assets" FontSize="20"
-                               VerticalAlignment="Center" Margin="0,0,10,0"/>
-                    <TextBlock Text="SQL Call Stack Resolver" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                </StackPanel>
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,12,0">
                     <TextBlock Text="Mode:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <RadioButton x:Name="WizardRadio" Content="Wizard" VerticalAlignment="Center" Margin="0,0,12,0"
+                    <RadioButton x:Name="WizardRadio" Content="Simple" VerticalAlignment="Center" Margin="0,0,12,0"
                                  GroupName="ViewMode" Checked="WizardRadio_Checked"/>
                     <RadioButton x:Name="ClassicRadio" Content="Classic" VerticalAlignment="Center"
                                  GroupName="ViewMode" Checked="ClassicRadio_Checked"/>
                 </StackPanel>
-                <ToggleButton Grid.Column="3" x:Name="ThemeToggle" Click="ThemeToggle_Click" Padding="8,4"
+                <ToggleButton Grid.Column="2" x:Name="ThemeToggle" Click="ThemeToggle_Click" Padding="8,4"
                               ToolTip="Toggle dark/light theme">
                     <TextBlock x:Name="ThemeIcon" Text="&#xE708;" FontFamily="Segoe MDL2 Assets" FontSize="16"/>
                 </ToggleButton>
@@ -84,7 +78,7 @@
                                        VerticalAlignment="Center" Margin="0,0,14,0"
                                        Foreground="{DynamicResource SystemControlForegroundAccentBrush}"/>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="SQL Call Stack Resolver" FontSize="22" FontWeight="Bold"/>
+                                <TextBlock Text="SQLCallStackResolver" FontSize="22" FontWeight="Bold"/>
                                 <TextBlock x:Name="SplashVersion" Text="" FontSize="12" Foreground="Gray"/>
                             </StackPanel>
                         </StackPanel>

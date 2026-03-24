@@ -15,7 +15,7 @@
 
         <TextBlock Grid.Row="0" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4"
                    Text="Resolved Output"/>
-        <TextBlock Grid.Row="0" FontSize="11" Foreground="Gray" Margin="0,24,0,8"
+        <TextBlock Grid.Row="0" FontSize="12" Foreground="Gray" Margin="0,24,0,8"
                    Text="Symbolized callstack output is shown below."/>
 
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
@@ -31,7 +31,7 @@
 
         <TextBox Grid.Row="2" IsReadOnly="True" AcceptsReturn="True"
                  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                 FontFamily="Consolas" FontSize="12" TextWrapping="NoWrap"
+                 FontFamily="Consolas" FontSize="13" TextWrapping="NoWrap"
                  Text="{Binding OutputText, Mode=OneWay}"/>
     </Grid>
 </UserControl>
