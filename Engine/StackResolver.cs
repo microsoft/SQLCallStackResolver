@@ -235,11 +235,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
                 // make sure we cleanup COM allocations for the resolved sym
                 Marshal.FinalReleaseComObject(mysym);
                 result = (inlineFrameAndSourceInfo + symbolizedFrame + "\t" + sourceInfo).Trim();
-                if (!resWasCached) {    // we only need to add to cache if it was not already cached.
-                    this.rwLockCachedSymbols.AcquireWriterLock(-1);
-                    if (!this.cachedSymbols.ContainsKey(symKey)) this.cachedSymbols.Add(symKey, result);
-                    this.rwLockCachedSymbols.ReleaseWriterLock();
-                }
+                this.rwLockCachedSymbols.AcquireWriterLock(-1);
+                if (!this.cachedSymbols.ContainsKey(symKey)) this.cachedSymbols.Add(symKey, result);
+                this.rwLockCachedSymbols.ReleaseWriterLock();
             }
 
             if (frameNum != int.MinValue) {
