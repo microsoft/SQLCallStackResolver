@@ -6,6 +6,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -37,8 +38,42 @@
             </Grid>
         </GroupBox>
 
-        <!-- Advanced options (collapsed by default) -->
+        <!-- Output options (collapsed by default) -->
         <Expander Grid.Row="3" Margin="0,4,0,0" IsExpanded="False">
+            <Expander.Header>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                               VerticalAlignment="Center" Margin="0,0,6,0" Foreground="Gray"/>
+                    <TextBlock Text="Output options" Foreground="Gray" FontSize="12"/>
+                </StackPanel>
+            </Expander.Header>
+            <StackPanel Margin="24,8,0,0">
+                <CheckBox Content="Include source file and line numbers (requires private PDBs)" Margin="0,0,0,6"
+                          IsChecked="{Binding IncludeLineNumbers}"/>
+                <CheckBox Content="Include function offsets" Margin="0,0,0,6"
+                          IsChecked="{Binding IncludeOffsets}"/>
+                <CheckBox Content="Show inline frames" Margin="0,0,0,6"
+                          IsChecked="{Binding ShowInlineFrames}"/>
+                <GroupBox Header="Output Destination" Padding="6" Margin="0,4,0,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Save to file:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBox Grid.Column="1" Text="{Binding OutputFilePath, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="Leave empty to display output in the results area"/>
+                        <Button Grid.Column="2" Content="Browse..." Width="80" Margin="4,0,0,0" Click="BrowseOutputPath_Click"/>
+                    </Grid>
+                </GroupBox>
+                <TextBlock FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap" Margin="0,6,0,0"
+                           Text="Tip: For very large inputs, saving output to a file is recommended to avoid truncation."/>
+            </StackPanel>
+        </Expander>
+
+        <!-- Advanced symbol options (collapsed by default) -->
+        <Expander Grid.Row="4" Margin="0,4,0,0" IsExpanded="False">
             <Expander.Header>
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="12"

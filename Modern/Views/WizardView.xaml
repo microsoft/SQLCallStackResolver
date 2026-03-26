@@ -7,6 +7,7 @@
         <local:StepToBrushConverter x:Key="StepToBrush"/>
         <local:BoolToVisibilityConverter x:Key="BoolToVis"/>
         <local:InverseBoolToVisibilityConverter x:Key="InvBoolToVis"/>
+        <local:BoolToMarginConverter x:Key="BoolToMargin"/>
     </UserControl.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
@@ -21,7 +22,7 @@
                 <ItemsControl x:Name="StepsList" DockPanel.Dock="Top">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8" Cursor="Hand"
+                            <StackPanel Orientation="Horizontal" Margin="{Binding IsConditional, Converter={StaticResource BoolToMargin}}" Cursor="Hand"
                                         MouseLeftButtonDown="StepItem_Click">
                                 <TextBlock Text="{Binding Icon}" FontFamily="Segoe MDL2 Assets" FontSize="14"
                                            VerticalAlignment="Center" Margin="0,0,6,0"/>
@@ -39,19 +40,28 @@
             <Grid DockPanel.Dock="Bottom" Margin="0,8,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Button Grid.Column="0" Width="90" Padding="4,6"
+                <Button Grid.Column="0" Width="90" Padding="4,6" Margin="0,0,8,0"
                         Command="{Binding PreviousStepCommand}"
-                        Visibility="{Binding IsOnResolvePage, Converter={StaticResource InvBoolToVis}}">
+                        Visibility="{Binding CanGoBack, Converter={StaticResource BoolToVis}}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
                         <TextBlock Text="Back"/>
                     </StackPanel>
                 </Button>
-                <Button Grid.Column="2" Width="90" Padding="4,6" Margin="0,0,8,0"
+                <Button Grid.Column="1" Width="120" Padding="4,6"
+                        Command="{Binding StartOverCommand}"
+                        Visibility="{Binding CanStartOver, Converter={StaticResource BoolToVis}}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock Text="Start Over"/>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="3" Width="90" Padding="4,6" Margin="0,0,8,0"
                         Command="{Binding NextStepCommand}"
                         Visibility="{Binding ShowNextButton, Converter={StaticResource BoolToVis}}">
                     <StackPanel Orientation="Horizontal">
@@ -59,15 +69,7 @@
                         <TextBlock Text="&#xE72A;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="4,0,0,0"/>
                     </StackPanel>
                 </Button>
-                <Button Grid.Column="2" Width="120" Padding="4,6" Margin="0,0,8,0"
-                        Command="{Binding StartOverCommand}"
-                        Visibility="{Binding IsOnResolvePage, Converter={StaticResource BoolToVis}}">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                        <TextBlock Text="Start Over"/>
-                    </StackPanel>
-                </Button>
-                <Button Grid.Column="3" Width="120" Padding="4,6" FontWeight="Bold"
+                <Button Grid.Column="4" Width="120" Padding="4,6" FontWeight="Bold"
                         Command="{Binding ResolveCommand}"
                         Visibility="{Binding IsOnStepBeforeResolve, Converter={StaticResource BoolToVis}}">
                     <StackPanel Orientation="Horizontal">

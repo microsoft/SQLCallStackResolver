@@ -6,7 +6,25 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ui:ThemeResources/>
+                <ui:ThemeResources>
+                    <ui:ThemeResources.ThemeDictionaries>
+                        <ResourceDictionary x:Key="Light">
+                            <SolidColorBrush x:Key="WarningBackgroundBrush" Color="#FFF3CD"/>
+                            <SolidColorBrush x:Key="WarningBorderBrush" Color="#FFD700"/>
+                            <SolidColorBrush x:Key="WarningForegroundBrush" Color="#856404"/>
+                        </ResourceDictionary>
+                        <ResourceDictionary x:Key="Dark">
+                            <SolidColorBrush x:Key="WarningBackgroundBrush" Color="#3D3520"/>
+                            <SolidColorBrush x:Key="WarningBorderBrush" Color="#B8860B"/>
+                            <SolidColorBrush x:Key="WarningForegroundBrush" Color="#FFD700"/>
+                        </ResourceDictionary>
+                        <ResourceDictionary x:Key="HighContrast">
+                            <SolidColorBrush x:Key="WarningBackgroundBrush" Color="{DynamicResource SystemColorWindowColor}"/>
+                            <SolidColorBrush x:Key="WarningBorderBrush" Color="{DynamicResource SystemColorWindowTextColor}"/>
+                            <SolidColorBrush x:Key="WarningForegroundBrush" Color="{DynamicResource SystemColorWindowTextColor}"/>
+                        </ResourceDictionary>
+                    </ui:ThemeResources.ThemeDictionaries>
+                </ui:ThemeResources>
                 <ui:XamlControlsResources/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>

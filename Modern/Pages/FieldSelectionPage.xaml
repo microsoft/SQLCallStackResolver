@@ -19,7 +19,7 @@
         </StackPanel>
 
         <!-- File picker section -->
-        <Border Grid.Row="1" BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,8">
+        <Border Grid.Row="1" BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,8">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -69,9 +69,18 @@
             </ListBox.ItemTemplate>
         </ListBox>
 
-        <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,8,0,0">
-            <Button Content="Add Item" Padding="8,4" Margin="0,0,8,0" Click="AddItem_Click"/>
-            <Button Content="Delete Selected" Padding="8,4" Margin="0,0,8,0" Click="DeleteItem_Click"/>
-        </StackPanel>
+        <Expander Grid.Row="4" Margin="0,8,0,0" IsExpanded="False">
+            <Expander.Header>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                               VerticalAlignment="Center" Margin="0,0,6,0" Foreground="Gray"/>
+                    <TextBlock Text="Manual field management" Foreground="Gray" FontSize="12"/>
+                </StackPanel>
+            </Expander.Header>
+            <StackPanel Orientation="Horizontal" Margin="24,6,0,0">
+                <Button Content="Add Item" Padding="8,4" Margin="0,0,8,0" Click="AddItem_Click"/>
+                <Button Content="Delete Selected" Padding="8,4" Margin="0,0,8,0" Click="DeleteItem_Click"/>
+            </StackPanel>
+        </Expander>
     </Grid>
 </UserControl>

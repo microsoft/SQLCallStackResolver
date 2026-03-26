@@ -32,5 +32,13 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.Properties 
             get { return ((bool)(this["UseWizardMode"])); }
             set { this["UseWizardMode"] = value; }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string AcceptedSplashVersion {
+            get { return ((string)(this["AcceptedSplashVersion"])); }
+            set { this["AcceptedSplashVersion"] = value; }
+        }
     }
 }

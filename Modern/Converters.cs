@@ -43,4 +43,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         }
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
     }
+
+    internal class BoolToMarginConverter : IValueConverter {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+            value is bool b && b ? new System.Windows.Thickness(20, 0, 0, 8) : new System.Windows.Thickness(0, 0, 0, 8);
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+    }
 }

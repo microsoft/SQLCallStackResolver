@@ -12,7 +12,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         private readonly FieldSelectionPage _fieldSelectionPage = new FieldSelectionPage();
         private readonly BaseAddressPage _baseAddressPage = new BaseAddressPage();
         private readonly SymbolConfigPage _symbolConfigPage = new SymbolConfigPage();
-        private readonly OptionsPage _optionsPage = new OptionsPage();
         private readonly ResolvePage _resolvePage = new ResolvePage();
 
         public WizardView() {
@@ -23,7 +22,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
             _pageRegistry["BaseAddress"] = _baseAddressPage;
             _pageRegistry["FieldSelection"] = _fieldSelectionPage;
             _pageRegistry["Symbols"] = _symbolConfigPage;
-            _pageRegistry["Options"] = _optionsPage;
             _pageRegistry["Resolve"] = _resolvePage;
 
             DataContextChanged += (s, e) => {
@@ -149,6 +147,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
                 }
 
                 await vm.LoadXELFilesAsync(fileNames, selectedFields);
+
+                // If cancelled or no data was imported, stay on the current page
+                if (string.IsNullOrWhiteSpace(vm.InputText)) return;
 
                 // After import, check if the imported data needs base addresses
                 if (!string.IsNullOrWhiteSpace(vm.InputText)
