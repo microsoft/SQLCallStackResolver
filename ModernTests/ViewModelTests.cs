@@ -15,13 +15,12 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.Tests {
         // ----------------------------------------------------------------
 
         [TestMethod][TestCategory("ModernUI")]
-        public void InitialState_HasFourCoreSteps() {
+        public void InitialState_HasThreeCoreSteps() {
             var vm = new ResolverViewModel();
-            Assert.AreEqual(4, vm.WizardSteps.Count);
+            Assert.AreEqual(3, vm.WizardSteps.Count);
             Assert.AreEqual("InputSource", vm.WizardSteps[0].Id);
             Assert.AreEqual("Symbols", vm.WizardSteps[1].Id);
-            Assert.AreEqual("Options", vm.WizardSteps[2].Id);
-            Assert.AreEqual("Resolve", vm.WizardSteps[3].Id);
+            Assert.AreEqual("Resolve", vm.WizardSteps[2].Id);
         }
 
         [TestMethod][TestCategory("ModernUI")]
@@ -82,16 +81,18 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.Tests {
         [TestMethod][TestCategory("ModernUI")]
         public void ShowNextButton_VisibleOnMiddleSteps() {
             var vm = new ResolverViewModel();
-            // Navigate to Symbols (index 1 in default 4-step layout)
+            // With 3 core steps, Symbols is step-before-resolve so insert a sub-step to create a middle
+            vm.InsertSubStepAfter("InputSource", ResolverViewModel.StepInput);
+            // Steps: InputSource(0), Input(1), Symbols(2), Resolve(3)
             vm.CurrentStep = 1;
-            Assert.AreEqual("Symbols", vm.CurrentStepId);
+            Assert.AreEqual("Input", vm.CurrentStepId);
             Assert.IsTrue(vm.ShowNextButton);
         }
 
         [TestMethod][TestCategory("ModernUI")]
         public void ShowNextButton_HiddenOnStepBeforeResolve() {
             var vm = new ResolverViewModel();
-            vm.CurrentStep = vm.WizardSteps.Count - 2; // Options
+            vm.CurrentStep = vm.WizardSteps.Count - 2; // Symbols
             Assert.IsFalse(vm.ShowNextButton);
         }
 
@@ -114,6 +115,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.Tests {
             Assert.IsTrue(changed.Contains(nameof(vm.IsOnStepBeforeResolve)));
             Assert.IsTrue(changed.Contains(nameof(vm.ShowNextButton)));
             Assert.IsTrue(changed.Contains(nameof(vm.CurrentStepId)));
+            Assert.IsTrue(changed.Contains(nameof(vm.CanStartOver)));
         }
 
         [TestMethod][TestCategory("ModernUI")]
@@ -145,7 +147,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.Tests {
         public void InsertSubStep_InsertsAfterParent() {
             var vm = new ResolverViewModel();
             vm.InsertSubStepAfter("InputSource", ResolverViewModel.StepInput);
-            Assert.AreEqual(5, vm.WizardSteps.Count);
+            Assert.AreEqual(4, vm.WizardSteps.Count);
             Assert.AreEqual("InputSource", vm.WizardSteps[0].Id);
             Assert.AreEqual("Input", vm.WizardSteps[1].Id);
             Assert.AreEqual("Symbols", vm.WizardSteps[2].Id);
@@ -156,7 +158,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.Tests {
             var vm = new ResolverViewModel();
             vm.InsertSubStepAfter("InputSource", ResolverViewModel.StepInput);
             vm.InsertSubStepAfter("InputSource", ResolverViewModel.StepInput);
-            Assert.AreEqual(5, vm.WizardSteps.Count);
+            Assert.AreEqual(4, vm.WizardSteps.Count);
             Assert.AreEqual(1, vm.WizardSteps.Count(s => s.Id == "Input"));
         }
 
@@ -166,7 +168,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.Tests {
             vm.InsertSubStepAfter("InputSource", ResolverViewModel.StepInput);
             vm.InsertSubStepAfter("InputSource", ResolverViewModel.StepBaseAddress);
             // Both should be after InputSource, before Symbols
-            Assert.AreEqual(6, vm.WizardSteps.Count);
+            Assert.AreEqual(5, vm.WizardSteps.Count);
             Assert.AreEqual("InputSource", vm.WizardSteps[0].Id);
             Assert.AreEqual("Input", vm.WizardSteps[1].Id);
             Assert.AreEqual("BaseAddress", vm.WizardSteps[2].Id);
@@ -177,15 +179,15 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.Tests {
         public void InsertSubStep_InvalidParent_NoChange() {
             var vm = new ResolverViewModel();
             vm.InsertSubStepAfter("NonExistent", ResolverViewModel.StepInput);
-            Assert.AreEqual(4, vm.WizardSteps.Count);
+            Assert.AreEqual(3, vm.WizardSteps.Count);
         }
 
         [TestMethod][TestCategory("ModernUI")]
         public void InsertSubStep_UpdatesTotalSteps() {
             var vm = new ResolverViewModel();
-            Assert.AreEqual(4, vm.TotalSteps);
+            Assert.AreEqual(3, vm.TotalSteps);
             vm.InsertSubStepAfter("InputSource", ResolverViewModel.StepInput);
-            Assert.AreEqual(5, vm.TotalSteps);
+            Assert.AreEqual(4, vm.TotalSteps);
         }
 
         // ----------------------------------------------------------------
@@ -196,9 +198,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.Tests {
         public void RemoveSubStep_RemovesExistingStep() {
             var vm = new ResolverViewModel();
             vm.InsertSubStepAfter("InputSource", ResolverViewModel.StepInput);
-            Assert.AreEqual(5, vm.WizardSteps.Count);
-            vm.RemoveSubStep("Input");
             Assert.AreEqual(4, vm.WizardSteps.Count);
+            vm.RemoveSubStep("Input");
+            Assert.AreEqual(3, vm.WizardSteps.Count);
             Assert.IsFalse(vm.WizardSteps.Any(s => s.Id == "Input"));
         }
 
@@ -206,17 +208,17 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.Tests {
         public void RemoveSubStep_NonExistent_NoChange() {
             var vm = new ResolverViewModel();
             vm.RemoveSubStep("NonExistent");
-            Assert.AreEqual(4, vm.WizardSteps.Count);
+            Assert.AreEqual(3, vm.WizardSteps.Count);
         }
 
         [TestMethod][TestCategory("ModernUI")]
         public void RemoveSubStep_ClampsCurrentStep() {
             var vm = new ResolverViewModel();
             vm.InsertSubStepAfter("InputSource", ResolverViewModel.StepInput);
-            // 5 steps: InputSource(0), Input(1), Symbols(2), Options(3), Resolve(4)
-            vm.CurrentStep = 4; // on Resolve
+            // 4 steps: InputSource(0), Input(1), Symbols(2), Resolve(3)
+            vm.CurrentStep = 3; // on Resolve
             vm.RemoveSubStep("Input");
-            // Now 4 steps: InputSource(0), Symbols(1), Options(2), Resolve(3)
+            // Now 3 steps: InputSource(0), Symbols(1), Resolve(2)
             Assert.IsTrue(vm.CurrentStep < vm.WizardSteps.Count);
         }
 
@@ -259,7 +261,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.Tests {
             Assert.AreEqual("Ready", vm.StatusMessage);
             Assert.AreEqual(0, vm.ProgressPercent);
             Assert.AreEqual(0, vm.CurrentStep);
-            Assert.AreEqual(4, vm.WizardSteps.Count, "All conditional sub-steps should be removed");
+            Assert.AreEqual(3, vm.WizardSteps.Count, "All conditional sub-steps should be removed");
             Assert.IsNull(vm.PendingXELFileNames);
         }
 
@@ -336,7 +338,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.Tests {
         public void WizardStep_CoreStepsAreNotConditional() {
             Assert.IsFalse(ResolverViewModel.StepInputSource.IsConditional);
             Assert.IsFalse(ResolverViewModel.StepSymbols.IsConditional);
-            Assert.IsFalse(ResolverViewModel.StepOptions.IsConditional);
             Assert.IsFalse(ResolverViewModel.StepResolve.IsConditional);
         }
 
@@ -403,8 +404,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.Tests {
             var vm = new ResolverViewModel();
             // Simulate "ChooseDirectInput": insert Input step
             vm.InsertSubStepAfter("InputSource", ResolverViewModel.StepInput);
-            // Steps: InputSource(0), Input(1), Symbols(2), Options(3), Resolve(4)
-            Assert.AreEqual(5, vm.WizardSteps.Count);
+            // Steps: InputSource(0), Input(1), Symbols(2), Resolve(3)
+            Assert.AreEqual(4, vm.WizardSteps.Count);
 
             vm.CurrentStep = 1;
             Assert.AreEqual("Input", vm.CurrentStepId);
@@ -412,14 +413,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.Tests {
 
             vm.CurrentStep = 2;
             Assert.AreEqual("Symbols", vm.CurrentStepId);
-            Assert.IsTrue(vm.ShowNextButton);
-
-            vm.CurrentStep = 3;
-            Assert.AreEqual("Options", vm.CurrentStepId);
             Assert.IsFalse(vm.ShowNextButton, "Should be hidden on step before Resolve");
             Assert.IsTrue(vm.IsOnStepBeforeResolve);
 
-            vm.CurrentStep = 4;
+            vm.CurrentStep = 3;
             Assert.AreEqual("Resolve", vm.CurrentStepId);
             Assert.IsTrue(vm.IsOnResolvePage);
         }
@@ -429,13 +426,13 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.Tests {
             var vm = new ResolverViewModel();
             // Simulate "ChooseXELImport"
             vm.InsertSubStepAfter("InputSource", ResolverViewModel.StepFieldSelection);
-            Assert.AreEqual(5, vm.WizardSteps.Count);
+            Assert.AreEqual(4, vm.WizardSteps.Count);
             Assert.AreEqual("FieldSelection", vm.WizardSteps[1].Id);
 
             // Simulate XEL import reveals VA-only data → insert BaseAddress
             vm.InsertSubStepAfter("InputSource", ResolverViewModel.StepBaseAddress);
-            Assert.AreEqual(6, vm.WizardSteps.Count);
-            // Order: InputSource, FieldSelection, BaseAddress, Symbols, Options, Resolve
+            Assert.AreEqual(5, vm.WizardSteps.Count);
+            // Order: InputSource, FieldSelection, BaseAddress, Symbols, Resolve
             Assert.AreEqual("FieldSelection", vm.WizardSteps[1].Id);
             Assert.AreEqual("BaseAddress", vm.WizardSteps[2].Id);
             Assert.AreEqual("Symbols", vm.WizardSteps[3].Id);
@@ -453,7 +450,36 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.Tests {
             vm.InsertSubStepAfter("InputSource", ResolverViewModel.StepFieldSelection);
             Assert.IsFalse(vm.HasSubStep("Input"));
             Assert.IsTrue(vm.HasSubStep("FieldSelection"));
-            Assert.AreEqual(5, vm.WizardSteps.Count);
+            Assert.AreEqual(4, vm.WizardSteps.Count);
+        }
+
+        // ----------------------------------------------------------------
+        // CanStartOver / HasOutput properties
+        // ----------------------------------------------------------------
+
+        [TestMethod][TestCategory("ModernUI")]
+        public void CanStartOver_FalseOnFirstStep_TrueAfter() {
+            var vm = new ResolverViewModel();
+            Assert.IsFalse(vm.CanStartOver);
+            vm.CurrentStep = 1;
+            Assert.IsTrue(vm.CanStartOver);
+        }
+
+        [TestMethod][TestCategory("ModernUI")]
+        public void HasOutput_FalseByDefault_TrueWhenSet() {
+            var vm = new ResolverViewModel();
+            Assert.IsFalse(vm.HasOutput);
+            vm.OutputText = "resolved output";
+            Assert.IsTrue(vm.HasOutput);
+        }
+
+        [TestMethod][TestCategory("ModernUI")]
+        public void HasOutput_RaisesPropertyChanged() {
+            var vm = new ResolverViewModel();
+            var changed = new List<string>();
+            vm.PropertyChanged += (s, e) => changed.Add(e.PropertyName);
+            vm.OutputText = "test";
+            Assert.IsTrue(changed.Contains(nameof(vm.HasOutput)));
         }
     }
 }

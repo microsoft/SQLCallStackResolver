@@ -49,5 +49,16 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
                 ViewModel.AppendPdbPath(dialog.LastDownloadedSymFolder);
             }
         }
+
+        private void BrowseOutputPath_Click(object sender, RoutedEventArgs e) {
+            var dlg = new Microsoft.Win32.SaveFileDialog {
+                FileName = "resolvedstacks.txt",
+                Filter = "Text files (*.txt)|*.txt",
+                Title = "Save output as"
+            };
+            if (dlg.ShowDialog(Window.GetWindow(this)) == true) {
+                ViewModel.OutputFilePath = dlg.FileName;
+            }
+        }
     }
 }

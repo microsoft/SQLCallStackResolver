@@ -62,7 +62,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
 
             WizardSteps.Add(StepInputSource);
             WizardSteps.Add(StepSymbols);
-            WizardSteps.Add(StepOptions);
             WizardSteps.Add(StepResolve);
 
             ResolveCommand = new RelayCommand(_ => Resolve(), _ => !IsProcessing);
@@ -85,7 +84,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         private int _currentStep;
         public int CurrentStep {
             get => _currentStep;
-            set { SetField(ref _currentStep, value, nameof(CurrentStep)); OnPropertyChanged(nameof(CanGoBack)); OnPropertyChanged(nameof(CanGoNext)); OnPropertyChanged(nameof(IsOnResolvePage)); OnPropertyChanged(nameof(IsOnStepBeforeResolve)); OnPropertyChanged(nameof(ShowNextButton)); OnPropertyChanged(nameof(CurrentStepId)); }
+            set { SetField(ref _currentStep, value, nameof(CurrentStep)); OnPropertyChanged(nameof(CanGoBack)); OnPropertyChanged(nameof(CanGoNext)); OnPropertyChanged(nameof(IsOnResolvePage)); OnPropertyChanged(nameof(IsOnStepBeforeResolve)); OnPropertyChanged(nameof(ShowNextButton)); OnPropertyChanged(nameof(CurrentStepId)); OnPropertyChanged(nameof(CanStartOver)); }
         }
         public bool CanGoBack => _currentStep > 0;
         public bool CanGoNext => _currentStep < WizardSteps.Count - 1;
@@ -93,6 +92,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         public bool IsOnStepBeforeResolve => _currentStep == WizardSteps.Count - 2;
         public bool ShowNextButton => _currentStep < WizardSteps.Count - 2 && CurrentStepId != "InputSource";
         public string CurrentStepId => _currentStep < WizardSteps.Count ? WizardSteps[_currentStep].Id : string.Empty;
+        public bool CanStartOver => _currentStep > 0;
 
         // -- Pending XEL data (for field selection sub-step) --
         public string[] PendingXELFileNames { get; set; }
@@ -104,7 +104,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         public string InputText { get => _inputText; set => SetField(ref _inputText, value, nameof(InputText)); }
 
         private string _outputText = string.Empty;
-        public string OutputText { get => _outputText; set => SetField(ref _outputText, value, nameof(OutputText)); }
+        public string OutputText { get => _outputText; set { SetField(ref _outputText, value, nameof(OutputText)); OnPropertyChanged(nameof(HasOutput)); } }
+
+        public bool HasOutput => !string.IsNullOrEmpty(_outputText);
 
         // -- Input Options --
         private bool _framesOnSingleLine;
@@ -288,6 +290,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
             OutputText = string.Empty;
             StatusMessage = "Parsing input...";
 
+            // Remember where we were so we can return on cancel
+            int previousStep = CurrentStep;
+
             // Navigate to the Resolve/output page so the user sees progress and results
             int resolveIdx = WizardSteps.IndexOf(StepResolve);
             if (resolveIdx >= 0 && CurrentStep != resolveIdx) CurrentStep = resolveIdx;
@@ -319,8 +324,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
                 StatusMessage = "Resolution complete.";
             } catch (OperationCanceledException) {
                 StatusMessage = StackResolver.OperationCanceled;
+                CurrentStep = previousStep;
             } catch (AggregateException ae) when (ae.InnerExceptions.Any(ex => ex is OperationCanceledException)) {
                 StatusMessage = StackResolver.OperationCanceled;
+                CurrentStep = previousStep;
             } catch (Exception ex) {
                 StatusMessage = $"Error: {ex.Message}";
             } finally {

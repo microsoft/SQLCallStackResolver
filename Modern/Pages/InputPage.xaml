@@ -18,15 +18,15 @@
 
         <!-- Single-line mismatch warning banner (hidden by default) -->
         <Border Grid.Row="1" x:Name="SingleLineWarningBanner" Visibility="Collapsed"
-                Background="#FFF3CD" BorderBrush="#FFD700" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,6">
+                Background="{DynamicResource WarningBackgroundBrush}" BorderBrush="{DynamicResource WarningBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,6">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="#856404"/>
-                    <TextBlock x:Name="SingleLineWarningText" Foreground="#856404" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                    <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{DynamicResource WarningForegroundBrush}"/>
+                    <TextBlock x:Name="SingleLineWarningText" Foreground="{DynamicResource WarningForegroundBrush}" TextWrapping="Wrap" VerticalAlignment="Center"/>
                 </StackPanel>
                 <Button Grid.Column="1" x:Name="AutoFixButton" Padding="8,4" Margin="8,0,0,0"
                         VerticalAlignment="Center" Click="AutoFixSingleLine_Click">

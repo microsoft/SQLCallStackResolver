@@ -4,35 +4,20 @@
         xmlns:local="clr-namespace:Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
+        Icon="app.ico"
         Title="SQLCallStackResolver (https://aka.ms/sqlstack)" Height="700" Width="1050" MinHeight="500" MinWidth="750"
         WindowStartupLocation="CenterScreen">
+    <Window.InputBindings>
+        <KeyBinding Gesture="Ctrl+Enter" Command="{Binding ResolveCommand}"/>
+        <KeyBinding Gesture="Escape" Command="{Binding CancelCommand}"/>
+        <KeyBinding Gesture="Ctrl+Shift+V" Command="{Binding PasteFromClipboardCommand}"/>
+    </Window.InputBindings>
     <Window.Resources>
         <local:BoolToVisibilityConverter x:Key="BoolToVis"/>
         <local:InverseBoolToVisibilityConverter x:Key="InvBoolToVis"/>
     </Window.Resources>
     <Grid>
         <DockPanel x:Name="MainContent">
-        <!-- Top toolbar: Mode toggle -->
-        <Border DockPanel.Dock="Top" Padding="12,8">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0" Orientation="Horizontal">
-                    <TextBlock Text="Mode:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <RadioButton x:Name="WizardRadio" Content="Simple" VerticalAlignment="Center" Margin="0,0,12,0"
-                                 GroupName="ViewMode" Checked="WizardRadio_Checked"/>
-                    <RadioButton x:Name="ClassicRadio" Content="Classic" VerticalAlignment="Center"
-                                 GroupName="ViewMode" Checked="ClassicRadio_Checked"/>
-                </StackPanel>
-                <ToggleButton Grid.Column="2" x:Name="ThemeToggle" Click="ThemeToggle_Click" Padding="8,4"
-                              ToolTip="Toggle dark/light theme">
-                    <TextBlock x:Name="ThemeIcon" Text="&#xE708;" FontFamily="Segoe MDL2 Assets" FontSize="16"/>
-                </ToggleButton>
-            </Grid>
-        </Border>
 
         <!-- Bottom status bar -->
         <StatusBar DockPanel.Dock="Bottom">
@@ -41,7 +26,7 @@
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="200"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                     </Grid>
                 </ItemsPanelTemplate>
@@ -49,8 +34,24 @@
             <StatusBarItem Grid.Column="0">
                 <TextBlock Text="{Binding StatusMessage}" TextTrimming="CharacterEllipsis"/>
             </StatusBarItem>
-            <StatusBarItem Grid.Column="1" HorizontalContentAlignment="Stretch">
-                <ProgressBar Height="16" Minimum="0" Maximum="100" Value="{Binding ProgressPercent, Mode=OneWay}"/>
+            <StatusBarItem Grid.Column="1">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Mode:" VerticalAlignment="Center" Margin="8,0,4,0" FontSize="11" Opacity="0.7"/>
+                    <RadioButton x:Name="WizardRadio" Content="Simple" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="11"
+                                 GroupName="ViewMode" Checked="WizardRadio_Checked"/>
+                    <RadioButton x:Name="ClassicRadio" Content="Classic" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="11"
+                                 GroupName="ViewMode" Checked="ClassicRadio_Checked"/>
+                    <Border Width="1" Background="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" Margin="2,2,6,2"/>
+                    <ToggleButton x:Name="ThemeToggle" Click="ThemeToggle_Click" Padding="4,2"
+                                  ToolTip="Toggle dark/light theme" Background="Transparent" BorderThickness="0">
+                        <TextBlock x:Name="ThemeIcon" Text="&#xE708;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                    </ToggleButton>
+                    <Border Width="1" Background="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" Margin="6,2,6,2"/>
+                    <Button Click="HelpAbout_Click" Padding="4,2" ToolTip="About SQLCallStackResolver"
+                            Background="Transparent" BorderThickness="0">
+                        <TextBlock Text="&#xE897;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                    </Button>
+                </StackPanel>
             </StatusBarItem>
         </StatusBar>
 
@@ -60,6 +61,35 @@
             <local:ClassicView x:Name="classicView" Visibility="{Binding IsWizardMode, Converter={StaticResource InvBoolToVis}}"/>
         </Grid>
         </DockPanel>
+
+        <!-- Processing overlay with spinner -->
+        <Border Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVis}}"
+                Background="#80000000" Panel.ZIndex="50">
+            <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                    CornerRadius="12" Padding="40,32"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    MinWidth="320"
+                    BorderThickness="1" BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="24" ShadowDepth="4" Opacity="0.3"/>
+                </Border.Effect>
+                <StackPanel HorizontalAlignment="Center">
+                    <!-- Spinning ring -->
+                    <ui:ProgressRing IsActive="{Binding IsProcessing}" Width="48" Height="48" Margin="0,0,0,16"/>
+                    <!-- Status text -->
+                    <TextBlock Text="{Binding StatusMessage}" FontSize="14" TextAlignment="Center"
+                               TextWrapping="Wrap" MaxWidth="280" Margin="0,0,0,16"/>
+                    <!-- Cancel button -->
+                    <Button Command="{Binding CancelCommand}" HorizontalAlignment="Center"
+                            Padding="24,8" ToolTip="Cancel (Esc)">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="Cancel"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Border>
+        </Border>
 
         <!-- Splash overlay -->
         <Border x:Name="SplashOverlay" Background="{DynamicResource SystemControlPageBackgroundChromeLowBrush}"
@@ -74,9 +104,8 @@
                     <StackPanel>
                         <!-- App icon and title -->
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,20">
-                            <TextBlock Text="&#xE7B8;" FontFamily="Segoe MDL2 Assets" FontSize="36"
-                                       VerticalAlignment="Center" Margin="0,0,14,0"
-                                       Foreground="{DynamicResource SystemControlForegroundAccentBrush}"/>
+                            <Image x:Name="SplashIcon" Width="48" Height="48" VerticalAlignment="Center" Margin="0,0,14,0"
+                                   RenderOptions.BitmapScalingMode="HighQuality"/>
                             <StackPanel VerticalAlignment="Center">
                                 <TextBlock Text="SQLCallStackResolver" FontSize="22" FontWeight="Bold"/>
                                 <TextBlock x:Name="SplashVersion" Text="" FontSize="12" Foreground="Gray"/>

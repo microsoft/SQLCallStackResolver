@@ -5,5 +5,12 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         public ResolvePage() {
             InitializeComponent();
         }
+
+        private void CopyAll_Click(object sender, RoutedEventArgs e) {
+            if (DataContext is ResolverViewModel vm && !string.IsNullOrEmpty(vm.OutputText)) {
+                Clipboard.SetText(vm.OutputText);
+                vm.StatusMessage = "Output copied to clipboard.";
+            }
+        }
     }
 }

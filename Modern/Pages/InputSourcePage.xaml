@@ -19,7 +19,7 @@
         <UniformGrid Grid.Row="1" Columns="2" Margin="0,0,0,0" MaxHeight="220">
             <!-- Direct Input card -->
             <Border x:Name="DirectInputCard" Margin="0,0,12,0" Padding="24" CornerRadius="8"
-                    BorderThickness="2" BorderBrush="#CCCCCC"
+                    BorderThickness="2" BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
                     Background="{DynamicResource SystemControlPageBackgroundAltHighBrush}"
                     Cursor="Hand" MouseLeftButtonDown="DirectInputCard_Click"
                     MouseEnter="Card_MouseEnter" MouseLeave="Card_MouseLeave">
@@ -36,7 +36,7 @@
 
             <!-- XEL Import card -->
             <Border x:Name="XELImportCard" Margin="12,0,0,0" Padding="24" CornerRadius="8"
-                    BorderThickness="2" BorderBrush="#CCCCCC"
+                    BorderThickness="2" BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
                     Background="{DynamicResource SystemControlPageBackgroundAltHighBrush}"
                     Cursor="Hand" MouseLeftButtonDown="XELImportCard_Click"
                     MouseEnter="Card_MouseEnter" MouseLeave="Card_MouseLeave">

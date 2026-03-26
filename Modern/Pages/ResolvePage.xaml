@@ -10,6 +10,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -19,17 +20,16 @@
                    Text="Symbolized callstack output is shown below."/>
 
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
-            <Button Padding="16,6"
-                    Command="{Binding CancelCommand}"
-                    Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVis}}">
+            <Button Padding="16,6" Click="CopyAll_Click"
+                    Visibility="{Binding HasOutput, Converter={StaticResource BoolToVis}}">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <TextBlock Text="Cancel"/>
+                    <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock Text="Copy All"/>
                 </StackPanel>
             </Button>
         </StackPanel>
 
-        <TextBox Grid.Row="2" IsReadOnly="True" AcceptsReturn="True"
+        <TextBox Grid.Row="3" IsReadOnly="True" AcceptsReturn="True"
                  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
                  FontFamily="Consolas" FontSize="13" TextWrapping="NoWrap"
                  Text="{Binding OutputText, Mode=OneWay}"/>

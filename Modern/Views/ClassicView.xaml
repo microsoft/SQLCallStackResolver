@@ -25,7 +25,7 @@
                 <TextBlock DockPanel.Dock="Top" Text="Input" FontWeight="SemiBold" Margin="0,0,0,2"/>
                 <TextBox AcceptsReturn="True" AcceptsTab="True"
                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                         FontFamily="Consolas" FontSize="11" TextWrapping="NoWrap"
+                         FontFamily="Consolas" FontSize="13" TextWrapping="NoWrap"
                          MaxLength="999999999"
                          Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
                          AllowDrop="True" PreviewDragOver="CallStackInput_DragOver" Drop="CallStackInput_Drop"/>
@@ -37,7 +37,7 @@
                 <TextBlock DockPanel.Dock="Top" Text="Output" FontWeight="SemiBold" Margin="0,0,0,2"/>
                 <TextBox IsReadOnly="True" AcceptsReturn="True"
                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                         FontFamily="Consolas" FontSize="11" TextWrapping="NoWrap"
+                         FontFamily="Consolas" FontSize="13" TextWrapping="NoWrap"
                          Text="{Binding OutputText, Mode=OneWay}"/>
             </DockPanel>
         </Grid>
@@ -86,8 +86,13 @@
                             <CheckBox Content="Group XEL events" VerticalAlignment="Center"
                                       IsChecked="{Binding GroupXEvents}"/>
                         </StackPanel>
-                        <Button Content="Enter base addresses..." Margin="0,0,0,6" Click="EnterBaseAddresses_Click"
-                                HorizontalAlignment="Left" Padding="8,3"/>
+                        <Button Margin="0,0,0,6" Click="EnterBaseAddresses_Click"
+                                HorizontalAlignment="Left" Padding="8,3">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE81C;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <TextBlock Text="Enter base addresses..."/>
+                            </StackPanel>
+                        </Button>
                         <TextBlock Text="Save output to file:" FontSize="11.5" Foreground="Gray" Margin="0,0,0,2"/>
                         <DockPanel>
                             <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowseOutputPath_Click"
@@ -135,14 +140,6 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Button Grid.Column="0" Padding="10,6"
-                        Command="{Binding CancelCommand}"
-                        Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVis}}">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                        <TextBlock Text="Cancel"/>
-                    </StackPanel>
-                </Button>
                 <Button Grid.Column="2" Padding="10,6" Margin="0,0,8,0"
                         Command="{Binding PasteFromClipboardCommand}">
                     <StackPanel Orientation="Horizontal">
