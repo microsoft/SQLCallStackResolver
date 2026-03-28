@@ -6,7 +6,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
 
         public ClassicView() {
             InitializeComponent();
+            findBar.Attach(outputTextBox);
         }
+
+        private void Find_Executed(object sender, ExecutedRoutedEventArgs e) => findBar.Open();
 
         private async void LoadXEL_Click(object sender, RoutedEventArgs e) {
             var dlg = new Microsoft.Win32.OpenFileDialog {

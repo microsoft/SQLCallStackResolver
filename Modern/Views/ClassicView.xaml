@@ -5,6 +5,12 @@
     <UserControl.Resources>
         <local:BoolToVisibilityConverter x:Key="BoolToVis"/>
     </UserControl.Resources>
+    <UserControl.InputBindings>
+        <KeyBinding Gesture="Ctrl+F" Command="Find"/>
+    </UserControl.InputBindings>
+    <UserControl.CommandBindings>
+        <CommandBinding Command="Find" Executed="Find_Executed"/>
+    </UserControl.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" MinHeight="100"/>
@@ -35,7 +41,9 @@
 
             <DockPanel Grid.Column="2">
                 <TextBlock DockPanel.Dock="Top" Text="Output" FontWeight="SemiBold" Margin="0,0,0,2"/>
-                <TextBox IsReadOnly="True" AcceptsReturn="True"
+                <local:FindBar x:Name="findBar" DockPanel.Dock="Top"/>
+                <TextBox x:Name="outputTextBox" IsReadOnly="True" AcceptsReturn="True"
+                         IsInactiveSelectionHighlightEnabled="True"
                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
                          FontFamily="Consolas" FontSize="13" TextWrapping="NoWrap"
                          Text="{Binding OutputText, Mode=OneWay}"/>
