@@ -4,6 +4,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
     public partial class ResolvePage : UserControl {
         public ResolvePage() {
             InitializeComponent();
+            findBar.Attach(outputTextBox);
         }
 
         private void CopyAll_Click(object sender, RoutedEventArgs e) {
@@ -12,5 +13,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
                 vm.StatusMessage = "Output copied to clipboard.";
             }
         }
+
+        private void Find_Executed(object sender, ExecutedRoutedEventArgs e) => findBar.Open();
+        private void Find_Click(object sender, RoutedEventArgs e) => findBar.Open();
     }
 }

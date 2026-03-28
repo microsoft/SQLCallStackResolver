@@ -103,25 +103,76 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
             downloadStatus.Text = failedUrls.Count > 0 ? string.Join(",", failedUrls) : "All PDBs for this build are available!";
         }
 
-        private void FindNext_Click(object sender, RoutedEventArgs e) {
-            if (string.IsNullOrWhiteSpace(searchText.Text)) return;
-            var found = SearchTree(treeviewSyms.Items, searchText.Text.Trim().ToLower(CultureInfo.CurrentCulture));
-            downloadStatus.Text = found ? "Found match!" : "No matches found.";
+        private void FindNext_Click(object sender, RoutedEventArgs e) => FindInTree(forward: true);
+        private void FindPrev_Click(object sender, RoutedEventArgs e) => FindInTree(forward: false);
+
+        private void Find_Executed(object sender, ExecutedRoutedEventArgs e) {
+            findBarBorder.Visibility = Visibility.Visible;
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Input, new Action(() => {
+                searchText.Focus();
+                Keyboard.Focus(searchText);
+                searchText.SelectAll();
+            }));
         }
 
-        private bool SearchTree(ItemCollection items, string searchTerm) {
-            foreach (TreeViewItem item in items) {
-                if (item.Tag is SQLBuildInfo bld && bld.ToString().ToLower(CultureInfo.CurrentCulture).Contains(searchTerm)) {
-                    item.IsSelected = true;
-                    item.BringIntoView();
-                    // expand parent chain
+        private void FindClose_Click(object sender, RoutedEventArgs e) {
+            findBarBorder.Visibility = Visibility.Collapsed;
+            matchInfo.Text = "";
+        }
+
+        private void SearchBox_KeyDown(object sender, KeyEventArgs e) {
+            if (e.Key == Key.Enter || e.Key == Key.F3) {
+                FindInTree(forward: Keyboard.Modifiers != ModifierKeys.Shift);
+                e.Handled = true;
+            } else if (e.Key == Key.Escape) {
+                FindClose_Click(sender, e);
+                e.Handled = true;
+            }
+        }
+
+        private List<TreeViewItem> _flatItems;
+        private int _lastFoundIndex = -1;
+
+        private void FindInTree(bool forward) {
+            if (string.IsNullOrWhiteSpace(searchText.Text)) return;
+            var term = searchText.Text.Trim().ToLower(CultureInfo.CurrentCulture);
+
+            // Build flat list of all leaf items
+            _flatItems = new List<TreeViewItem>();
+            CollectLeafItems(treeviewSyms.Items, _flatItems);
+
+            if (_flatItems.Count == 0) { matchInfo.Text = "No items"; return; }
+
+            int start = forward ? _lastFoundIndex + 1 : _lastFoundIndex - 1;
+            int count = _flatItems.Count;
+
+            for (int i = 0; i < count; i++) {
+                int idx = forward
+                    ? (start + i + count) % count
+                    : (start - i + count) % count;
+                var item = _flatItems[idx];
+                if (item.Tag is SQLBuildInfo bld && bld.ToString().ToLower(CultureInfo.CurrentCulture).Contains(term)) {
+                    // Expand parent chain
                     var parent = item.Parent as TreeViewItem;
                     while (parent != null) { parent.IsExpanded = true; parent = parent.Parent as TreeViewItem; }
-                    return true;
+                    item.IsSelected = true;
+                    item.BringIntoView();
+                    _lastFoundIndex = idx;
+                    matchInfo.Text = "Found";
+                    downloadStatus.Text = "";
+                    return;
                 }
-                if (item.Items.Count > 0 && SearchTree(item.Items, searchTerm)) return true;
             }
-            return false;
+            matchInfo.Text = "No matches";
+        }
+
+        private void CollectLeafItems(ItemCollection items, List<TreeViewItem> result) {
+            foreach (TreeViewItem item in items) {
+                if (item.Items.Count > 0)
+                    CollectLeafItems(item.Items, result);
+                else
+                    result.Add(item);
+            }
         }
     }
 }

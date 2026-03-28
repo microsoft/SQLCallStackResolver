@@ -121,6 +121,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Controls\FindBar.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="App.xaml.cs">
@@ -171,6 +175,9 @@
     </Compile>
     <Compile Include="ResolverViewModel.cs" />
     <Compile Include="Utils.cs" />
+    <Compile Include="Controls\FindBar.xaml.cs">
+      <DependentUpon>FindBar.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\ClassicView.xaml.cs">
       <DependentUpon>ClassicView.xaml</DependentUpon>
     </Compile>

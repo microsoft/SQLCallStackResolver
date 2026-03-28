@@ -6,8 +6,15 @@
         <local:BoolToVisibilityConverter x:Key="BoolToVis"/>
         <local:InverseBoolToVisibilityConverter x:Key="InvBoolToVis"/>
     </UserControl.Resources>
+    <UserControl.InputBindings>
+        <KeyBinding Gesture="Ctrl+F" Command="Find"/>
+    </UserControl.InputBindings>
+    <UserControl.CommandBindings>
+        <CommandBinding Command="Find" Executed="Find_Executed"/>
+    </UserControl.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -27,9 +34,19 @@
                     <TextBlock Text="Copy All"/>
                 </StackPanel>
             </Button>
+            <Button Padding="16,6" Margin="8,0,0,0" Click="Find_Click"
+                    Visibility="{Binding HasOutput, Converter={StaticResource BoolToVis}}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock Text="Find"/>
+                </StackPanel>
+            </Button>
         </StackPanel>
 
-        <TextBox Grid.Row="3" IsReadOnly="True" AcceptsReturn="True"
+        <local:FindBar x:Name="findBar" Grid.Row="2"/>
+
+        <TextBox x:Name="outputTextBox" Grid.Row="4" IsReadOnly="True" AcceptsReturn="True"
+                 IsInactiveSelectionHighlightEnabled="True"
                  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
                  FontFamily="Consolas" FontSize="13" TextWrapping="NoWrap"
                  Text="{Binding OutputText, Mode=OneWay}"/>
