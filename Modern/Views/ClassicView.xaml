@@ -1,7 +1,8 @@
 <UserControl x:Class="Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.ClassicView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern">
+             xmlns:local="clr-namespace:Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern"
+             FontSize="12">
     <UserControl.Resources>
         <local:BoolToVisibilityConverter x:Key="BoolToVis"/>
     </UserControl.Resources>
@@ -53,7 +54,7 @@
         <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" Background="LightGray"/>
 
         <!-- Bottom: Configuration panels in 2x2 grid -->
-        <Grid Grid.Row="2" Margin="0,4,0,0">
+        <Grid Grid.Row="2" Margin="0,4,0,0" TextElement.FontSize="11">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
@@ -61,10 +62,59 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
+            <!-- Detection banners (version or XML frame) -->
+            <Border Grid.Row="0" Grid.ColumnSpan="2" CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
+                    Background="{DynamicResource SystemControlBackgroundListLowBrush}"
+                    BorderBrush="{DynamicResource SystemControlForegroundAccentBrush}"
+                    BorderThickness="1"
+                    Visibility="{Binding HasDetectedBuild, Converter={StaticResource BoolToVis}}">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Padding="8,4" Click="DownloadDetectedBuild_Click"
+                            Style="{DynamicResource AccentButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBlock Text="Download Symbols"/>
+                        </StackPanel>
+                    </Button>
+                    <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"
+                               Foreground="{DynamicResource SystemControlForegroundAccentBrush}"/>
+                    <TextBlock VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                        <Run Text="Detected SQL Server" FontWeight="SemiBold"/>
+                        <Run Text="{Binding DetectedBuildVersion, Mode=OneWay}" FontWeight="SemiBold"/>
+                        <Run Text=" - "/>
+                        <Run Text="{Binding DetectedBuildDetails, Mode=OneWay}" Foreground="Gray"/>
+                    </TextBlock>
+                </DockPanel>
+            </Border>
+            <Border Grid.Row="0" Grid.ColumnSpan="2" CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
+                    Background="{DynamicResource SystemControlBackgroundListLowBrush}"
+                    BorderBrush="{DynamicResource SystemControlForegroundAccentBrush}"
+                    BorderThickness="1"
+                    Visibility="{Binding HasXmlFrameInput, Converter={StaticResource BoolToVis}}">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Padding="8,4" Click="UseSymbolServer_Click"
+                            Style="{DynamicResource AccentButtonStyle}"
+                            ToolTip="SRV*c:\temp\symcache*https://msdl.microsoft.com/download/symbols">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE753;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBlock Text="Use Symbol Server"/>
+                        </StackPanel>
+                    </Button>
+                    <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"
+                               Foreground="{DynamicResource SystemControlForegroundAccentBrush}"/>
+                    <TextBlock VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                        <Run Text="XML frames with PDB info detected" FontWeight="SemiBold"/>
+                        <Run Text=" - Modules: "/>
+                        <Run Text="{Binding DetectedPdbModules, Mode=OneWay}" Foreground="Gray"/>
+                    </TextBlock>
+                </DockPanel>
+            </Border>
+
             <!-- Top-left: Input/Output Options + Import -->
-            <GroupBox Grid.Row="0" Grid.Column="0" Header="Input / Output Options" Margin="0,0,4,4" Padding="6">
+            <GroupBox Grid.Row="1" Grid.Column="0" Header="Input / Output Options" Margin="0,0,4,4" Padding="4">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -101,7 +151,7 @@
                                 <TextBlock Text="Enter base addresses..."/>
                             </StackPanel>
                         </Button>
-                        <TextBlock Text="Save output to file:" FontSize="11.5" Foreground="Gray" Margin="0,0,0,2"/>
+                        <TextBlock Text="Save output to file:" Foreground="Gray" Margin="0,0,0,2"/>
                         <DockPanel>
                             <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowseOutputPath_Click"
                                     ToolTip="Browse for output file location"/>
@@ -113,11 +163,24 @@
             </GroupBox>
 
             <!-- Top-right: Symbol / PDB paths -->
-            <GroupBox Grid.Row="0" Grid.Column="1" Header="Symbol / PDB Paths" Margin="4,0,0,4" Padding="6">
+            <GroupBox Grid.Row="1" Grid.Column="1" Header="Symbol / PDB Paths" Margin="4,0,0,4" Padding="4">
                 <StackPanel>
-                    <Button Content="Use public PDBs for a known SQL Server build..." Margin="0,0,0,6" Click="SelectSQLPDB_Click"
-                            HorizontalAlignment="Left" Padding="8,3"/>
-                    <TextBlock Text="PDB search paths:" FontSize="11.5" Foreground="Gray" Margin="0,0,0,2"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <Button Click="SelectSQLPDB_Click" Padding="8,3" Margin="0,0,8,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <TextBlock Text="For a SQL version..."/>
+                            </StackPanel>
+                        </Button>
+                        <Button Click="UseSymbolServer_Click" Padding="8,3"
+                                ToolTip="SRV*c:\temp\symcache*https://msdl.microsoft.com/download/symbols">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE753;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <TextBlock Text="MS Symbol Server"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                    <TextBlock Text="PDB search paths:" Foreground="Gray" Margin="0,0,0,2"/>
                     <DockPanel Margin="0,0,0,4">
                         <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowsePdbPath_Click"
                                 ToolTip="Browse for PDB folder"/>
@@ -129,7 +192,7 @@
                         <CheckBox Content="Cache PDBs locally" IsChecked="{Binding CachePDB}"
                                   ToolTip="Copies PDBs to %TEMP%\SymCache"/>
                     </StackPanel>
-                    <TextBlock Text="Binary paths (for OrdinalNNN resolution):" FontSize="11.5" Foreground="Gray" Margin="0,0,0,2"/>
+                    <TextBlock Text="Binary paths (for OrdinalNNN resolution):" Foreground="Gray" Margin="0,0,0,2"/>
                     <DockPanel Margin="0,0,0,4">
                         <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowseBinaryPath_Click"
                                 ToolTip="Browse for binary folder"/>
@@ -141,7 +204,7 @@
             </GroupBox>
 
             <!-- Bottom row: Resolve spanning full width -->
-            <Grid Grid.Row="1" Grid.ColumnSpan="2">
+            <Grid Grid.Row="2" Grid.ColumnSpan="2">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
