@@ -72,6 +72,30 @@
                 <Button Grid.Column="4" Width="120" Padding="4,6" FontWeight="Bold"
                         Command="{Binding ResolveCommand}"
                         Visibility="{Binding IsOnStepBeforeResolve, Converter={StaticResource BoolToVis}}">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HighlightResolve}" Value="True">
+                                    <DataTrigger.EnterActions>
+                                        <BeginStoryboard x:Name="GlowStoryboard">
+                                            <Storyboard RepeatBehavior="3x">
+                                                <ColorAnimation Storyboard.TargetProperty="(Effect).(DropShadowEffect.Color)"
+                                                                To="#40C040" Duration="0:0:0.4" AutoReverse="True"/>
+                                                <DoubleAnimation Storyboard.TargetProperty="(Effect).(DropShadowEffect.Opacity)"
+                                                                 To="1" Duration="0:0:0.4" AutoReverse="True"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </DataTrigger.EnterActions>
+                                    <DataTrigger.ExitActions>
+                                        <StopStoryboard BeginStoryboardName="GlowStoryboard"/>
+                                    </DataTrigger.ExitActions>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                    <Button.Effect>
+                        <DropShadowEffect Color="Transparent" ShadowDepth="0" BlurRadius="15" Opacity="0"/>
+                    </Button.Effect>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
                         <TextBlock Text="Resolve!" FontWeight="Bold"/>
