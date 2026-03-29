@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
 using System.Reflection;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
@@ -11,6 +12,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         public MainWindow() {
             InitializeComponent();
             DataContext = _viewModel;
+            _viewModel.PropertyChanged += ViewModel_PropertyChanged;
             WizardRadio.IsChecked = _viewModel.IsWizardMode;
             ClassicRadio.IsChecked = !_viewModel.IsWizardMode;
 
@@ -29,6 +31,24 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
 
             SplashIcon.Source = AppIcon;
             Loaded += MainWindow_Loaded;
+        }
+
+        private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e) {
+            if (e.PropertyName == nameof(ResolverViewModel.StatusMessage))
+                FlashStatusBar();
+        }
+
+        private void FlashStatusBar() {
+            var accent = TryFindResource("SystemControlForegroundAccentBrush") as SolidColorBrush;
+            var flashColor = accent?.Color ?? Colors.DodgerBlue;
+            // Brief highlight: accent color fading to transparent over 600ms
+            var anim = new ColorAnimation(
+                Color.FromArgb(60, flashColor.R, flashColor.G, flashColor.B),
+                Colors.Transparent,
+                TimeSpan.FromMilliseconds(600)) {
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+            };
+            StatusFlashBrush.BeginAnimation(SolidColorBrush.ColorProperty, anim);
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e) {

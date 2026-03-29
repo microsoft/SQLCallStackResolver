@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License - see LICENSE file in this repo.
 using System.Collections.ObjectModel;
+using System.Text.RegularExpressions;
 using System.Windows.Threading;
 
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
@@ -101,7 +102,73 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
 
         // -- Input --
         private string _inputText = string.Empty;
-        public string InputText { get => _inputText; set => SetField(ref _inputText, value, nameof(InputText)); }
+        public string InputText {
+            get => _inputText;
+            set {
+                if (SetField(ref _inputText, value, nameof(InputText)))
+                    DetectSqlBuildVersion();
+            }
+        }
+
+        // -- Detected SQL Build --
+        private SQLBuildInfo _detectedBuildInfo;
+        public SQLBuildInfo DetectedBuildInfo { get => _detectedBuildInfo; private set { SetField(ref _detectedBuildInfo, value, nameof(DetectedBuildInfo)); OnPropertyChanged(nameof(HasDetectedBuild)); OnPropertyChanged(nameof(DetectedBuildVersion)); OnPropertyChanged(nameof(DetectedBuildDetails)); } }
+        public bool HasDetectedBuild => _detectedBuildInfo != null;
+        public string DetectedBuildVersion => _detectedBuildInfo?.BuildNumber;
+        public string DetectedBuildDetails => _detectedBuildInfo != null ? $"{_detectedBuildInfo.ProductMajorVersion} {_detectedBuildInfo.ProductLevel} - {_detectedBuildInfo.Label} ({_detectedBuildInfo.MachineType})" : null;
+
+        // -- Detected XML frames with PDB GUID info --
+        private bool _hasXmlFrameInput;
+        public bool HasXmlFrameInput { get => _hasXmlFrameInput; private set => SetField(ref _hasXmlFrameInput, value, nameof(HasXmlFrameInput)); }
+        private string _detectedPdbModules;
+        public string DetectedPdbModules { get => _detectedPdbModules; private set => SetField(ref _detectedPdbModules, value, nameof(DetectedPdbModules)); }
+
+        private void DetectSqlBuildVersion() {
+            DetectedBuildInfo = null;
+            HasXmlFrameInput = false;
+            DetectedPdbModules = null;
+            if (string.IsNullOrWhiteSpace(_inputText)) return;
+
+            // HTML-decode first, as input may contain &lt;frame ... (same as MCP's HasEmbeddedSymbolInfo)
+            var decoded = WebUtility.HtmlDecode(_inputText);
+
+            // Check for XML frame format (same sniff test as engine's ModuleInfoHelper.ParseModuleInfoXMLAsync
+            // and MCP's HasEmbeddedSymbolInfo)
+            if (decoded.Contains("<frame")) {
+                HasXmlFrameInput = true;
+                // Extract distinct module names using XML parsing, same as engine does
+                var uniqueModules = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                using (var reader = new StringReader(decoded)) {
+                    string line;
+                    while ((line = reader.ReadLine()) != null) {
+                        if (string.IsNullOrWhiteSpace(line) || !line.Contains("<frame")) continue;
+                        try {
+                            using var sreader = new StringReader(line.Substring(line.IndexOf("<frame")));
+                            using var xmlReader = XmlReader.Create(sreader, new XmlReaderSettings() { XmlResolver = null });
+                            if (xmlReader.Read()) {
+                                var moduleName = xmlReader.GetAttribute("module");
+                                if (string.IsNullOrEmpty(moduleName)) moduleName = xmlReader.GetAttribute("name");
+                                if (!string.IsNullOrEmpty(moduleName))
+                                    uniqueModules.Add(Path.GetFileNameWithoutExtension(moduleName));
+                            }
+                        } catch { /* best-effort module extraction */ }
+                    }
+                }
+                if (uniqueModules.Count > 0)
+                    DetectedPdbModules = string.Join(", ", uniqueModules.OrderBy(s => s));
+            }
+
+            // Also try version-based detection
+            if (!File.Exists(SqlBuildInfoFileName)) return;
+            var match = Regex.Match(_inputText, @"\b(\d{2}\.\d+\.\d+\.\d+)\b");
+            if (!match.Success) return;
+            var versionStr = match.Groups[1].Value;
+            try {
+                var allBuilds = SQLBuildInfo.GetSqlBuildInfo(SqlBuildInfoFileName);
+                var found = allBuilds.Values.FirstOrDefault(b => b.BuildNumber == versionStr && b.SymbolDetails?.Count > 0);
+                if (found != null) DetectedBuildInfo = found;
+            } catch { /* best effort */ }
+        }
 
         private string _outputText = string.Empty;
         public string OutputText { get => _outputText; set { SetField(ref _outputText, value, nameof(OutputText)); OnPropertyChanged(nameof(HasOutput)); } }
@@ -475,6 +542,53 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         internal void AppendBinaryPath(string path) {
             if (string.IsNullOrEmpty(path)) return;
             BinaryPaths = string.IsNullOrEmpty(BinaryPaths) ? path : BinaryPaths + ";" + path;
+        }
+
+        internal async Task DownloadSymbolsForDetectedBuildAsync() {
+            if (_detectedBuildInfo == null || _detectedBuildInfo.SymbolDetails?.Count == 0) return;
+            var bld = _detectedBuildInfo;
+            var pdbFolder = ConfigurationManager.AppSettings["PDBDownloadFolder"] ?? @"c:\temp";
+            var destFolder = $@"{pdbFolder}\{bld.BuildNumber}.{bld.MachineType}";
+            Directory.CreateDirectory(destFolder);
+
+            IsProcessing = true;
+            var errors = new StringBuilder();
+            var urls = bld.SymbolDetails.Select(s => s.DownloadURL).Where(u => !string.IsNullOrEmpty(u)).ToList();
+            int completed = 0;
+
+            using (_cts = new CancellationTokenSource()) {
+                foreach (var url in urls) {
+                    if (_cts.IsCancellationRequested) break;
+                    var filename = Path.GetFileName(new Uri(url).LocalPath);
+                    var localPath = Path.Combine(destFolder, filename);
+                    if (File.Exists(localPath)) { completed++; continue; }
+
+                    StatusMessage = $"Downloading {filename} ({completed + 1}/{urls.Count})...";
+                    var prog = new DownloadProgress();
+                    var dlTask = Task.Run(async () => {
+                        var ok = await Utils.DownloadFromUrl(url, localPath, prog, _cts);
+                        if (!ok) errors.AppendLine($"Failed: {filename}");
+                    });
+                    while (!dlTask.IsCompleted) {
+                        await Task.Delay(StackResolver.OperationWaitIntervalMilliseconds);
+                        ProgressPercent = prog.Percent;
+                    }
+                    completed++;
+                }
+            }
+
+            IsProcessing = false;
+            ProgressPercent = 0;
+
+            if (errors.Length > 0) {
+                StatusMessage = "Some symbol downloads failed.";
+                await MainWindow.ShowContentDialogAsync("Download Errors", errors.ToString());
+            } else if (_cts?.IsCancellationRequested == true) {
+                StatusMessage = StackResolver.OperationCanceled;
+            } else {
+                AppendPdbPath(destFolder);
+                StatusMessage = $"Symbols for {bld.BuildNumber} downloaded. Ready to resolve!";
+            }
         }
     }
 }

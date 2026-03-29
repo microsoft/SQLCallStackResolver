@@ -32,7 +32,12 @@
                 </ItemsPanelTemplate>
             </StatusBar.ItemsPanel>
             <StatusBarItem Grid.Column="0">
-                <TextBlock Text="{Binding StatusMessage}" TextTrimming="CharacterEllipsis"/>
+                <Border x:Name="StatusFlashBorder" CornerRadius="3" Padding="4,1">
+                    <Border.Background>
+                        <SolidColorBrush x:Name="StatusFlashBrush" Color="Transparent"/>
+                    </Border.Background>
+                    <TextBlock x:Name="StatusText" Text="{Binding StatusMessage}" TextTrimming="CharacterEllipsis"/>
+                </Border>
             </StatusBarItem>
             <StatusBarItem Grid.Column="1">
                 <StackPanel Orientation="Horizontal">

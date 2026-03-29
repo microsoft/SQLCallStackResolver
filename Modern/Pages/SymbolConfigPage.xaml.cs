@@ -8,6 +8,15 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
             InitializeComponent();
         }
 
+        private void UseSymbolServer_Click(object sender, RoutedEventArgs e) {
+            ViewModel.AppendPdbPath(@"SRV*c:\temp\symcache*https://msdl.microsoft.com/download/symbols");
+            ViewModel.StatusMessage = "Symbol server path added. Ready to resolve!";
+        }
+
+        private async void DownloadDetectedBuild_Click(object sender, RoutedEventArgs e) {
+            await ViewModel.DownloadSymbolsForDetectedBuildAsync();
+        }
+
         private void BrowsePdbPath_Click(object sender, RoutedEventArgs e) {
             var dlg = new Microsoft.Win32.OpenFileDialog {
                 CheckPathExists = false,
