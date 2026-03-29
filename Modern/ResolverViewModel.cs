@@ -228,6 +228,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         public bool IsProcessing { get => _isProcessing; set { SetField(ref _isProcessing, value, nameof(IsProcessing)); OnPropertyChanged(nameof(IsNotProcessing)); } }
         public bool IsNotProcessing => !_isProcessing;
 
+        // -- Resolve button highlight (set after banner actions, cleared on resolve) --
+        private bool _highlightResolve;
+        public bool HighlightResolve { get => _highlightResolve; set => SetField(ref _highlightResolve, value, nameof(HighlightResolve)); }
+
         // -- Commands --
         public ICommand ResolveCommand { get; }
         public ICommand CancelCommand { get; }
@@ -347,6 +351,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         }
 
         internal async void Resolve() {
+            HighlightResolve = false;
             var validationError = ValidateInputs();
             if (validationError != null) {
                 await MainWindow.ShowContentDialogAsync("Validation Error", validationError);
@@ -588,6 +593,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
             } else {
                 AppendPdbPath(destFolder);
                 StatusMessage = $"Symbols for {bld.BuildNumber} downloaded. Ready to resolve!";
+                HighlightResolve = true;
             }
         }
     }
