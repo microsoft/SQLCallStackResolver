@@ -33,7 +33,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver {
             return XELHelper.GetDistinctXELActionsFieldsAsync(xelFiles, eventsToSample);
         }
 
-        /// Public method which to help import XEL files
+        /// <summary>
+        /// Public method which to help import XEL files.
+        /// </summary>
         public async Task<Tuple<int, string>> ExtractFromXELAsync(string[] xelFiles, bool groupEvents, List<string> relevantFields, CancellationTokenSource cts) {
             return await XELHelper.ExtractFromXELAsync(this, xelFiles, groupEvents, relevantFields, cts);
         }
