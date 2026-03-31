@@ -4,6 +4,8 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  schedule:
+    - cron: '25 14 * * 1'
   workflow_dispatch:
 jobs:
   analyze:
@@ -17,13 +19,19 @@ jobs:
       fail-fast: false
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
+      uses: github/codeql-action/init@v4
       with:
         languages: 'csharp'
         queries: security-extended,security-and-quality
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v3
+    - name: Add msbuild to PATH
+      uses: microsoft/setup-msbuild@v3
+    - name: Setup NuGet
+      uses: NuGet/setup-nuget@v3
+    - name: Restore NuGet Packages
+      run: nuget restore SQLCallStackResolver.sln
+    - name: Build
+      run: msbuild SQLCallStackResolver.sln /p:Configuration=Release
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
+      uses: github/codeql-action/analyze@v4
