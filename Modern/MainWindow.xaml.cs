@@ -13,8 +13,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
             InitializeComponent();
             DataContext = _viewModel;
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
-            WizardRadio.IsChecked = _viewModel.IsWizardMode;
-            ClassicRadio.IsChecked = !_viewModel.IsWizardMode;
+            WizardToggle.IsChecked = _viewModel.IsWizardMode;
+            ClassicToggle.IsChecked = !_viewModel.IsWizardMode;
 
             // Initialize theme from system setting
             bool isDark = DwmInterop.IsSystemDarkTheme();
@@ -129,12 +129,16 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
             ApplyTheme(isDark);
         }
 
-        private void WizardRadio_Checked(object sender, RoutedEventArgs e) {
+        private void WizardToggle_Click(object sender, RoutedEventArgs e) {
             if (_viewModel != null) _viewModel.IsWizardMode = true;
+            WizardToggle.IsChecked = true;
+            ClassicToggle.IsChecked = false;
         }
 
-        private void ClassicRadio_Checked(object sender, RoutedEventArgs e) {
+        private void ClassicToggle_Click(object sender, RoutedEventArgs e) {
             if (_viewModel != null) _viewModel.IsWizardMode = false;
+            ClassicToggle.IsChecked = true;
+            WizardToggle.IsChecked = false;
         }
 
         private async void HelpAbout_Click(object sender, RoutedEventArgs e) {

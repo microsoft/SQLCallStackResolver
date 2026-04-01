@@ -41,12 +41,46 @@
             </StatusBarItem>
             <StatusBarItem Grid.Column="1">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="Mode:" VerticalAlignment="Center" Margin="8,0,4,0" FontSize="11" Opacity="0.7"/>
-                    <RadioButton x:Name="WizardRadio" Content="Simple" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="11"
-                                 GroupName="ViewMode" Checked="WizardRadio_Checked"/>
-                    <RadioButton x:Name="ClassicRadio" Content="Classic" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="11"
-                                 GroupName="ViewMode" Checked="ClassicRadio_Checked"/>
-                    <Border Width="1" Background="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" Margin="2,2,6,2"/>
+                    <!-- Segmented mode toggle -->
+                    <Border CornerRadius="4" BorderThickness="1" Margin="8,0,0,0"
+                            BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+                            Background="{DynamicResource SystemControlBackgroundListLowBrush}">
+                        <StackPanel Orientation="Horizontal">
+                            <ToggleButton x:Name="WizardToggle" Content="Simple" FontSize="11" Padding="8,2"
+                                          Click="WizardToggle_Click" BorderThickness="0"
+                                          ToolTip="Guided wizard mode">
+                                <ToggleButton.Style>
+                                    <Style TargetType="ToggleButton" BasedOn="{StaticResource {x:Type ToggleButton}}">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="Opacity" Value="0.6"/>
+                                        <Style.Triggers>
+                                            <Trigger Property="IsChecked" Value="True">
+                                                <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentLowBrush}"/>
+                                                <Setter Property="Opacity" Value="1"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ToggleButton.Style>
+                            </ToggleButton>
+                            <ToggleButton x:Name="ClassicToggle" Content="Classic" FontSize="11" Padding="8,2"
+                                          Click="ClassicToggle_Click" BorderThickness="0"
+                                          ToolTip="All-in-one classic mode">
+                                <ToggleButton.Style>
+                                    <Style TargetType="ToggleButton" BasedOn="{StaticResource {x:Type ToggleButton}}">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="Opacity" Value="0.6"/>
+                                        <Style.Triggers>
+                                            <Trigger Property="IsChecked" Value="True">
+                                                <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentLowBrush}"/>
+                                                <Setter Property="Opacity" Value="1"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ToggleButton.Style>
+                            </ToggleButton>
+                        </StackPanel>
+                    </Border>
+                    <Border Width="1" Background="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" Margin="6,2,6,2"/>
                     <ToggleButton x:Name="ThemeToggle" Click="ThemeToggle_Click" Padding="4,2"
                                   ToolTip="Toggle dark/light theme" Background="Transparent" BorderThickness="0">
                         <TextBlock x:Name="ThemeIcon" Text="&#xE708;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
