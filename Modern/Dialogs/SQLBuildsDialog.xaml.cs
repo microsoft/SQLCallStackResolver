@@ -40,13 +40,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
             var selectedItem = treeviewSyms.SelectedItem as TreeViewItem;
             if (selectedItem?.Tag is not SQLBuildInfo bld || bld.SymbolDetails.Count <= 0) return;
 
-            if (_dnldTask != null) {
-                _cts?.Cancel();
-                return;
-            }
-
             var statusMsg = new StringBuilder();
-            dnldButton.Content = "Cancel download";
+            dnldButton.IsEnabled = false;
+            processingOverlay.Visibility = Visibility.Visible;
             LastDownloadedSymFolder = $@"{PathToPDBs}\{bld.BuildNumber}.{bld.MachineType}";
             Directory.CreateDirectory(LastDownloadedSymFolder);
             var urls = bld.SymbolDetails.Select(s => s.DownloadURL);
@@ -58,7 +54,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
                     var filename = Path.GetFileName(uri.LocalPath);
                     if (File.Exists($@"{LastDownloadedSymFolder}\{filename}")) continue;
 
-                    downloadStatus.Text = filename;
+                    overlayStatus.Text = $"Downloading {filename}...";
                     var prog = new DownloadProgress();
                     _dnldTask = Task.Run(async () => {
                         var res = await Utils.DownloadFromUrl(url, $@"{LastDownloadedSymFolder}\{filename}", prog, _cts);
@@ -67,13 +63,12 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
 
                     while (!_dnldTask.IsCompleted) {
                         await Task.Delay(StackResolver.OperationWaitIntervalMilliseconds);
-                        downloadProgress.Value = prog.Percent;
                     }
                     _dnldTask = null;
                 }
 
-                dnldButton.Content = "Download PDBs";
-                downloadProgress.Value = 0;
+                dnldButton.IsEnabled = true;
+                processingOverlay.Visibility = Visibility.Collapsed;
                 downloadStatus.Text = string.Empty;
 
                 if (statusMsg.Length > 0) {
@@ -97,10 +92,14 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
             List<string> failedUrls = new();
             var urls = bld.SymbolDetails.Select(s => s.DownloadURL);
             foreach (var url in urls) {
-                downloadStatus.Text = url;
+                downloadStatus.Text = $"Checking {url}...";
                 if (!(await Symbol.IsURLValid(new Uri(url)))) failedUrls.Add(url);
             }
             downloadStatus.Text = failedUrls.Count > 0 ? string.Join(",", failedUrls) : "All PDBs for this build are available!";
+        }
+
+        private void CancelDownload_Click(object sender, RoutedEventArgs e) {
+            _cts?.Cancel();
         }
 
         private void FindNext_Click(object sender, RoutedEventArgs e) => FindInTree(forward: true);

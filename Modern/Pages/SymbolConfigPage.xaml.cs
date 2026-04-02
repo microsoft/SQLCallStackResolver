@@ -9,7 +9,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         }
 
         private void UseSymbolServer_Click(object sender, RoutedEventArgs e) {
-            ViewModel.AppendPdbPath(@"SRV*c:\temp\symcache*https://msdl.microsoft.com/download/symbols");
+            ViewModel.UpdatePdbPath(@"SRV*c:\temp\symcache*https://msdl.microsoft.com/download/symbols");
             ViewModel.StatusMessage = "Symbol server path added. Ready to resolve!";
             ViewModel.HighlightResolve = true;
         }
@@ -27,7 +27,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
                 Title = "Select FOLDER path to your PDBs"
             };
             if (dlg.ShowDialog(Window.GetWindow(this)) == true) {
-                ViewModel.AppendPdbPath(Path.GetDirectoryName(dlg.FileName));
+                ViewModel.UpdatePdbPath(Path.GetDirectoryName(dlg.FileName));
             }
         }
 
@@ -56,7 +56,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
                 Owner = Window.GetWindow(this)
             };
             if (dialog.ShowDialog() == true) {
-                ViewModel.AppendPdbPath(dialog.LastDownloadedSymFolder);
+                ViewModel.UpdatePdbPath(dialog.LastDownloadedSymFolder);
             }
         }
 

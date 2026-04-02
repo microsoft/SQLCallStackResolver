@@ -40,5 +40,21 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.Properties 
             get { return ((string)(this["AcceptedSplashVersion"])); }
             set { this["AcceptedSplashVersion"] = value; }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string LastPdbPaths {
+            get { return ((string)(this["LastPdbPaths"])); }
+            set { this["LastPdbPaths"] = value; }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool PinPdbPaths {
+            get { return ((bool)(this["PinPdbPaths"])); }
+            set { this["PinPdbPaths"] = value; }
+        }
     }
 }
