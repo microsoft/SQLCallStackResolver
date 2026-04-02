@@ -106,22 +106,22 @@
 
         <!-- PDB Paths (manual) -->
         <GroupBox Grid.Row="3" Header="PDB Symbol Paths" Padding="6" Margin="0,0,0,8">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBox Grid.Column="0" Text="{Binding PdbPaths, UpdateSourceTrigger=PropertyChanged}"
-                         Margin="0,0,4,0" ToolTip="Semicolon-separated paths to PDB files"/>
-                <Button Grid.Column="1" Content="Browse..." Width="80" Click="BrowsePdbPath_Click"/>
-                <ToggleButton Grid.Column="2" IsChecked="{Binding PinPdbPaths}" Margin="4,0,0,0"
-                              Padding="4,2" Background="Transparent" BorderThickness="0"
+            <StackPanel>
+                <TextBlock FontSize="11" Foreground="Gray" Margin="0,0,0,4"
+                           Text="Local folder(s), UNC path(s), or WinDbg-style symbol server(s). If using multiple paths; separate using semicolons."/>
+                <DockPanel>
+                <ToggleButton DockPanel.Dock="Right" IsChecked="{Binding PinPdbPaths}"
+                              Padding="4,2" Background="Transparent" BorderThickness="0" Margin="2,0,0,0"
                               ToolTip="Pin to remember this path for next session">
                     <TextBlock Text="&#xE718;" FontFamily="Segoe MDL2 Assets" FontSize="14"
                                Opacity="{Binding PinPdbPaths, Converter={StaticResource BoolToOpacityConverter}}"/>
                 </ToggleButton>
-            </Grid>
+                <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowsePdbPath_Click"
+                        ToolTip="Browse for PDB folder"/>
+                <TextBox Text="{Binding PdbPaths, UpdateSourceTrigger=PropertyChanged}"
+                         Margin="0,0,2,0" ToolTip="Semicolon-separated paths to PDB files"/>
+            </DockPanel>
+            </StackPanel>
         </GroupBox>
 
         <!-- Output options (collapsed by default) -->
@@ -141,17 +141,13 @@
                 <CheckBox Content="Show inline frames" Margin="0,0,0,6"
                           IsChecked="{Binding ShowInlineFrames}"/>
                 <GroupBox Header="Output Destination" Padding="6" Margin="0,4,0,0">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="Save to file:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                        <TextBox Grid.Column="1" Text="{Binding OutputFilePath, UpdateSourceTrigger=PropertyChanged}"
-                                 ToolTip="Leave empty to display output in the results area"/>
-                        <Button Grid.Column="2" Content="Browse..." Width="80" Margin="4,0,0,0" Click="BrowseOutputPath_Click"/>
-                    </Grid>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowseOutputPath_Click"
+                                ToolTip="Browse for output file location"/>
+                        <TextBlock DockPanel.Dock="Left" Text="Save to file:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBox Text="{Binding OutputFilePath, UpdateSourceTrigger=PropertyChanged}"
+                                 Margin="0,0,2,0" ToolTip="Leave empty to display output in the results area"/>
+                    </DockPanel>
                 </GroupBox>
                 <TextBlock FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap" Margin="0,6,0,0"
                            Text="Tip: For very large inputs, saving output to a file is recommended to avoid truncation."/>
@@ -175,21 +171,16 @@
                 </StackPanel>
 
                 <GroupBox Header="Binary Paths (only needed when frames have OrdinalNNN values)" Padding="6" Margin="0,0,0,8">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        <TextBox Grid.Row="0" Grid.Column="0" Text="{Binding BinaryPaths, UpdateSourceTrigger=PropertyChanged}"
-                                 Margin="0,0,4,4" ToolTip="Semicolon-separated paths to SQL Server binaries (DLL/EXE)"/>
-                        <Button Grid.Row="0" Grid.Column="1" Content="Browse..." Width="80" Click="BrowseBinaryPath_Click"/>
-                        <CheckBox Grid.Row="1" Grid.ColumnSpan="2" Content="Search for DLLs and EXEs recursively"
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,4">
+                            <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowseBinaryPath_Click"
+                                    ToolTip="Browse for binary folder"/>
+                            <TextBox Text="{Binding BinaryPaths, UpdateSourceTrigger=PropertyChanged}"
+                                     Margin="0,0,2,0" ToolTip="Semicolon-separated paths to SQL Server binaries (DLL/EXE)"/>
+                        </DockPanel>
+                        <CheckBox Content="Search for DLLs and EXEs recursively"
                                   IsChecked="{Binding DllRecurse}"/>
-                    </Grid>
+                    </StackPanel>
                 </GroupBox>
 
                 <TextBlock FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap"

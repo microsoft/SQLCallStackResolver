@@ -26,17 +26,13 @@
         </GroupBox>
 
         <GroupBox Grid.Row="2" Header="Output Destination" Padding="6" Margin="0,0,0,8">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="Save to file:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                <TextBox Grid.Column="1" Text="{Binding OutputFilePath, UpdateSourceTrigger=PropertyChanged}"
-                         ToolTip="Leave empty to display output in the results area"/>
-                <Button Grid.Column="2" Content="Browse..." Width="80" Margin="4,0,0,0" Click="BrowseOutputPath_Click"/>
-            </Grid>
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowseOutputPath_Click"
+                        ToolTip="Browse for output file location"/>
+                <TextBlock DockPanel.Dock="Left" Text="Save to file:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBox Text="{Binding OutputFilePath, UpdateSourceTrigger=PropertyChanged}"
+                         Margin="0,0,2,0" ToolTip="Leave empty to display output in the results area"/>
+            </DockPanel>
         </GroupBox>
 
         <TextBlock Grid.Row="3" FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap"
