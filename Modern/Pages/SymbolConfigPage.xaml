@@ -4,6 +4,7 @@
              xmlns:local="clr-namespace:Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern">
     <UserControl.Resources>
         <local:BoolToVisibilityConverter x:Key="BoolToVis"/>
+        <local:BoolToOpacityConverter x:Key="BoolToOpacityConverter"/>
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -109,10 +110,17 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBox Grid.Column="0" Text="{Binding PdbPaths, UpdateSourceTrigger=PropertyChanged}"
                          Margin="0,0,4,0" ToolTip="Semicolon-separated paths to PDB files"/>
                 <Button Grid.Column="1" Content="Browse..." Width="80" Click="BrowsePdbPath_Click"/>
+                <ToggleButton Grid.Column="2" IsChecked="{Binding PinPdbPaths}" Margin="4,0,0,0"
+                              Padding="4,2" Background="Transparent" BorderThickness="0"
+                              ToolTip="Pin to remember this path for next session">
+                    <TextBlock Text="&#xE718;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                               Opacity="{Binding PinPdbPaths, Converter={StaticResource BoolToOpacityConverter}}"/>
+                </ToggleButton>
             </Grid>
         </GroupBox>
 

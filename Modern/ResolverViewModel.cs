@@ -189,8 +189,32 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         public string BaseAddressesString { get => _baseAddressesString; set => SetField(ref _baseAddressesString, value, nameof(BaseAddressesString)); }
 
         // -- Symbol Config --
-        private string _pdbPaths = string.Empty;
-        public string PdbPaths { get => _pdbPaths; set => SetField(ref _pdbPaths, value, nameof(PdbPaths)); }
+        private string _pdbPaths = Properties.Settings.Default.PinPdbPaths ? (Properties.Settings.Default.LastPdbPaths ?? string.Empty) : string.Empty;
+        public string PdbPaths {
+            get => _pdbPaths;
+            set {
+                if (SetField(ref _pdbPaths, value, nameof(PdbPaths)) && _pinPdbPaths) {
+                    Properties.Settings.Default.LastPdbPaths = value;
+                    Properties.Settings.Default.Save();
+                }
+            }
+        }
+
+        private bool _pinPdbPaths = Properties.Settings.Default.PinPdbPaths;
+        public bool PinPdbPaths {
+            get => _pinPdbPaths;
+            set {
+                if (SetField(ref _pinPdbPaths, value, nameof(PinPdbPaths))) {
+                    Properties.Settings.Default.PinPdbPaths = value;
+                    if (value) {
+                        Properties.Settings.Default.LastPdbPaths = _pdbPaths;
+                    } else {
+                        Properties.Settings.Default.LastPdbPaths = string.Empty;
+                    }
+                    Properties.Settings.Default.Save();
+                }
+            }
+        }
 
         private bool _pdbRecurse = true;
         public bool PdbRecurse { get => _pdbRecurse; set => SetField(ref _pdbRecurse, value, nameof(PdbRecurse)); }
@@ -539,9 +563,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
             } catch { /* best effort update check */ }
         }
 
-        internal void AppendPdbPath(string path) {
+        internal void UpdatePdbPath(string path) {
             if (string.IsNullOrEmpty(path)) return;
-            PdbPaths = string.IsNullOrEmpty(PdbPaths) ? path : PdbPaths + ";" + path;
+            PdbPaths = path;
         }
 
         internal void AppendBinaryPath(string path) {
@@ -591,7 +615,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
             } else if (_cts?.IsCancellationRequested == true) {
                 StatusMessage = StackResolver.OperationCanceled;
             } else {
-                AppendPdbPath(destFolder);
+                UpdatePdbPath(destFolder);
                 StatusMessage = $"Symbols for {bld.BuildNumber} downloaded. Ready to resolve!";
                 HighlightResolve = true;
             }

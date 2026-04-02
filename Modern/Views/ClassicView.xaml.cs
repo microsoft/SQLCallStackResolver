@@ -12,7 +12,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         private void Find_Executed(object sender, ExecutedRoutedEventArgs e) => findBar.Open();
 
         private void UseSymbolServer_Click(object sender, RoutedEventArgs e) {
-            ViewModel.AppendPdbPath(@"SRV*c:\temp\symcache*https://msdl.microsoft.com/download/symbols");
+            ViewModel.UpdatePdbPath(@"SRV*c:\temp\symcache*https://msdl.microsoft.com/download/symbols");
             ViewModel.StatusMessage = "Symbol server path added. Ready to resolve!";
             ViewModel.HighlightResolve = true;
         }
@@ -49,7 +49,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
                 CheckPathExists = false, CheckFileExists = false, FileName = "select folder only",
                 Filter = "All files (*.*)|*.*", Title = "Select FOLDER path to your PDBs"
             };
-            if (dlg.ShowDialog(Window.GetWindow(this)) == true) ViewModel.AppendPdbPath(Path.GetDirectoryName(dlg.FileName));
+            if (dlg.ShowDialog(Window.GetWindow(this)) == true) ViewModel.UpdatePdbPath(Path.GetDirectoryName(dlg.FileName));
         }
 
         private void BrowseBinaryPath_Click(object sender, RoutedEventArgs e) {
@@ -68,7 +68,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
                 return;
             }
             var dialog = new SQLBuildsDialog { PathToPDBs = ConfigurationManager.AppSettings["PDBDownloadFolder"], Owner = Window.GetWindow(this) };
-            if (dialog.ShowDialog() == true) ViewModel.AppendPdbPath(dialog.LastDownloadedSymFolder);
+            if (dialog.ShowDialog() == true) ViewModel.UpdatePdbPath(dialog.LastDownloadedSymFolder);
         }
 
         private void BrowseOutputPath_Click(object sender, RoutedEventArgs e) {

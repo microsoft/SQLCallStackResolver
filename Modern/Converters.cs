@@ -24,6 +24,13 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
             value is bool b ? !b : value;
     }
 
+    internal class BoolToOpacityConverter : IValueConverter {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+            value is bool b && b ? 1.0 : 0.35;
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+            throw new NotSupportedException();
+    }
+
     internal class StepToBoldConverter : IValueConverter {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
             if (value is int current && parameter is string stepStr && int.TryParse(stepStr, out int step))
