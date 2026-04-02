@@ -9,7 +9,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+        <StackPanel Grid.Row="0" Margin="0,0,0,8">
             <TextBlock FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4"
                        Text="How would you like to provide input?"/>
             <TextBlock FontSize="12" Foreground="Gray"

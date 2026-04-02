@@ -17,10 +17,6 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
             ViewModel.HighlightResolve = true;
         }
 
-        private async void DownloadDetectedBuild_Click(object sender, RoutedEventArgs e) {
-            await ViewModel.DownloadSymbolsForDetectedBuildAsync();
-        }
-
         private async void LoadXEL_Click(object sender, RoutedEventArgs e) {
             var dlg = new Microsoft.Win32.OpenFileDialog {
                 Multiselect = true,

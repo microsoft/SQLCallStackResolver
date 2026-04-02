@@ -123,9 +123,14 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         private string _detectedPdbModules;
         public string DetectedPdbModules { get => _detectedPdbModules; private set => SetField(ref _detectedPdbModules, value, nameof(DetectedPdbModules)); }
 
+        // -- Input needs base addresses --
+        private bool _needsBaseAddresses;
+        public bool NeedsBaseAddresses { get => _needsBaseAddresses; private set => SetField(ref _needsBaseAddresses, value, nameof(NeedsBaseAddresses)); }
+
         private void DetectSqlBuildVersion() {
             DetectedBuildInfo = null;
             HasXmlFrameInput = false;
+            NeedsBaseAddresses = false;
             DetectedPdbModules = null;
             if (string.IsNullOrWhiteSpace(_inputText)) return;
 
@@ -158,6 +163,9 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
                     DetectedPdbModules = string.Join(", ", uniqueModules.OrderBy(s => s));
             }
 
+            // Check if input needs base addresses (before version detection which may return early)
+            NeedsBaseAddresses = _resolver.IsInputVAOnly(_inputText) && string.IsNullOrEmpty(_baseAddressesString);
+
             // Also try version-based detection
             if (!File.Exists(SqlBuildInfoFileName)) return;
             var match = Regex.Match(_inputText, @"\b(\d{2}\.\d+\.\d+\.\d+)\b");
@@ -186,16 +194,29 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         public bool GroupXEvents { get => _groupXEvents; set => SetField(ref _groupXEvents, value, nameof(GroupXEvents)); }
 
         private string _baseAddressesString = string.Empty;
-        public string BaseAddressesString { get => _baseAddressesString; set => SetField(ref _baseAddressesString, value, nameof(BaseAddressesString)); }
+        public string BaseAddressesString {
+            get => _baseAddressesString;
+            set {
+                if (SetField(ref _baseAddressesString, value, nameof(BaseAddressesString)))
+                    NeedsBaseAddresses = _resolver.IsInputVAOnly(_inputText) && string.IsNullOrEmpty(value);
+            }
+        }
 
         // -- Symbol Config --
         private string _pdbPaths = Properties.Settings.Default.PinPdbPaths ? (Properties.Settings.Default.LastPdbPaths ?? string.Empty) : string.Empty;
         public string PdbPaths {
             get => _pdbPaths;
             set {
-                if (SetField(ref _pdbPaths, value, nameof(PdbPaths)) && _pinPdbPaths) {
-                    Properties.Settings.Default.LastPdbPaths = value;
-                    Properties.Settings.Default.Save();
+                if (SetField(ref _pdbPaths, value, nameof(PdbPaths))) {
+                    // Dismiss detection banners when the user sets a non-empty symbol path
+                    if (!string.IsNullOrEmpty(value)) {
+                        HasXmlFrameInput = false;
+                        DetectedBuildInfo = null;
+                    }
+                    if (_pinPdbPaths) {
+                        Properties.Settings.Default.LastPdbPaths = value;
+                        Properties.Settings.Default.Save();
+                    }
                 }
             }
         }

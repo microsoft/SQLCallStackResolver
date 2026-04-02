@@ -14,7 +14,7 @@
 
         <Border Grid.Row="1" Background="{DynamicResource WarningBackgroundBrush}" BorderBrush="{DynamicResource WarningBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,8">
             <StackPanel Orientation="Horizontal">
-                <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource WarningForegroundBrush}"/>
+                <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource WarningForegroundBrush}"/>
                 <TextBlock Foreground="{DynamicResource WarningForegroundBrush}" TextWrapping="Wrap" VerticalAlignment="Center"
                            Text="Your input appears to contain only virtual addresses. Module base address information is required to resolve these. Paste the output of the query shown below, or load from a file."/>
             </StackPanel>
@@ -31,9 +31,9 @@
         </DockPanel>
 
         <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,8,0,0">
-            <Button Margin="0,0,8,0" Padding="8,4" Click="LoadFromFile_Click">
+            <Button Margin="0,0,8,0" Padding="10,6" Click="LoadFromFile_Click">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="&#xED25;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock Text="&#xED25;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
                     <TextBlock Text="Load from file..."/>
                 </StackPanel>
             </Button>
