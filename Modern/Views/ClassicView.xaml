@@ -72,50 +72,50 @@
                     BorderBrush="{DynamicResource SystemControlForegroundAccentBrush}"
                     BorderThickness="1"
                     Visibility="{Binding HasDetectedBuild, Converter={StaticResource BoolToVis}}">
-                <DockPanel>
-                    <Button DockPanel.Dock="Right" Padding="8,4" Click="DownloadDetectedBuild_Click"
-                            Style="{DynamicResource AccentButtonStyle}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                            <TextBlock Text="Download Symbols"/>
-                        </StackPanel>
-                    </Button>
-                    <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"
                                Foreground="{DynamicResource SystemControlForegroundAccentBrush}"/>
-                    <TextBlock VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                    <TextBlock VerticalAlignment="Center" TextWrapping="Wrap">
                         <Run Text="Detected SQL Server" FontWeight="SemiBold"/>
                         <Run Text="{Binding DetectedBuildVersion, Mode=OneWay}" FontWeight="SemiBold"/>
                         <Run Text=" - "/>
                         <Run Text="{Binding DetectedBuildDetails, Mode=OneWay}" Foreground="Gray"/>
+                        <Run Text=" Use the 'For a SQL version' button to download symbols."/>
                     </TextBlock>
-                </DockPanel>
+                </StackPanel>
             </Border>
             <Border Grid.Row="0" Grid.ColumnSpan="2" CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
                     Background="{DynamicResource SystemControlBackgroundListLowBrush}"
                     BorderBrush="{DynamicResource SystemControlForegroundAccentBrush}"
                     BorderThickness="1"
                     Visibility="{Binding HasXmlFrameInput, Converter={StaticResource BoolToVis}}">
-                <DockPanel>
-                    <Button DockPanel.Dock="Right" Padding="8,4" Click="UseSymbolServer_Click"
-                            Style="{DynamicResource AccentButtonStyle}"
-                            ToolTip="SRV*c:\temp\symcache*https://msdl.microsoft.com/download/symbols">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE753;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                            <TextBlock Text="Use Symbol Server"/>
-                        </StackPanel>
-                    </Button>
-                    <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"
                                Foreground="{DynamicResource SystemControlForegroundAccentBrush}"/>
-                    <TextBlock VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                    <TextBlock VerticalAlignment="Center" TextWrapping="Wrap">
                         <Run Text="XML frames with PDB info detected" FontWeight="SemiBold"/>
                         <Run Text=" - Modules: "/>
                         <Run Text="{Binding DetectedPdbModules, Mode=OneWay}" Foreground="Gray"/>
+                        <Run Text=" Use the 'MS Symbol Server' button to set the symbol path."/>
                     </TextBlock>
-                </DockPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Base address warning banner -->
+            <Border Grid.Row="0" Grid.ColumnSpan="2" CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
+                    Background="{DynamicResource SystemControlBackgroundListLowBrush}"
+                    BorderBrush="Orange" BorderThickness="1"
+                    Visibility="{Binding NeedsBaseAddresses, Converter={StaticResource BoolToVis}}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"
+                               Foreground="Orange"/>
+                    <TextBlock VerticalAlignment="Center" TextWrapping="Wrap"
+                               Text="Input appears to contain virtual addresses only. Click the 'Enter base addresses' button to provide module base address information."/>
+                </StackPanel>
             </Border>
 
             <!-- Top-left: Input/Output Options + Import -->
-            <GroupBox Grid.Row="1" Grid.Column="0" Header="Input / Output Options" Margin="0,0,4,4" Padding="4">
+            <GroupBox Grid.Row="1" Grid.Column="0" Header="Input / Output Options" Margin="0,0,4,4" Padding="6">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -135,20 +135,44 @@
                     </StackPanel>
                     <StackPanel Grid.Column="1" Margin="8,0,0,0">
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                            <Button Click="LoadXEL_Click" Padding="8,3" Margin="0,0,8,0"
+                            <Button Click="LoadXEL_Click" Padding="10,6" Margin="0,0,8,0"
                                     IsEnabled="{Binding IsNotProcessing}">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xED25;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBlock Text="&#xED25;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                     <TextBlock Text="Import XEL..."/>
                                 </StackPanel>
                             </Button>
-                            <CheckBox Content="Group XEL events" VerticalAlignment="Center"
-                                      IsChecked="{Binding GroupXEvents}"/>
                         </StackPanel>
+                        <CheckBox Content="Group XEL events" Margin="0,0,0,6"
+                                  IsChecked="{Binding GroupXEvents}"/>
                         <Button Margin="0,0,0,6" Click="EnterBaseAddresses_Click"
-                                HorizontalAlignment="Left" Padding="8,3">
+                                HorizontalAlignment="Left" Padding="10,6">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding NeedsBaseAddresses}" Value="True">
+                                            <DataTrigger.EnterActions>
+                                                <BeginStoryboard x:Name="BaseAddrGlow">
+                                                    <Storyboard RepeatBehavior="3x">
+                                                        <ColorAnimation Storyboard.TargetProperty="(Effect).(DropShadowEffect.Color)"
+                                                                        To="Orange" Duration="0:0:0.4" AutoReverse="True"/>
+                                                        <DoubleAnimation Storyboard.TargetProperty="(Effect).(DropShadowEffect.Opacity)"
+                                                                         To="1" Duration="0:0:0.4" AutoReverse="True"/>
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </DataTrigger.EnterActions>
+                                            <DataTrigger.ExitActions>
+                                                <StopStoryboard BeginStoryboardName="BaseAddrGlow"/>
+                                            </DataTrigger.ExitActions>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <Button.Effect>
+                                <DropShadowEffect Color="Transparent" ShadowDepth="0" BlurRadius="15" Opacity="0"/>
+                            </Button.Effect>
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE81C;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <TextBlock Text="&#xE81C;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                 <TextBlock Text="Enter base addresses..."/>
                             </StackPanel>
                         </Button>
@@ -164,19 +188,67 @@
             </GroupBox>
 
             <!-- Top-right: Symbol / PDB paths -->
-            <GroupBox Grid.Row="1" Grid.Column="1" Header="Symbol / PDB Paths" Margin="4,0,0,4" Padding="4">
+            <GroupBox Grid.Row="1" Grid.Column="1" Header="Symbol / PDB Paths" Margin="4,0,0,4" Padding="6">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Button Click="SelectSQLPDB_Click" Padding="8,3" Margin="0,0,8,0">
+                        <Button Click="SelectSQLPDB_Click" Padding="10,6" Margin="0,0,8,0">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasDetectedBuild}" Value="True">
+                                            <DataTrigger.EnterActions>
+                                                <BeginStoryboard x:Name="SqlBuildGlow">
+                                                    <Storyboard RepeatBehavior="3x">
+                                                        <ColorAnimation Storyboard.TargetProperty="(Effect).(DropShadowEffect.Color)"
+                                                                        To="#40C040" Duration="0:0:0.4" AutoReverse="True"/>
+                                                        <DoubleAnimation Storyboard.TargetProperty="(Effect).(DropShadowEffect.Opacity)"
+                                                                         To="1" Duration="0:0:0.4" AutoReverse="True"/>
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </DataTrigger.EnterActions>
+                                            <DataTrigger.ExitActions>
+                                                <StopStoryboard BeginStoryboardName="SqlBuildGlow"/>
+                                            </DataTrigger.ExitActions>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <Button.Effect>
+                                <DropShadowEffect Color="Transparent" ShadowDepth="0" BlurRadius="15" Opacity="0"/>
+                            </Button.Effect>
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                 <TextBlock Text="For a SQL version..."/>
                             </StackPanel>
                         </Button>
-                        <Button Click="UseSymbolServer_Click" Padding="8,3"
+                        <Button Click="UseSymbolServer_Click" Padding="10,6"
                                 ToolTip="SRV*c:\temp\symcache*https://msdl.microsoft.com/download/symbols">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasXmlFrameInput}" Value="True">
+                                            <DataTrigger.EnterActions>
+                                                <BeginStoryboard x:Name="SymSrvGlow">
+                                                    <Storyboard RepeatBehavior="3x">
+                                                        <ColorAnimation Storyboard.TargetProperty="(Effect).(DropShadowEffect.Color)"
+                                                                        To="#40C040" Duration="0:0:0.4" AutoReverse="True"/>
+                                                        <DoubleAnimation Storyboard.TargetProperty="(Effect).(DropShadowEffect.Opacity)"
+                                                                         To="1" Duration="0:0:0.4" AutoReverse="True"/>
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </DataTrigger.EnterActions>
+                                            <DataTrigger.ExitActions>
+                                                <StopStoryboard BeginStoryboardName="SymSrvGlow"/>
+                                            </DataTrigger.ExitActions>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <Button.Effect>
+                                <DropShadowEffect Color="Transparent" ShadowDepth="0" BlurRadius="15" Opacity="0"/>
+                            </Button.Effect>
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE753;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <TextBlock Text="&#xE753;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                 <TextBlock Text="MS Symbol Server"/>
                             </StackPanel>
                         </Button>
@@ -184,9 +256,9 @@
                     <TextBlock Text="PDB search paths:" Foreground="Gray" Margin="0,0,0,2"/>
                     <DockPanel Margin="0,0,0,4">
                         <ToggleButton DockPanel.Dock="Right" IsChecked="{Binding PinPdbPaths}"
-                                      Padding="2,2" Background="Transparent" BorderThickness="0" Margin="2,0,0,0"
+                                      Padding="4,2" Background="Transparent" BorderThickness="0" Margin="2,0,0,0"
                                       ToolTip="Pin to remember this path for next session">
-                            <TextBlock Text="&#xE718;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                            <TextBlock Text="&#xE718;" FontFamily="Segoe MDL2 Assets" FontSize="14"
                                        Opacity="{Binding PinPdbPaths, Converter={StaticResource BoolToOpacityConverter}}"/>
                         </ToggleButton>
                         <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowsePdbPath_Click"
@@ -221,7 +293,7 @@
                 <Button Grid.Column="2" Padding="10,6" Margin="0,0,8,0"
                         Command="{Binding PasteFromClipboardCommand}">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE77F;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBlock Text="&#xE77F;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
                         <TextBlock Text="Paste clipboard &amp; resolve"/>
                     </StackPanel>
                 </Button>
@@ -252,7 +324,7 @@
                         <DropShadowEffect Color="Transparent" ShadowDepth="0" BlurRadius="15" Opacity="0"/>
                     </Button.Effect>
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
                         <TextBlock Text="Resolve Callstacks!" FontWeight="Bold"/>
                     </StackPanel>
                 </Button>

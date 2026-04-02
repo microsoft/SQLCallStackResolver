@@ -18,20 +18,20 @@
 
         <!-- Single-line mismatch warning banner (hidden by default) -->
         <Border Grid.Row="1" x:Name="SingleLineWarningBanner" Visibility="Collapsed"
-                Background="{DynamicResource WarningBackgroundBrush}" BorderBrush="{DynamicResource WarningBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,6">
+                Background="{DynamicResource WarningBackgroundBrush}" BorderBrush="{DynamicResource WarningBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,6">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{DynamicResource WarningForegroundBrush}"/>
+                    <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource WarningForegroundBrush}"/>
                     <TextBlock x:Name="SingleLineWarningText" Foreground="{DynamicResource WarningForegroundBrush}" TextWrapping="Wrap" VerticalAlignment="Center"/>
                 </StackPanel>
-                <Button Grid.Column="1" x:Name="AutoFixButton" Padding="8,4" Margin="8,0,0,0"
+                <Button Grid.Column="1" x:Name="AutoFixButton" Padding="10,6" Margin="8,0,0,0"
                         VerticalAlignment="Center" Click="AutoFixSingleLine_Click">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE90F;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock Text="&#xE90F;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
                         <TextBlock Text="Fix automatically"/>
                     </StackPanel>
                 </Button>

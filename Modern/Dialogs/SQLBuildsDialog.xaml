@@ -62,16 +62,16 @@
             <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
                     CornerRadius="12" Padding="40,32"
                     HorizontalAlignment="Center" VerticalAlignment="Center"
-                    MinWidth="280"
+                    MinWidth="320"
                     BorderThickness="1" BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}">
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="24" ShadowDepth="4" Opacity="0.3"/>
                 </Border.Effect>
                 <StackPanel HorizontalAlignment="Center">
-                    <ui:ProgressRing IsActive="True" Width="40" Height="40" Margin="0,0,0,14"/>
-                    <TextBlock x:Name="overlayStatus" FontSize="13" TextAlignment="Center"
-                               TextWrapping="Wrap" MaxWidth="240" Margin="0,0,0,14"/>
-                    <Button Click="CancelDownload_Click" HorizontalAlignment="Center" Padding="20,6">
+                    <ui:ProgressRing IsActive="True" Width="48" Height="48" Margin="0,0,0,16"/>
+                    <TextBlock x:Name="overlayStatus" FontSize="14" TextAlignment="Center"
+                               TextWrapping="Wrap" MaxWidth="280" Margin="0,0,0,16"/>
+                    <Button Click="CancelDownload_Click" HorizontalAlignment="Center" Padding="24,8">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
                             <TextBlock Text="Cancel"/>

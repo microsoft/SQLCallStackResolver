@@ -43,7 +43,7 @@
                         <TextBlock Text="Detected SQL Server " FontWeight="SemiBold" FontSize="13"/>
                         <TextBlock Text="{Binding DetectedBuildVersion}" FontWeight="SemiBold" FontSize="13"/>
                     </StackPanel>
-                    <TextBlock Text="{Binding DetectedBuildDetails}" FontSize="11.5" Opacity="0.7" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding DetectedBuildDetails}" FontSize="11.5" Foreground="Gray" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
                 <Button Grid.Column="2" Padding="12,6" Click="DownloadDetectedBuild_Click"
                         Style="{DynamicResource AccentButtonStyle}">
@@ -72,7 +72,7 @@
                            Foreground="{DynamicResource SystemControlForegroundAccentBrush}"/>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock Text="XML frames with PDB info detected" FontWeight="SemiBold" FontSize="13"/>
-                    <TextBlock FontSize="11.5" Opacity="0.7" TextTrimming="CharacterEllipsis">
+                    <TextBlock FontSize="11.5" Foreground="Gray" TextTrimming="CharacterEllipsis">
                         <Run Text="Modules:"/>
                         <Run Text="{Binding DetectedPdbModules, Mode=OneWay}"/>
                     </TextBlock>
@@ -92,13 +92,13 @@
         <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,12">
             <Button Padding="10,6" Margin="0,0,8,0" Click="SelectSQLPDB_Click">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
                     <TextBlock Text="For a SQL Server version..."/>
                 </StackPanel>
             </Button>
-            <Button Padding="10,6" Click="UseSymbolServer_Click" ToolTip="Sets PDB path to SRV*c:\temp\symcache*https://msdl.microsoft.com/download/symbols">
+            <Button Padding="10,6" Click="UseSymbolServer_Click" ToolTip="SRV*c:\temp\symcache*https://msdl.microsoft.com/download/symbols">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="&#xE753;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock Text="&#xE753;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
                     <TextBlock Text="Microsoft Symbol Server"/>
                 </StackPanel>
             </Button>
@@ -167,7 +167,7 @@
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                     <CheckBox Content="Search PDBs recursively" Margin="0,0,16,0" IsChecked="{Binding PdbRecurse}"/>
                     <CheckBox Content="Cache PDBs locally" Margin="0,0,0,0" IsChecked="{Binding CachePDB}"
-                              ToolTip="Copies PDBs to %TEMP%\SymCache. Recommended for UNC paths."/>
+                              ToolTip="Copies PDBs to %TEMP%\SymCache"/>
                 </StackPanel>
 
                 <GroupBox Header="Binary Paths (only needed when frames have OrdinalNNN values)" Padding="6" Margin="0,0,0,8">

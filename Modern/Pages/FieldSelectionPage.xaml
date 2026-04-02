@@ -66,8 +66,8 @@
                 </StackPanel>
             </Expander.Header>
             <StackPanel Orientation="Horizontal" Margin="24,6,0,0">
-                <Button Content="Add Item" Padding="8,4" Margin="0,0,8,0" Click="AddItem_Click"/>
-                <Button Content="Delete Selected" Padding="8,4" Margin="0,0,8,0" Click="DeleteItem_Click"/>
+                <Button Content="Add Item" Padding="10,6" Margin="0,0,8,0" Click="AddItem_Click"/>
+                <Button Content="Delete Selected" Padding="10,6" Margin="0,0,8,0" Click="DeleteItem_Click"/>
             </StackPanel>
         </Expander>
     </Grid>
