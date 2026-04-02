@@ -19,24 +19,12 @@
         </StackPanel>
 
         <!-- File picker section -->
-        <Border Grid.Row="1" BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,8">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <Button Grid.Column="0" Padding="8,4" Click="BrowseXEL_Click"
-                        IsEnabled="{Binding IsNotProcessing}">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xED25;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <TextBlock Text="Browse XEL files..."/>
-                    </StackPanel>
-                </Button>
-                <TextBlock Grid.Column="1" x:Name="FileInfoText" Margin="12,0,0,0"
-                           VerticalAlignment="Center" Foreground="Gray" TextTrimming="CharacterEllipsis"
-                           Text="No files selected"/>
-            </Grid>
-        </Border>
+        <DockPanel Grid.Row="1" Margin="0,0,0,8">
+            <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowseXEL_Click"
+                    IsEnabled="{Binding IsNotProcessing}" ToolTip="Browse for XEL files"/>
+            <TextBox x:Name="FileInfoText" IsReadOnly="True" Margin="0,0,2,0"
+                     Text="No files selected" ToolTip="XEL file path(s)"/>
+        </DockPanel>
 
         <!-- Fields header + Group checkbox -->
         <Grid Grid.Row="2" Margin="0,0,0,4">
