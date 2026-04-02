@@ -12,6 +12,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         private void Find_Executed(object sender, ExecutedRoutedEventArgs e) => findBar.Open();
 
         private void UseSymbolServer_Click(object sender, RoutedEventArgs e) {
+            ViewModel.HasXmlFrameInput = false;
             ViewModel.UpdatePdbPath(@"SRV*c:\temp\symcache*https://msdl.microsoft.com/download/symbols");
             ViewModel.StatusMessage = "Symbol server path added. Ready to resolve!";
             ViewModel.HighlightResolve = true;
@@ -57,6 +58,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         }
 
         private void SelectSQLPDB_Click(object sender, RoutedEventArgs e) {
+            // Dismiss the banner immediately — user has responded to the hint
+            ViewModel.DetectedBuildInfo = null;
             if (!File.Exists(ResolverViewModel.SqlBuildInfoFileName)) {
                 MessageBox.Show(Window.GetWindow(this),
                     $"Could not find the SQL build info JSON file: {ResolverViewModel.SqlBuildInfoFileName}. You might need to manually obtain it from: {ConfigurationManager.AppSettings["SQLBuildInfoURLs"]}",
