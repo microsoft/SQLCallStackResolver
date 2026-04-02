@@ -112,14 +112,14 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
 
         // -- Detected SQL Build --
         private SQLBuildInfo _detectedBuildInfo;
-        public SQLBuildInfo DetectedBuildInfo { get => _detectedBuildInfo; private set { SetField(ref _detectedBuildInfo, value, nameof(DetectedBuildInfo)); OnPropertyChanged(nameof(HasDetectedBuild)); OnPropertyChanged(nameof(DetectedBuildVersion)); OnPropertyChanged(nameof(DetectedBuildDetails)); } }
+        public SQLBuildInfo DetectedBuildInfo { get => _detectedBuildInfo; internal set { SetField(ref _detectedBuildInfo, value, nameof(DetectedBuildInfo)); OnPropertyChanged(nameof(HasDetectedBuild)); OnPropertyChanged(nameof(DetectedBuildVersion)); OnPropertyChanged(nameof(DetectedBuildDetails)); } }
         public bool HasDetectedBuild => _detectedBuildInfo != null;
         public string DetectedBuildVersion => _detectedBuildInfo?.BuildNumber;
         public string DetectedBuildDetails => _detectedBuildInfo != null ? $"{_detectedBuildInfo.ProductMajorVersion} {_detectedBuildInfo.ProductLevel} - {_detectedBuildInfo.Label} ({_detectedBuildInfo.MachineType})" : null;
 
         // -- Detected XML frames with PDB GUID info --
         private bool _hasXmlFrameInput;
-        public bool HasXmlFrameInput { get => _hasXmlFrameInput; private set => SetField(ref _hasXmlFrameInput, value, nameof(HasXmlFrameInput)); }
+        public bool HasXmlFrameInput { get => _hasXmlFrameInput; internal set => SetField(ref _hasXmlFrameInput, value, nameof(HasXmlFrameInput)); }
         private string _detectedPdbModules;
         public string DetectedPdbModules { get => _detectedPdbModules; private set => SetField(ref _detectedPdbModules, value, nameof(DetectedPdbModules)); }
 

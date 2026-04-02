@@ -153,24 +153,25 @@
                                         <DataTrigger Binding="{Binding NeedsBaseAddresses}" Value="True">
                                             <DataTrigger.EnterActions>
                                                 <BeginStoryboard x:Name="BaseAddrGlow">
-                                                    <Storyboard RepeatBehavior="3x">
-                                                        <ColorAnimation Storyboard.TargetProperty="(Effect).(DropShadowEffect.Color)"
-                                                                        To="Orange" Duration="0:0:0.4" AutoReverse="True"/>
-                                                        <DoubleAnimation Storyboard.TargetProperty="(Effect).(DropShadowEffect.Opacity)"
-                                                                         To="1" Duration="0:0:0.4" AutoReverse="True"/>
+                                                    <Storyboard RepeatBehavior="Forever">
+                                                        <ColorAnimation Storyboard.TargetProperty="(Button.BorderBrush).(SolidColorBrush.Color)"
+                                                                        To="Orange" Duration="0:0:0.5" AutoReverse="True"/>
                                                     </Storyboard>
                                                 </BeginStoryboard>
                                             </DataTrigger.EnterActions>
                                             <DataTrigger.ExitActions>
                                                 <StopStoryboard BeginStoryboardName="BaseAddrGlow"/>
                                             </DataTrigger.ExitActions>
+                                            <Setter Property="BorderThickness" Value="2"/>
+                                            <Setter Property="BorderBrush">
+                                                <Setter.Value>
+                                                    <SolidColorBrush Color="Transparent"/>
+                                                </Setter.Value>
+                                            </Setter>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </Button.Style>
-                            <Button.Effect>
-                                <DropShadowEffect Color="Transparent" ShadowDepth="0" BlurRadius="15" Opacity="0"/>
-                            </Button.Effect>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE81C;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                 <TextBlock Text="Enter base addresses..."/>
@@ -198,24 +199,25 @@
                                         <DataTrigger Binding="{Binding HasDetectedBuild}" Value="True">
                                             <DataTrigger.EnterActions>
                                                 <BeginStoryboard x:Name="SqlBuildGlow">
-                                                    <Storyboard RepeatBehavior="3x">
-                                                        <ColorAnimation Storyboard.TargetProperty="(Effect).(DropShadowEffect.Color)"
-                                                                        To="#40C040" Duration="0:0:0.4" AutoReverse="True"/>
-                                                        <DoubleAnimation Storyboard.TargetProperty="(Effect).(DropShadowEffect.Opacity)"
-                                                                         To="1" Duration="0:0:0.4" AutoReverse="True"/>
+                                                    <Storyboard RepeatBehavior="Forever">
+                                                        <ColorAnimation Storyboard.TargetProperty="(Button.BorderBrush).(SolidColorBrush.Color)"
+                                                                        To="#40C040" Duration="0:0:0.5" AutoReverse="True"/>
                                                     </Storyboard>
                                                 </BeginStoryboard>
                                             </DataTrigger.EnterActions>
                                             <DataTrigger.ExitActions>
                                                 <StopStoryboard BeginStoryboardName="SqlBuildGlow"/>
                                             </DataTrigger.ExitActions>
+                                            <Setter Property="BorderThickness" Value="2"/>
+                                            <Setter Property="BorderBrush">
+                                                <Setter.Value>
+                                                    <SolidColorBrush Color="Transparent"/>
+                                                </Setter.Value>
+                                            </Setter>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </Button.Style>
-                            <Button.Effect>
-                                <DropShadowEffect Color="Transparent" ShadowDepth="0" BlurRadius="15" Opacity="0"/>
-                            </Button.Effect>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                 <TextBlock Text="For a SQL version..."/>
@@ -229,24 +231,25 @@
                                         <DataTrigger Binding="{Binding HasXmlFrameInput}" Value="True">
                                             <DataTrigger.EnterActions>
                                                 <BeginStoryboard x:Name="SymSrvGlow">
-                                                    <Storyboard RepeatBehavior="3x">
-                                                        <ColorAnimation Storyboard.TargetProperty="(Effect).(DropShadowEffect.Color)"
-                                                                        To="#40C040" Duration="0:0:0.4" AutoReverse="True"/>
-                                                        <DoubleAnimation Storyboard.TargetProperty="(Effect).(DropShadowEffect.Opacity)"
-                                                                         To="1" Duration="0:0:0.4" AutoReverse="True"/>
+                                                    <Storyboard RepeatBehavior="Forever">
+                                                        <ColorAnimation Storyboard.TargetProperty="(Button.BorderBrush).(SolidColorBrush.Color)"
+                                                                        To="#40C040" Duration="0:0:0.5" AutoReverse="True"/>
                                                     </Storyboard>
                                                 </BeginStoryboard>
                                             </DataTrigger.EnterActions>
                                             <DataTrigger.ExitActions>
                                                 <StopStoryboard BeginStoryboardName="SymSrvGlow"/>
                                             </DataTrigger.ExitActions>
+                                            <Setter Property="BorderThickness" Value="2"/>
+                                            <Setter Property="BorderBrush">
+                                                <Setter.Value>
+                                                    <SolidColorBrush Color="Transparent"/>
+                                                </Setter.Value>
+                                            </Setter>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </Button.Style>
-                            <Button.Effect>
-                                <DropShadowEffect Color="Transparent" ShadowDepth="0" BlurRadius="15" Opacity="0"/>
-                            </Button.Effect>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE753;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                 <TextBlock Text="MS Symbol Server"/>
