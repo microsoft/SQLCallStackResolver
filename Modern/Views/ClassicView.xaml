@@ -19,6 +19,7 @@
             <RowDefinition Height="5"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Top: Input / Output split -->
@@ -56,11 +57,53 @@
 
         <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" Background="LightGray"/>
 
+        <!-- Detection banners -->
+        <StackPanel Grid.Row="2" Margin="0,4,0,0">
+            <Border CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
+                    Background="{DynamicResource SystemControlBackgroundListLowBrush}"
+                    BorderBrush="{DynamicResource SystemControlForegroundAccentBrush}"
+                    BorderThickness="1"
+                    Visibility="{Binding HasDetectedBuild, Converter={StaticResource BoolToVis}}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Left" Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"
+                               Foreground="{DynamicResource SystemControlForegroundAccentBrush}"/>
+                    <TextBlock VerticalAlignment="Center" TextWrapping="Wrap">
+                        <Run Text="Detected SQL Server" FontWeight="SemiBold"/>
+                        <Run Text="{Binding DetectedBuildVersion, Mode=OneWay}" FontWeight="SemiBold"/>
+                        <Run Text=" — use the 'For a SQL version' button to download symbols."/>
+                    </TextBlock>
+                </DockPanel>
+            </Border>
+            <Border CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
+                    Background="{DynamicResource SystemControlBackgroundListLowBrush}"
+                    BorderBrush="{DynamicResource SystemControlForegroundAccentBrush}"
+                    BorderThickness="1"
+                    Visibility="{Binding HasXmlFrameInput, Converter={StaticResource BoolToVis}}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Left" Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"
+                               Foreground="{DynamicResource SystemControlForegroundAccentBrush}"/>
+                    <TextBlock VerticalAlignment="Center" TextWrapping="Wrap"
+                               Text="XML frames with PDB info detected — use the 'MS Symbol Server' button to set the symbol path."/>
+                </DockPanel>
+            </Border>
+            <Border CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
+                    Background="{DynamicResource SystemControlBackgroundListLowBrush}"
+                    BorderBrush="Orange" BorderThickness="1"
+                    Visibility="{Binding NeedsBaseAddresses, Converter={StaticResource BoolToVis}}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Left" Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"
+                               Foreground="Orange"/>
+                    <TextBlock VerticalAlignment="Center" TextWrapping="Wrap"
+                               Text="Virtual addresses detected — click 'Enter base addresses' to provide module base address info."/>
+                </DockPanel>
+            </Border>
+        </StackPanel>
+
         <!-- Bottom: Configuration panels in 2x2 grid -->
-        <Grid Grid.Row="2" Margin="0,4,0,0" TextElement.FontSize="11">
+        <Grid Grid.Row="3" Margin="0,4,0,0" TextElement.FontSize="11">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="55*"/>
+                <ColumnDefinition Width="45*"/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -68,75 +111,19 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- Detection banners (version or XML frame) -->
-            <Border Grid.Row="0" Grid.ColumnSpan="2" CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
-                    Background="{DynamicResource SystemControlBackgroundListLowBrush}"
-                    BorderBrush="{DynamicResource SystemControlForegroundAccentBrush}"
-                    BorderThickness="1"
-                    Visibility="{Binding HasDetectedBuild, Converter={StaticResource BoolToVis}}">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"
-                               Foreground="{DynamicResource SystemControlForegroundAccentBrush}"/>
-                    <TextBlock VerticalAlignment="Center" TextWrapping="Wrap">
-                        <Run Text="Detected SQL Server" FontWeight="SemiBold"/>
-                        <Run Text="{Binding DetectedBuildVersion, Mode=OneWay}" FontWeight="SemiBold"/>
-                        <Run Text=" - "/>
-                        <Run Text="{Binding DetectedBuildDetails, Mode=OneWay}" Foreground="Gray"/>
-                        <Run Text=" Use the 'For a SQL version' button to download symbols."/>
-                    </TextBlock>
-                </StackPanel>
-            </Border>
-            <Border Grid.Row="0" Grid.ColumnSpan="2" CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
-                    Background="{DynamicResource SystemControlBackgroundListLowBrush}"
-                    BorderBrush="{DynamicResource SystemControlForegroundAccentBrush}"
-                    BorderThickness="1"
-                    Visibility="{Binding HasXmlFrameInput, Converter={StaticResource BoolToVis}}">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"
-                               Foreground="{DynamicResource SystemControlForegroundAccentBrush}"/>
-                    <TextBlock VerticalAlignment="Center" TextWrapping="Wrap">
-                        <Run Text="XML frames with PDB info detected" FontWeight="SemiBold"/>
-                        <Run Text=" - Modules: "/>
-                        <Run Text="{Binding DetectedPdbModules, Mode=OneWay}" Foreground="Gray"/>
-                        <Run Text=" Use the 'MS Symbol Server' button to set the symbol path."/>
-                    </TextBlock>
-                </StackPanel>
-            </Border>
-
-            <!-- Base address warning banner -->
-            <Border Grid.Row="0" Grid.ColumnSpan="2" CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
-                    Background="{DynamicResource SystemControlBackgroundListLowBrush}"
-                    BorderBrush="Orange" BorderThickness="1"
-                    Visibility="{Binding NeedsBaseAddresses, Converter={StaticResource BoolToVis}}">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"
-                               Foreground="Orange"/>
-                    <TextBlock VerticalAlignment="Center" TextWrapping="Wrap"
-                               Text="Input appears to contain virtual addresses only. Click the 'Enter base addresses' button to provide module base address information."/>
-                </StackPanel>
-            </Border>
-
-            <!-- Top-left: Input/Output Options + Import -->
-            <GroupBox Grid.Row="1" Grid.Column="0" Header="Input / Output Options" Margin="0,0,4,4" Padding="6">
-                <Grid>
+            <!-- Top-left: Input / Output Options -->
+            <GroupBox Grid.Row="1" Grid.Column="0" Header="Input / Output Options" Margin="0,0,4,4" Padding="6,2,6,6" FontSize="10">
+                <Grid Margin="0,-2,0,0">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="6*"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="4*"/>
                     </Grid.ColumnDefinitions>
+
+                    <!-- Input column -->
                     <StackPanel Grid.Column="0">
-                        <CheckBox Content="Frames on single line" Margin="0,0,0,3"
-                                  IsChecked="{Binding FramesOnSingleLine}"/>
-                        <CheckBox Content="Re-lookup source" Margin="0,0,0,3"
-                                  IsChecked="{Binding RelookupSource}"/>
-                        <CheckBox Content="Source lines (private PDBs)" Margin="0,0,0,3"
-                                  IsChecked="{Binding IncludeLineNumbers}"/>
-                        <CheckBox Content="Function offsets" Margin="0,0,0,3"
-                                  IsChecked="{Binding IncludeOffsets}"/>
-                        <CheckBox Content="Inline frames" Margin="0,0,0,3"
-                                  IsChecked="{Binding ShowInlineFrames}"/>
-                    </StackPanel>
-                    <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBlock Text="Input" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
                             <Button Click="LoadXEL_Click" Padding="10,6" Margin="0,0,8,0"
                                     IsEnabled="{Binding IsNotProcessing}">
                                 <StackPanel Orientation="Horizontal">
@@ -144,10 +131,10 @@
                                     <TextBlock Text="Import XEL..."/>
                                 </StackPanel>
                             </Button>
+                            <CheckBox Content="Group XEL events" VerticalAlignment="Center"
+                                      IsChecked="{Binding GroupXEvents}"/>
                         </StackPanel>
-                        <CheckBox Content="Group XEL events" Margin="0,0,0,6"
-                                  IsChecked="{Binding GroupXEvents}"/>
-                        <Button Margin="0,0,0,6" Click="EnterBaseAddresses_Click"
+                        <Button Margin="0,0,0,3" Click="EnterBaseAddresses_Click"
                                 HorizontalAlignment="Left" Padding="10,6">
                             <Button.Style>
                                 <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
@@ -179,19 +166,50 @@
                                 <TextBlock Text="Enter base addresses..."/>
                             </StackPanel>
                         </Button>
+                        <Expander Header="Advanced input options" IsExpanded="False" Margin="0,0,0,0">
+                            <StackPanel Margin="16,4,0,0">
+                                <CheckBox Content="Frames on single line" Margin="0,0,0,3"
+                                          IsChecked="{Binding FramesOnSingleLine}"/>
+                                <CheckBox Content="Re-lookup source" Margin="0,0,0,3"
+                                          IsChecked="{Binding RelookupSource}"/>
+                                <TextBlock Text="Binary paths (OrdinalNNN):" Foreground="Gray" Margin="0,2,0,2"/>
+                                <DockPanel Margin="0,0,0,3">
+                                    <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowseBinaryPath_Click"
+                                            ToolTip="Browse for binary folder"/>
+                                    <TextBox Text="{Binding BinaryPaths, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,2,0"
+                                             ToolTip="Binary paths for ordinal resolution (semicolon-separated)"/>
+                                </DockPanel>
+                                <CheckBox Content="Search DLLs recursively" IsChecked="{Binding DllRecurse}"/>
+                            </StackPanel>
+                        </Expander>
+                    </StackPanel>
+
+                    <!-- Output column -->
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Output" FontWeight="SemiBold" Margin="0,0,0,2"/>
                         <TextBlock Text="Save output to file:" Foreground="Gray" Margin="0,0,0,2"/>
-                        <DockPanel>
+                        <DockPanel Margin="0,0,0,3">
                             <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowseOutputPath_Click"
                                     ToolTip="Browse for output file location"/>
                             <TextBox Text="{Binding OutputFilePath, UpdateSourceTrigger=PropertyChanged}"
                                      ToolTip="Output file path (optional)" Margin="0,0,2,0"/>
                         </DockPanel>
+                        <Expander Header="Advanced output options" IsExpanded="False" Margin="0,0,0,0">
+                            <StackPanel Margin="16,4,0,0">
+                                <CheckBox Content="Source lines (private PDBs)" Margin="0,0,0,3"
+                                          IsChecked="{Binding IncludeLineNumbers}"/>
+                                <CheckBox Content="Function offsets" Margin="0,0,0,3"
+                                          IsChecked="{Binding IncludeOffsets}"/>
+                                <CheckBox Content="Inline frames" Margin="0,0,0,0"
+                                          IsChecked="{Binding ShowInlineFrames}"/>
+                            </StackPanel>
+                        </Expander>
                     </StackPanel>
                 </Grid>
             </GroupBox>
 
-            <!-- Top-right: Symbol / PDB paths -->
-            <GroupBox Grid.Row="1" Grid.Column="1" Header="Symbol / PDB Paths" Margin="4,0,0,4" Padding="6">
+            <!-- Top-right: Symbol / PDB Paths -->
+            <GroupBox Grid.Row="1" Grid.Column="1" Header="Symbol / PDB Paths" Margin="4,0,0,4" Padding="6" FontSize="10">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                         <Button Click="SelectSQLPDB_Click" Padding="10,6" Margin="0,0,8,0">
@@ -271,68 +289,72 @@
                         <TextBox Text="{Binding PdbPaths, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,2,0"
                                  ToolTip="PDB paths (semicolon-separated)"/>
                     </DockPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                    <StackPanel Orientation="Horizontal">
                         <CheckBox Content="Search recursively" Margin="0,0,16,0" IsChecked="{Binding PdbRecurse}"/>
                         <CheckBox Content="Cache PDBs locally" IsChecked="{Binding CachePDB}"
                                   ToolTip="Copies PDBs to %TEMP%\SymCache"/>
                     </StackPanel>
-                    <TextBlock Text="Binary paths (for OrdinalNNN resolution):" Foreground="Gray" Margin="0,0,0,2"/>
-                    <DockPanel Margin="0,0,0,4">
-                        <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowseBinaryPath_Click"
-                                ToolTip="Browse for binary folder"/>
-                        <TextBox Text="{Binding BinaryPaths, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,2,0"
-                                 ToolTip="Binary paths for ordinal resolution (semicolon-separated)"/>
-                    </DockPanel>
-                    <CheckBox Content="Search DLLs recursively" IsChecked="{Binding DllRecurse}"/>
                 </StackPanel>
             </GroupBox>
 
-            <!-- Bottom row: Resolve spanning full width -->
+            <!-- Bottom row: Split resolve button -->
             <Grid Grid.Row="2" Grid.ColumnSpan="2">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Button Grid.Column="2" Padding="10,6" Margin="0,0,8,0"
-                        Command="{Binding PasteFromClipboardCommand}">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE77F;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <TextBlock Text="Paste clipboard &amp; resolve"/>
-                    </StackPanel>
-                </Button>
-                <Button Grid.Column="3" FontWeight="Bold" Padding="14,6"
-                        Command="{Binding ResolveCommand}">
-                    <Button.Style>
-                        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding HighlightResolve}" Value="True">
-                                    <DataTrigger.EnterActions>
-                                        <BeginStoryboard x:Name="GlowStoryboard">
-                                            <Storyboard RepeatBehavior="3x">
-                                                <ColorAnimation Storyboard.TargetProperty="(Effect).(DropShadowEffect.Color)"
-                                                                To="#40C040" Duration="0:0:0.4" AutoReverse="True"/>
-                                                <DoubleAnimation Storyboard.TargetProperty="(Effect).(DropShadowEffect.Opacity)"
-                                                                 To="1" Duration="0:0:0.4" AutoReverse="True"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </DataTrigger.EnterActions>
-                                    <DataTrigger.ExitActions>
-                                        <StopStoryboard BeginStoryboardName="GlowStoryboard"/>
-                                    </DataTrigger.ExitActions>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                    <Button.Effect>
-                        <DropShadowEffect Color="Transparent" ShadowDepth="0" BlurRadius="15" Opacity="0"/>
-                    </Button.Effect>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <TextBlock Text="Resolve Callstacks!" FontWeight="Bold"/>
-                    </StackPanel>
-                </Button>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button x:Name="resolveMainButton" FontWeight="Bold" Padding="14,6"
+                            Click="ResolveMain_Click">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HighlightResolve}" Value="True">
+                                        <DataTrigger.EnterActions>
+                                            <BeginStoryboard x:Name="GlowStoryboard">
+                                                <Storyboard RepeatBehavior="3x">
+                                                    <ColorAnimation Storyboard.TargetProperty="(Effect).(DropShadowEffect.Color)"
+                                                                    To="#40C040" Duration="0:0:0.4" AutoReverse="True"/>
+                                                    <DoubleAnimation Storyboard.TargetProperty="(Effect).(DropShadowEffect.Opacity)"
+                                                                     To="1" Duration="0:0:0.4" AutoReverse="True"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </DataTrigger.EnterActions>
+                                        <DataTrigger.ExitActions>
+                                            <StopStoryboard BeginStoryboardName="GlowStoryboard"/>
+                                        </DataTrigger.ExitActions>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <Button.Effect>
+                            <DropShadowEffect Color="Transparent" ShadowDepth="0" BlurRadius="15" Opacity="0"/>
+                        </Button.Effect>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock x:Name="resolveMainIcon" Text="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock x:Name="resolveMainText" Text="Resolve Callstacks!" FontWeight="Bold"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Padding="4,6" Margin="1,0,0,0" Click="ResolveDropdown_Click"
+                            VerticalAlignment="Stretch"
+                            ToolTip="Choose resolve action">
+                        <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center"/>
+                        <Button.ContextMenu>
+                            <ContextMenu x:Name="resolveMenu">
+                                <MenuItem Header="Resolve Callstacks" Click="ResolveMenuItem_Click" Tag="resolve">
+                                    <MenuItem.Icon>
+                                        <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="13"/>
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <MenuItem Header="Paste clipboard &amp; resolve" Click="ResolveMenuItem_Click" Tag="paste">
+                                    <MenuItem.Icon>
+                                        <TextBlock Text="&#xE77F;" FontFamily="Segoe MDL2 Assets" FontSize="13"/>
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+                </StackPanel>
             </Grid>
         </Grid>
     </Grid>

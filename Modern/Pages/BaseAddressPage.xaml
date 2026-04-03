@@ -13,11 +13,15 @@
                    Text="Provide Module Base Addresses"/>
 
         <Border Grid.Row="1" Background="{DynamicResource WarningBackgroundBrush}" BorderBrush="{DynamicResource WarningBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,8">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource WarningForegroundBrush}"/>
-                <TextBlock Foreground="{DynamicResource WarningForegroundBrush}" TextWrapping="Wrap" VerticalAlignment="Center"
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource WarningForegroundBrush}"/>
+                <TextBlock Grid.Column="1" Foreground="{DynamicResource WarningForegroundBrush}" TextWrapping="Wrap" VerticalAlignment="Center"
                            Text="Your input appears to contain only virtual addresses. Module base address information is required to resolve these. Paste the output of the query shown below, or load from a file."/>
-            </StackPanel>
+            </Grid>
         </Border>
 
         <DockPanel Grid.Row="2">
