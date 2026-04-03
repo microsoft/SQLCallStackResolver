@@ -25,13 +25,23 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
             }));
         }
 
-        /// <summary>Hide the find bar and return focus to the target.</summary>
+        /// <summary>Hide the find bar and clear state.</summary>
         public void Close() {
             Visibility = Visibility.Collapsed;
             _matchPositions.Clear();
             _currentMatchIndex = -1;
             MatchInfo.Text = "";
-            _targetTextBox?.Focus();
+            SearchBox.Text = "";
+        }
+
+        private void Close_Click(object sender, RoutedEventArgs e) {
+            Close();
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Input, new Action(() => {
+                if (_targetTextBox != null) {
+                    _targetTextBox.Focus();
+                    Keyboard.Focus(_targetTextBox);
+                }
+            }));
         }
 
         public bool IsOpen => Visibility == Visibility.Visible;
@@ -53,8 +63,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
             }
 
             if (_matchPositions.Count > 0) {
-                _currentMatchIndex = 0;
-                HighlightCurrent();
+                MatchInfo.Text = $"{_matchPositions.Count} matches";
             } else {
                 MatchInfo.Text = "No matches";
             }
@@ -63,39 +72,44 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         private void HighlightCurrent() {
             if (_targetTextBox == null || _currentMatchIndex < 0 || _currentMatchIndex >= _matchPositions.Count) return;
             var pos = _matchPositions[_currentMatchIndex];
+            var len = SearchBox.Text.Length;
+
+            // Focus the target briefly to make Select() work, then scroll and return focus
             _targetTextBox.Focus();
-            _targetTextBox.Select(pos, SearchBox.Text.Length);
-            // Scroll to selection by getting the character rect
-            var rect = _targetTextBox.GetRectFromCharacterIndex(pos);
-            _targetTextBox.ScrollToLine(_targetTextBox.GetLineIndexFromCharacterIndex(pos));
-            MatchInfo.Text = $"{_currentMatchIndex + 1} of {_matchPositions.Count}";
-            // Return focus to search box so user can keep typing
+            _targetTextBox.Select(pos, len);
+            var lineIndex = _targetTextBox.GetLineIndexFromCharacterIndex(pos);
+            _targetTextBox.ScrollToLine(lineIndex);
             SearchBox.Focus();
+            MatchInfo.Text = $"{_currentMatchIndex + 1} of {_matchPositions.Count}";
         }
 
         private void Next_Click(object sender, RoutedEventArgs e) => FindNext();
         private void Prev_Click(object sender, RoutedEventArgs e) => FindPrevious();
 
         public void FindNext() {
+            if (_matchPositions.Count == 0) FindMatches();
             if (_matchPositions.Count == 0) return;
             _currentMatchIndex = (_currentMatchIndex + 1) % _matchPositions.Count;
             HighlightCurrent();
         }
 
         public void FindPrevious() {
+            if (_matchPositions.Count == 0) FindMatches();
             if (_matchPositions.Count == 0) return;
             _currentMatchIndex = (_currentMatchIndex - 1 + _matchPositions.Count) % _matchPositions.Count;
             HighlightCurrent();
         }
 
-        private void Close_Click(object sender, RoutedEventArgs e) => Close();
-
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e) {
-            FindMatches();
+            // Clear stale matches when search text changes; new matches built on Enter/nav
+            _matchPositions.Clear();
+            _currentMatchIndex = -1;
+            MatchInfo.Text = "";
         }
 
         private void SearchBox_KeyDown(object sender, KeyEventArgs e) {
             if (e.Key == Key.Enter || e.Key == Key.F3) {
+                if (_matchPositions.Count == 0) FindMatches();
                 if (Keyboard.Modifiers == ModifierKeys.Shift)
                     FindPrevious();
                 else
@@ -103,6 +117,12 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
                 e.Handled = true;
             } else if (e.Key == Key.Escape) {
                 Close();
+                Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Input, new Action(() => {
+                    if (_targetTextBox != null) {
+                        _targetTextBox.Focus();
+                        Keyboard.Focus(_targetTextBox);
+                    }
+                }));
                 e.Handled = true;
             }
         }

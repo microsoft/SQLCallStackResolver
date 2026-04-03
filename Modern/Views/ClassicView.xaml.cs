@@ -7,6 +7,26 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         public ClassicView() {
             InitializeComponent();
             findBar.Attach(outputTextBox);
+            // On mouse wheel, focus the output TextBox so the highlight stays with the text
+            outputTextBox.PreviewMouseWheel += (s, e) => {
+                if (findBar.IsOpen) {
+                    outputTextBox.Focus();
+                    Keyboard.Focus(outputTextBox);
+                }
+            };
+            // On keyboard scroll keys or Escape, close find bar
+            outputTextBox.PreviewKeyDown += (s, e) => {
+                if (findBar.IsOpen && (e.Key == Key.Escape || e.Key == Key.Up || e.Key == Key.Down || e.Key == Key.PageUp || e.Key == Key.PageDown || e.Key == Key.Home || e.Key == Key.End))
+                    findBar.Close();
+            };
+            // Ctrl+F from the input textbox needs special handling because
+            // WPF's TextBox intercepts ApplicationCommands.Find internally
+            inputTextBox.PreviewKeyDown += (s, e) => {
+                if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control) {
+                    findBar.Open();
+                    e.Handled = true;
+                }
+            };
         }
 
         private void Find_Executed(object sender, ExecutedRoutedEventArgs e) => findBar.Open();

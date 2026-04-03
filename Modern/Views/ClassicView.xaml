@@ -31,7 +31,8 @@
 
             <DockPanel Grid.Column="0">
                 <TextBlock DockPanel.Dock="Top" Text="Input" FontWeight="SemiBold" Margin="0,0,0,2"/>
-                <TextBox AcceptsReturn="True" AcceptsTab="True"
+                <TextBox x:Name="inputTextBox" AcceptsReturn="True" AcceptsTab="True"
+                         IsInactiveSelectionHighlightEnabled="True"
                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
                          FontFamily="Consolas" FontSize="13" TextWrapping="NoWrap"
                          MaxLength="999999999"
@@ -44,7 +45,8 @@
             <DockPanel Grid.Column="2">
                 <TextBlock DockPanel.Dock="Top" Text="Output" FontWeight="SemiBold" Margin="0,0,0,2"/>
                 <local:FindBar x:Name="findBar" DockPanel.Dock="Top"/>
-                <TextBox x:Name="outputTextBox" IsReadOnly="True" AcceptsReturn="True"
+                <TextBox x:Name="outputTextBox" IsReadOnly="True" IsReadOnlyCaretVisible="True"
+                         AcceptsReturn="True"
                          IsInactiveSelectionHighlightEnabled="True"
                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
                          FontFamily="Consolas" FontSize="13" TextWrapping="NoWrap"

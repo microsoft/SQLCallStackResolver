@@ -22,7 +22,7 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Margin="0,0,0,8">
-            <TextBlock FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4"
+            <TextBlock FontSize="15" FontWeight="SemiBold" Margin="0,0,0,4"
                        Text="Resolved Output"/>
             <TextBlock FontSize="12" Foreground="Gray"
                        Text="Symbolized callstack output is shown below."/>
@@ -37,7 +37,8 @@
                 </StackPanel>
             </Button>
             <Button Padding="10,6" Margin="8,0,0,0" Click="Find_Click"
-                    Visibility="{Binding HasOutput, Converter={StaticResource BoolToVis}}">
+                    Visibility="{Binding HasOutput, Converter={StaticResource BoolToVis}}"
+                    ToolTip="Find text in output (Ctrl+F)">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
                     <TextBlock Text="Find"/>
@@ -47,7 +48,8 @@
 
         <local:FindBar x:Name="findBar" Grid.Row="2"/>
 
-        <TextBox x:Name="outputTextBox" Grid.Row="4" IsReadOnly="True" AcceptsReturn="True"
+        <TextBox x:Name="outputTextBox" Grid.Row="4" IsReadOnly="True" IsReadOnlyCaretVisible="True"
+                 AcceptsReturn="True"
                  IsInactiveSelectionHighlightEnabled="True"
                  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
                  FontFamily="Consolas" FontSize="13" TextWrapping="NoWrap"
