@@ -439,6 +439,11 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
                         "One or more potential issues exist in the output. This is sometimes due to mismatched symbols; please double-check symbol paths and re-run if needed.");
                 }
                 StatusMessage = "Resolution complete.";
+                // Clear all detection banners on successful resolution
+                DetectedBuildInfo = null;
+                HasXmlFrameInput = false;
+                NeedsBaseAddresses = false;
+                HighlightResolve = false;
             } catch (OperationCanceledException) {
                 StatusMessage = StackResolver.OperationCanceled;
                 CurrentStep = previousStep;

@@ -9,7 +9,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4"
+        <TextBlock Grid.Row="0" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,4"
                    Text="Provide Module Base Addresses"/>
 
         <Border Grid.Row="1" Background="{DynamicResource WarningBackgroundBrush}" BorderBrush="{DynamicResource WarningBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,8">

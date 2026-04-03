@@ -9,6 +9,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         }
 
         private void UseSymbolServer_Click(object sender, RoutedEventArgs e) {
+            ViewModel.HasXmlFrameInput = false;
             ViewModel.UpdatePdbPath(@"SRV*c:\temp\symcache*https://msdl.microsoft.com/download/symbols");
             ViewModel.StatusMessage = "Symbol server path added. Ready to resolve!";
             ViewModel.HighlightResolve = true;
@@ -16,6 +17,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
 
         private async void DownloadDetectedBuild_Click(object sender, RoutedEventArgs e) {
             await ViewModel.DownloadSymbolsForDetectedBuildAsync();
+            ViewModel.DetectedBuildInfo = null;
         }
 
         private void BrowsePdbPath_Click(object sender, RoutedEventArgs e) {

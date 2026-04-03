@@ -10,7 +10,7 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Margin="0,0,0,8">
-            <TextBlock FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4"
+            <TextBlock FontSize="15" FontWeight="SemiBold" Margin="0,0,0,4"
                        Text="Provide Callstack Input"/>
             <TextBlock FontSize="12" Foreground="Gray"
                        Text="Paste or type raw callstack text below, or drag and drop text files."/>

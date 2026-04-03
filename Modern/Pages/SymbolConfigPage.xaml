@@ -17,7 +17,7 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Margin="0,0,0,8">
-            <TextBlock FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4"
+            <TextBlock FontSize="15" FontWeight="SemiBold" Margin="0,0,0,4"
                        Text="Configure Symbol Paths"/>
             <TextBlock FontSize="12" Foreground="Gray"
                        Text="Use preset symbol downloads for a known SQL Server build, or set custom PDB search paths."/>
@@ -43,7 +43,7 @@
                         <TextBlock Text="Detected SQL Server " FontWeight="SemiBold" FontSize="13"/>
                         <TextBlock Text="{Binding DetectedBuildVersion}" FontWeight="SemiBold" FontSize="13"/>
                     </StackPanel>
-                    <TextBlock Text="{Binding DetectedBuildDetails}" FontSize="11.5" Foreground="Gray" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding DetectedBuildDetails}" FontSize="12" Foreground="Gray" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
                 <Button Grid.Column="2" Padding="12,6" Click="DownloadDetectedBuild_Click"
                         Style="{DynamicResource AccentButtonStyle}">
@@ -72,7 +72,7 @@
                            Foreground="{DynamicResource SystemControlForegroundAccentBrush}"/>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock Text="XML frames with PDB info detected" FontWeight="SemiBold" FontSize="13"/>
-                    <TextBlock FontSize="11.5" Foreground="Gray" TextTrimming="CharacterEllipsis">
+                    <TextBlock FontSize="12" Foreground="Gray" TextTrimming="CharacterEllipsis">
                         <Run Text="Modules:"/>
                         <Run Text="{Binding DetectedPdbModules, Mode=OneWay}"/>
                     </TextBlock>
@@ -107,7 +107,7 @@
         <!-- PDB Paths (manual) -->
         <GroupBox Grid.Row="3" Header="PDB Symbol Paths" Padding="6" Margin="0,0,0,8">
             <StackPanel>
-                <TextBlock FontSize="11" Foreground="Gray" Margin="0,0,0,4"
+                <TextBlock FontSize="11.5" Foreground="Gray" Margin="0,0,0,4"
                            Text="Local folder(s), UNC path(s), or WinDbg-style symbol server(s). If using multiple paths; separate using semicolons."/>
                 <DockPanel>
                 <ToggleButton DockPanel.Dock="Right" IsChecked="{Binding PinPdbPaths}"
