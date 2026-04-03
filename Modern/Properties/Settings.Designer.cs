@@ -56,5 +56,13 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.Properties 
             get { return ((bool)(this["PinPdbPaths"])); }
             set { this["PinPdbPaths"] = value; }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("resolve")]
+        public string LastResolveMode {
+            get { return ((string)(this["LastResolveMode"])); }
+            set { this["LastResolveMode"] = value; }
+        }
     }
 }

@@ -3,6 +3,7 @@
 namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
     public partial class ClassicView : UserControl {
         private ResolverViewModel ViewModel => DataContext as ResolverViewModel;
+        private string _lastResolveMode = Properties.Settings.Default.LastResolveMode ?? "resolve";
 
         public ClassicView() {
             InitializeComponent();
@@ -25,6 +26,13 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
                 if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control) {
                     findBar.Open();
                     e.Handled = true;
+                }
+            };
+            // Restore the split button face from the persisted setting
+            Loaded += (s, e) => {
+                if (_lastResolveMode == "paste") {
+                    resolveMainIcon.Text = "\uE77F";
+                    resolveMainText.Text = "Paste clipboard & resolve";
                 }
             };
         }
@@ -115,6 +123,43 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
                     foreach (var file in files) sb.AppendLine(File.ReadAllText(file));
                     ViewModel.InputText = sb.ToString();
                 }
+            }
+        }
+
+        private void ExecuteResolveAction(string mode) {
+            if (mode == "paste") {
+                ViewModel.PasteFromClipboardCommand.Execute(null);
+            } else {
+                ViewModel.ResolveCommand.Execute(null);
+            }
+        }
+
+        private void UpdateResolveButton(string mode) {
+            _lastResolveMode = mode;
+            Properties.Settings.Default.LastResolveMode = mode;
+            Properties.Settings.Default.Save();
+            if (mode == "paste") {
+                resolveMainIcon.Text = "\uE77F";
+                resolveMainText.Text = "Paste clipboard & resolve";
+            } else {
+                resolveMainIcon.Text = "\uE768";
+                resolveMainText.Text = "Resolve Callstacks!";
+            }
+        }
+
+        private void ResolveMain_Click(object sender, RoutedEventArgs e) => ExecuteResolveAction(_lastResolveMode);
+
+        private void ResolveDropdown_Click(object sender, RoutedEventArgs e) {
+            if (sender is Button btn) {
+                btn.ContextMenu.PlacementTarget = btn;
+                btn.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                btn.ContextMenu.IsOpen = true;
+            }
+        }
+
+        private void ResolveMenuItem_Click(object sender, RoutedEventArgs e) {
+            if (sender is MenuItem item && item.Tag is string mode) {
+                UpdateResolveButton(mode);
             }
         }
     }

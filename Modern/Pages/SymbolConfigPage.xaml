@@ -43,7 +43,7 @@
                         <TextBlock Text="Detected SQL Server " FontWeight="SemiBold" FontSize="13"/>
                         <TextBlock Text="{Binding DetectedBuildVersion}" FontWeight="SemiBold" FontSize="13"/>
                     </StackPanel>
-                    <TextBlock Text="{Binding DetectedBuildDetails}" FontSize="12" Foreground="Gray" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding DetectedBuildDetails}" FontSize="12" Foreground="Gray" TextWrapping="Wrap"/>
                 </StackPanel>
                 <Button Grid.Column="2" Padding="12,6" Click="DownloadDetectedBuild_Click"
                         Style="{DynamicResource AccentButtonStyle}">
@@ -72,7 +72,7 @@
                            Foreground="{DynamicResource SystemControlForegroundAccentBrush}"/>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock Text="XML frames with PDB info detected" FontWeight="SemiBold" FontSize="13"/>
-                    <TextBlock FontSize="12" Foreground="Gray" TextTrimming="CharacterEllipsis">
+                    <TextBlock FontSize="12" Foreground="Gray" TextWrapping="Wrap">
                         <Run Text="Modules:"/>
                         <Run Text="{Binding DetectedPdbModules, Mode=OneWay}"/>
                     </TextBlock>

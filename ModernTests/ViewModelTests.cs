@@ -121,10 +121,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern.Tests {
         [TestMethod][TestCategory("ModernUI")]
         public void InputText_RaisesPropertyChanged() {
             var vm = new ResolverViewModel();
-            string changedProp = null;
-            vm.PropertyChanged += (s, e) => changedProp = e.PropertyName;
+            var changed = new List<string>();
+            vm.PropertyChanged += (s, e) => changed.Add(e.PropertyName);
             vm.InputText = "test callstack";
-            Assert.AreEqual(nameof(vm.InputText), changedProp);
+            Assert.IsTrue(changed.Contains(nameof(vm.InputText)));
         }
 
         [TestMethod][TestCategory("ModernUI")]
