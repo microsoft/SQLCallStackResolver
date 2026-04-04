@@ -305,7 +305,7 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Button x:Name="resolveMainButton" FontWeight="Bold" Padding="14,6"
-                            Click="ResolveMain_Click">
+                            Width="230" Click="ResolveMain_Click">
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
                                 <Style.Triggers>
@@ -330,17 +330,17 @@
                         <Button.Effect>
                             <DropShadowEffect Color="Transparent" ShadowDepth="0" BlurRadius="15" Opacity="0"/>
                         </Button.Effect>
-                        <StackPanel Orientation="Horizontal">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                             <TextBlock x:Name="resolveMainIcon" Text="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
                             <TextBlock x:Name="resolveMainText" Text="Resolve Callstacks!" FontWeight="Bold"/>
                         </StackPanel>
                     </Button>
-                    <Button Padding="4,6" Margin="1,0,0,0" Click="ResolveDropdown_Click"
+                    <Button Padding="6,6" Margin="1,0,0,0" Click="ResolveDropdown_Click"
                             VerticalAlignment="Stretch"
                             ToolTip="Choose resolve action">
                         <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center"/>
                         <Button.ContextMenu>
-                            <ContextMenu x:Name="resolveMenu">
+                            <ContextMenu x:Name="resolveMenu" Placement="Left">
                                 <MenuItem Header="Resolve Callstacks" Click="ResolveMenuItem_Click" Tag="resolve">
                                     <MenuItem.Icon>
                                         <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="13"/>
