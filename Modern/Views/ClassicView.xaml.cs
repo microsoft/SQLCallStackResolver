@@ -151,8 +151,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
 
         private void ResolveDropdown_Click(object sender, RoutedEventArgs e) {
             if (sender is Button btn) {
-                btn.ContextMenu.PlacementTarget = btn;
-                btn.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                btn.ContextMenu.PlacementTarget = resolveMainButton;
+                btn.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Top;
                 btn.ContextMenu.IsOpen = true;
             }
         }
