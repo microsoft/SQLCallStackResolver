@@ -27,6 +27,8 @@ jobs:
         name: SQLCallStackResolver
         path: |
           Target/Release
+          NOTICE.md
+          LICENSE
           !Target/Release/*.xml
           !Target/Release/Tests
           !Target/Release/ModernTests
