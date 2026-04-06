@@ -103,6 +103,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
             if (dlg.ShowDialog(Window.GetWindow(this)) == true) ViewModel.OutputFilePath = dlg.FileName;
         }
 
+        private void ClearOutputFile_Click(object sender, RoutedEventArgs e) {
+            ViewModel.OutputFilePath = string.Empty;
+        }
+
         private void CallStackInput_DragOver(object sender, DragEventArgs e) {
             e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
             e.Handled = true;

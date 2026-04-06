@@ -31,6 +31,13 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
             throw new NotSupportedException();
     }
 
+    internal class BoolToOutputBrushConverter : IValueConverter {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+            value is bool b && b ? System.Windows.Media.Brushes.DodgerBlue : System.Windows.Media.Brushes.Gray;
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+            throw new NotSupportedException();
+    }
+
     internal class StepToBoldConverter : IValueConverter {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
             if (value is int current && parameter is string stepStr && int.TryParse(stepStr, out int step))

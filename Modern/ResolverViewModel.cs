@@ -260,7 +260,17 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         public bool ShowInlineFrames { get => _showInlineFrames; set => SetField(ref _showInlineFrames, value, nameof(ShowInlineFrames)); }
 
         private string _outputFilePath = string.Empty;
-        public string OutputFilePath { get => _outputFilePath; set => SetField(ref _outputFilePath, value, nameof(OutputFilePath)); }
+        public string OutputFilePath {
+            get => _outputFilePath;
+            set {
+                if (SetField(ref _outputFilePath, value, nameof(OutputFilePath))) {
+                    OnPropertyChanged(nameof(HasOutputFilePath));
+                    OnPropertyChanged(nameof(OutputRedirectMessage));
+                }
+            }
+        }
+        public bool HasOutputFilePath => !string.IsNullOrEmpty(_outputFilePath);
+        public string OutputRedirectMessage => HasOutputFilePath ? $"Output will be saved to: {_outputFilePath}" : null;
 
         // -- Status --
         private string _statusMessage = "Ready";
