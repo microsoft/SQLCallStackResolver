@@ -5,7 +5,9 @@
              FontSize="12">
     <UserControl.Resources>
         <local:BoolToVisibilityConverter x:Key="BoolToVis"/>
+        <local:InverseBoolToVisibilityConverter x:Key="InvBoolToVis"/>
         <local:BoolToOpacityConverter x:Key="BoolToOpacityConverter"/>
+        <local:BoolToOutputBrushConverter x:Key="BoolToOutputBrushConverter"/>
     </UserControl.Resources>
     <UserControl.InputBindings>
         <KeyBinding Gesture="Ctrl+F" Command="Find"/>
@@ -29,30 +31,74 @@
                 <ColumnDefinition Width="5"/>
                 <ColumnDefinition Width="*" MinWidth="100"/>
             </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-            <DockPanel Grid.Column="0">
-                <TextBlock DockPanel.Dock="Top" Text="Input" FontWeight="SemiBold" Margin="0,0,0,2"/>
-                <TextBox x:Name="inputTextBox" AcceptsReturn="True" AcceptsTab="True"
-                         IsInactiveSelectionHighlightEnabled="True"
-                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                         FontFamily="Consolas" FontSize="13" TextWrapping="NoWrap"
-                         MaxLength="999999999"
-                         Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
-                         AllowDrop="True" PreviewDragOver="CallStackInput_DragOver" Drop="CallStackInput_Drop"/>
+            <!-- Row 0: Header rows -->
+            <DockPanel Grid.Row="0" Grid.Column="0" Margin="0,0,0,1">
+                <TextBlock DockPanel.Dock="Left" Text="Input" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                <CheckBox DockPanel.Dock="Right" Content="Group XEL events" VerticalAlignment="Center" FontSize="11"
+                          IsChecked="{Binding GroupXEvents}" Margin="6,0,0,0"/>
+                <Button DockPanel.Dock="Right" Click="LoadXEL_Click" Padding="6,2"
+                        IsEnabled="{Binding IsNotProcessing}" ToolTip="Import callstacks from XEL files">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xED25;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock Text="Import XEL..." FontSize="11"/>
+                    </StackPanel>
+                </Button>
+                <TextBlock/>
             </DockPanel>
 
-            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="LightGray"/>
-
-            <DockPanel Grid.Column="2">
-                <TextBlock DockPanel.Dock="Top" Text="Output" FontWeight="SemiBold" Margin="0,0,0,2"/>
-                <local:FindBar x:Name="findBar" DockPanel.Dock="Top"/>
-                <TextBox x:Name="outputTextBox" IsReadOnly="True" IsReadOnlyCaretVisible="True"
-                         AcceptsReturn="True"
-                         IsInactiveSelectionHighlightEnabled="True"
-                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                         FontFamily="Consolas" FontSize="13" TextWrapping="NoWrap"
-                         Text="{Binding OutputText, Mode=OneWay}"/>
+            <DockPanel Grid.Row="0" Grid.Column="2" Margin="0,0,0,1">
+                <TextBlock DockPanel.Dock="Left" Text="Output" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                <Button DockPanel.Dock="Right" Click="ClearOutputFile_Click" Padding="4,2"
+                        ToolTip="Clear file path and show output below"
+                        Visibility="{Binding HasOutputFilePath, Converter={StaticResource BoolToVis}}"
+                        Background="Transparent" BorderThickness="0">
+                    <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="10"/>
+                </Button>
+                <Button DockPanel.Dock="Right" Click="BrowseOutputPath_Click" Padding="6,2"
+                        ToolTip="Save output to a file instead of displaying below">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE78C;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock Text="Save to file..." FontSize="11"/>
+                    </StackPanel>
+                </Button>
+                <TextBlock/>
             </DockPanel>
+
+            <!-- Row 1: Annotations -->
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="Paste or type callstacks, or import from XEL files" FontSize="12" Foreground="Gray" Margin="0,0,0,2"/>
+            <TextBlock Grid.Row="1" Grid.Column="2" FontSize="12" Margin="0,0,0,2"
+                       Foreground="{Binding HasOutputFilePath, Converter={StaticResource BoolToOutputBrushConverter}}"
+                       Text="{Binding OutputRedirectMessage, TargetNullValue='Results shown below. Use Save to file to redirect.'}"/>
+
+            <!-- Row 2: FindBar (output only) -->
+            <local:FindBar x:Name="findBar" Grid.Row="2" Grid.Column="2"/>
+
+            <!-- Row 3: TextBoxes -->
+            <TextBox Grid.Row="2" Grid.RowSpan="2" Grid.Column="0" x:Name="inputTextBox"
+                     AcceptsReturn="True" AcceptsTab="True"
+                     IsInactiveSelectionHighlightEnabled="True"
+                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                     FontFamily="Consolas" FontSize="13" TextWrapping="NoWrap"
+                     MaxLength="999999999"
+                     Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
+                     AllowDrop="True" PreviewDragOver="CallStackInput_DragOver" Drop="CallStackInput_Drop"/>
+
+            <GridSplitter Grid.Row="0" Grid.RowSpan="4" Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="LightGray"/>
+
+            <TextBox Grid.Row="3" Grid.Column="2" x:Name="outputTextBox"
+                     IsReadOnly="True" IsReadOnlyCaretVisible="True"
+                     AcceptsReturn="True"
+                     IsInactiveSelectionHighlightEnabled="True"
+                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                     FontFamily="Consolas" FontSize="13" TextWrapping="NoWrap"
+                     Text="{Binding OutputText, Mode=OneWay}"/>
         </Grid>
 
         <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" Background="LightGray"/>
@@ -99,11 +145,12 @@
             </Border>
         </StackPanel>
 
-        <!-- Bottom: Configuration panels in 2x2 grid -->
+        <!-- Bottom: Configuration panels -->
         <Grid Grid.Row="3" Margin="0,4,0,0" TextElement.FontSize="11">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="55*"/>
-                <ColumnDefinition Width="45*"/>
+                <ColumnDefinition Width="25*"/>
+                <ColumnDefinition Width="25*"/>
+                <ColumnDefinition Width="50*"/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -111,105 +158,74 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- Top-left: Input / Output Options -->
-            <GroupBox Grid.Row="1" Grid.Column="0" Header="Input / Output Options" Margin="0,0,4,4" Padding="6,2,6,6" FontSize="10">
-                <Grid Margin="0,-2,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="6*"/>
-                        <ColumnDefinition Width="10"/>
-                        <ColumnDefinition Width="4*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <!-- Input column -->
-                    <StackPanel Grid.Column="0">
-                        <TextBlock Text="Input" FontWeight="SemiBold" Margin="0,0,0,2"/>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
-                            <Button Click="LoadXEL_Click" Padding="10,6" Margin="0,0,8,0"
-                                    IsEnabled="{Binding IsNotProcessing}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xED25;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                    <TextBlock Text="Import XEL..."/>
-                                </StackPanel>
-                            </Button>
-                            <CheckBox Content="Group XEL events" VerticalAlignment="Center"
-                                      IsChecked="{Binding GroupXEvents}"/>
+            <!-- Input Options -->
+            <GroupBox Grid.Row="1" Grid.Column="0" Header="Input Options" Margin="0,0,4,4" Padding="6,2,6,4" FontSize="10">
+                <StackPanel Margin="0,-2,0,0">
+                    <Button Margin="0,2,0,3" Click="EnterBaseAddresses_Click"
+                            HorizontalAlignment="Left" Padding="10,6">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding NeedsBaseAddresses}" Value="True">
+                                        <DataTrigger.EnterActions>
+                                            <BeginStoryboard x:Name="BaseAddrGlow">
+                                                <Storyboard RepeatBehavior="Forever">
+                                                    <ColorAnimation Storyboard.TargetProperty="(Button.BorderBrush).(SolidColorBrush.Color)"
+                                                                    To="Orange" Duration="0:0:0.5" AutoReverse="True"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </DataTrigger.EnterActions>
+                                        <DataTrigger.ExitActions>
+                                            <StopStoryboard BeginStoryboardName="BaseAddrGlow"/>
+                                        </DataTrigger.ExitActions>
+                                        <Setter Property="BorderThickness" Value="2"/>
+                                        <Setter Property="BorderBrush">
+                                            <Setter.Value>
+                                                <SolidColorBrush Color="Transparent"/>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE81C;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="Enter base addresses..."/>
                         </StackPanel>
-                        <Button Margin="0,0,0,3" Click="EnterBaseAddresses_Click"
-                                HorizontalAlignment="Left" Padding="10,6">
-                            <Button.Style>
-                                <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding NeedsBaseAddresses}" Value="True">
-                                            <DataTrigger.EnterActions>
-                                                <BeginStoryboard x:Name="BaseAddrGlow">
-                                                    <Storyboard RepeatBehavior="Forever">
-                                                        <ColorAnimation Storyboard.TargetProperty="(Button.BorderBrush).(SolidColorBrush.Color)"
-                                                                        To="Orange" Duration="0:0:0.5" AutoReverse="True"/>
-                                                    </Storyboard>
-                                                </BeginStoryboard>
-                                            </DataTrigger.EnterActions>
-                                            <DataTrigger.ExitActions>
-                                                <StopStoryboard BeginStoryboardName="BaseAddrGlow"/>
-                                            </DataTrigger.ExitActions>
-                                            <Setter Property="BorderThickness" Value="2"/>
-                                            <Setter Property="BorderBrush">
-                                                <Setter.Value>
-                                                    <SolidColorBrush Color="Transparent"/>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Button.Style>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE81C;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock Text="Enter base addresses..."/>
-                            </StackPanel>
-                        </Button>
-                        <Expander Header="Advanced input options" IsExpanded="False" Margin="0,0,0,0">
-                            <StackPanel Margin="16,4,0,0">
-                                <CheckBox Content="Frames on single line" Margin="0,0,0,3"
-                                          IsChecked="{Binding FramesOnSingleLine}"/>
-                                <CheckBox Content="Re-lookup source" Margin="0,0,0,3"
-                                          IsChecked="{Binding RelookupSource}"/>
-                                <TextBlock Text="Binary paths (OrdinalNNN):" Foreground="Gray" Margin="0,2,0,2"/>
-                                <DockPanel Margin="0,0,0,3">
-                                    <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowseBinaryPath_Click"
-                                            ToolTip="Browse for binary folder"/>
-                                    <TextBox Text="{Binding BinaryPaths, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,2,0"
-                                             ToolTip="Binary paths for ordinal resolution (semicolon-separated)"/>
-                                </DockPanel>
-                                <CheckBox Content="Search DLLs recursively" IsChecked="{Binding DllRecurse}"/>
-                            </StackPanel>
-                        </Expander>
-                    </StackPanel>
-
-                    <!-- Output column -->
-                    <StackPanel Grid.Column="2">
-                        <TextBlock Text="Output" FontWeight="SemiBold" Margin="0,0,0,2"/>
-                        <TextBlock Text="Save output to file:" Foreground="Gray" Margin="0,0,0,2"/>
-                        <DockPanel Margin="0,0,0,3">
-                            <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowseOutputPath_Click"
-                                    ToolTip="Browse for output file location"/>
-                            <TextBox Text="{Binding OutputFilePath, UpdateSourceTrigger=PropertyChanged}"
-                                     ToolTip="Output file path (optional)" Margin="0,0,2,0"/>
-                        </DockPanel>
-                        <Expander Header="Advanced output options" IsExpanded="False" Margin="0,0,0,0">
-                            <StackPanel Margin="16,4,0,0">
-                                <CheckBox Content="Source lines (private PDBs)" Margin="0,0,0,3"
-                                          IsChecked="{Binding IncludeLineNumbers}"/>
-                                <CheckBox Content="Function offsets" Margin="0,0,0,3"
-                                          IsChecked="{Binding IncludeOffsets}"/>
-                                <CheckBox Content="Inline frames" Margin="0,0,0,0"
-                                          IsChecked="{Binding ShowInlineFrames}"/>
-                            </StackPanel>
-                        </Expander>
-                    </StackPanel>
-                </Grid>
+                    </Button>
+                    <Expander Header="Advanced" IsExpanded="False" Margin="0,0,0,0">
+                        <StackPanel Margin="16,4,0,0">
+                            <CheckBox Content="Frames on single line" Margin="0,0,0,3"
+                                      IsChecked="{Binding FramesOnSingleLine}"/>
+                            <CheckBox Content="Re-lookup source" Margin="0,0,0,3"
+                                      IsChecked="{Binding RelookupSource}"/>
+                            <TextBlock Text="Binary paths (OrdinalNNN):" Foreground="Gray" Margin="0,2,0,2"/>
+                            <DockPanel Margin="0,0,0,3">
+                                <Button DockPanel.Dock="Right" Content="..." Width="30" Click="BrowseBinaryPath_Click"
+                                        ToolTip="Browse for binary folder"/>
+                                <TextBox Text="{Binding BinaryPaths, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,2,0"
+                                         ToolTip="Binary paths for ordinal resolution (semicolon-separated)"/>
+                            </DockPanel>
+                            <CheckBox Content="Search DLLs recursively" IsChecked="{Binding DllRecurse}"/>
+                        </StackPanel>
+                    </Expander>
+                </StackPanel>
             </GroupBox>
 
-            <!-- Top-right: Symbol / PDB Paths -->
-            <GroupBox Grid.Row="1" Grid.Column="1" Header="Symbol / PDB Paths" Margin="4,0,0,4" Padding="6" FontSize="10">
+            <!-- Output Options -->
+            <GroupBox Grid.Row="1" Grid.Column="1" Header="Output Options" Margin="4,0,4,4" Padding="6,2,6,4" FontSize="10">
+                <StackPanel Margin="0,-2,0,0">
+                    <CheckBox Content="Source lines (private PDBs)" Margin="0,2,0,3"
+                              IsChecked="{Binding IncludeLineNumbers}"/>
+                    <CheckBox Content="Function offsets" Margin="0,0,0,3"
+                              IsChecked="{Binding IncludeOffsets}"/>
+                    <CheckBox Content="Inline frames" Margin="0,0,0,0"
+                              IsChecked="{Binding ShowInlineFrames}"/>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- Symbol / PDB Paths -->
+            <GroupBox Grid.Row="1" Grid.Column="2" Header="Symbol / PDB Paths" Margin="4,0,0,4" Padding="6" FontSize="10">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                         <Button Click="SelectSQLPDB_Click" Padding="10,6" Margin="0,0,8,0">
@@ -298,7 +314,7 @@
             </GroupBox>
 
             <!-- Bottom row: Split resolve button -->
-            <Grid Grid.Row="2" Grid.ColumnSpan="2">
+            <Grid Grid.Row="2" Grid.ColumnSpan="3">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>

@@ -218,4 +218,7 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
   </PropertyGroup>
+  <Target Name="CleanModernWpfLocales" AfterTargets="Build">
+    <Exec Command="for /d %%d in (&quot;$(OutDir)*&quot;) do ( if exist &quot;%%d\ModernWpf.resources.dll&quot; if exist &quot;%%d\ModernWpf.Controls.resources.dll&quot; rd /s /q &quot;%%d&quot; )" />
+  </Target>
 </Project>
