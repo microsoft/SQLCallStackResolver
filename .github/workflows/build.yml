@@ -21,17 +21,6 @@ jobs:
       run: nuget restore SQLCallStackResolver.sln
     - name: Build SQLCallStackResolver
       run: msbuild SQLCallStackResolver.sln /p:Configuration=Release
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v7
-      with:
-        name: SQLCallStackResolver
-        path: |
-          Target/Release
-          NOTICE.md
-          LICENSE
-          !Target/Release/*.xml
-          !Target/Release/Tests
-          !Target/Release/ModernTests
     - name: Prep for running tests
       run: ./downloadsyms.ps1
       working-directory: Tests/TestCases
@@ -42,3 +31,16 @@ jobs:
         & "$env:VSINSTALLDIR/Common7/IDE/Extensions/TestPlatform/vstest.console.exe" ./SQLCalLStackResolver.Tests.dll /Parallel /logger:"console;verbosity=normal" /TestCaseFilter:"${{ github.event.inputs.testsfilter || 'TestCategory=Unit' }}"
       working-directory: Target/Release/Tests
       shell: powershell
+    - name: Prepare release artifact
+      run: |
+        Copy-Item NOTICE.md Target/Release/
+        Copy-Item LICENSE Target/Release/
+        Remove-Item Target/Release/*.xml -ErrorAction SilentlyContinue
+        Remove-Item Target/Release/Tests -Recurse -ErrorAction SilentlyContinue
+        Remove-Item Target/Release/ModernTests -Recurse -ErrorAction SilentlyContinue
+      shell: powershell
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: SQLCallStackResolver
+        path: Target/Release/
