@@ -90,7 +90,7 @@
                      Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
                      AllowDrop="True" PreviewDragOver="CallStackInput_DragOver" Drop="CallStackInput_Drop"/>
 
-            <GridSplitter Grid.Row="0" Grid.RowSpan="4" Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="LightGray"/>
+            <GridSplitter Grid.Row="0" Grid.RowSpan="4" Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="Transparent"/>
 
             <TextBox Grid.Row="3" Grid.Column="2" x:Name="outputTextBox"
                      IsReadOnly="True" IsReadOnlyCaretVisible="True"
@@ -101,7 +101,7 @@
                      Text="{Binding OutputText, Mode=OneWay}"/>
         </Grid>
 
-        <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" Background="LightGray"/>
+        <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" Background="Transparent"/>
 
         <!-- Detection banners -->
         <StackPanel Grid.Row="2" Margin="0,4,0,0">
