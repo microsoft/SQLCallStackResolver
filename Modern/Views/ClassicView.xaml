@@ -214,14 +214,16 @@
 
             <!-- Output Options -->
             <GroupBox Grid.Row="1" Grid.Column="1" Header="Output Options" Margin="4,0,4,4" Padding="6,2,6,4" FontSize="10">
-                <StackPanel Margin="0,-2,0,0">
-                    <CheckBox Content="Source lines (private PDBs)" Margin="0,2,0,3"
-                              IsChecked="{Binding IncludeLineNumbers}"/>
-                    <CheckBox Content="Function offsets" Margin="0,0,0,3"
-                              IsChecked="{Binding IncludeOffsets}"/>
-                    <CheckBox Content="Inline frames" Margin="0,0,0,0"
-                              IsChecked="{Binding ShowInlineFrames}"/>
-                </StackPanel>
+                <Expander Header="Advanced" IsExpanded="False" Margin="0,-2,0,0">
+                    <StackPanel Margin="16,4,0,0">
+                        <CheckBox Content="Source lines (private PDBs)" Margin="0,0,0,3"
+                                  IsChecked="{Binding IncludeLineNumbers}"/>
+                        <CheckBox Content="Function offsets" Margin="0,0,0,3"
+                                  IsChecked="{Binding IncludeOffsets}"/>
+                        <CheckBox Content="Inline frames" Margin="0,0,0,0"
+                                  IsChecked="{Binding ShowInlineFrames}"/>
+                    </StackPanel>
+                </Expander>
             </GroupBox>
 
             <!-- Symbol / PDB Paths -->
