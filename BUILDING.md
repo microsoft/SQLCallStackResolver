@@ -5,7 +5,7 @@
     * The DIA SDK files - msdia140.dll and msdia140.dll.manifest - are components of Visual Studio 2022 used under the terms as published [here](https://docs.microsoft.com/en-us/visualstudio/releases/2022/redistribution).
     * [XELite](https://www.nuget.org/packages/Microsoft.SqlServer.XEvent.XELite/) is used for importing Microsoft SQL Extended Event (XEL) files.
     * Other packages from Microsoft .NET family are used as well.
-* Tests are implemented using [MSTest v2](https://docs.microsoft.com/en-us/visualstudio/test/mstest-update-to-mstestv2?view=vs-2022#why-upgrade-to-mstestv2). Please try to ensure all the tests are passing before submitting a PR.
+* Tests are implemented using [MSTest v3](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-mstest-intro). Please try to ensure all the tests are passing before submitting a PR.
 * Prior to running tests, you need to execute the [downloadsyms.ps1](./Tests/TestCases/downloadsyms.ps1) file once as shown below:
 ``` cmd
 cd .\SQLCallStackResolver\Tests\TestCases
