@@ -105,42 +105,22 @@
 
         <!-- Detection banners -->
         <StackPanel Grid.Row="2" Margin="0,4,0,0">
-            <Border CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
-                    Background="{DynamicResource SystemControlBackgroundListLowBrush}"
-                    BorderBrush="{DynamicResource SystemControlForegroundAccentBrush}"
-                    BorderThickness="1"
-                    Visibility="{Binding HasDetectedBuild, Converter={StaticResource BoolToVis}}">
+            <Border CornerRadius="4" Padding="8,6" Margin="0,0,0,6" Background="{DynamicResource SystemControlBackgroundListLowBrush}" BorderBrush="{DynamicResource SystemControlForegroundAccentBrush}" BorderThickness="1" Visibility="{Binding HasDetectedBuild, Converter={StaticResource BoolToVis}}">
                 <DockPanel>
-                    <TextBlock DockPanel.Dock="Left" Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"
-                               Foreground="{DynamicResource SystemControlForegroundAccentBrush}"/>
-                    <TextBlock VerticalAlignment="Center" TextWrapping="Wrap">
-                        <Run Text="Detected SQL Server" FontWeight="SemiBold"/>
-                        <Run Text="{Binding DetectedBuildVersion, Mode=OneWay}" FontWeight="SemiBold"/>
-                        <Run Text=" — use the 'For a SQL version' button to download symbols."/>
-                    </TextBlock>
+                    <TextBlock DockPanel.Dock="Left" Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource SystemControlForegroundAccentBrush}"/>
+                    <TextBlock VerticalAlignment="Center" TextWrapping="Wrap"><Run Text="Detected SQL Server" FontWeight="SemiBold"/><Run Text="{Binding DetectedBuildVersion, Mode=OneWay}" FontWeight="SemiBold"/><Run Text=" — use the 'For a SQL version' button to download symbols."/></TextBlock>
                 </DockPanel>
             </Border>
-            <Border CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
-                    Background="{DynamicResource SystemControlBackgroundListLowBrush}"
-                    BorderBrush="{DynamicResource SystemControlForegroundAccentBrush}"
-                    BorderThickness="1"
-                    Visibility="{Binding HasXmlFrameInput, Converter={StaticResource BoolToVis}}">
+            <Border CornerRadius="4" Padding="8,6" Margin="0,0,0,6" Background="{DynamicResource SystemControlBackgroundListLowBrush}" BorderBrush="{DynamicResource SystemControlForegroundAccentBrush}" BorderThickness="1" Visibility="{Binding HasXmlFrameInput, Converter={StaticResource BoolToVis}}">
                 <DockPanel>
-                    <TextBlock DockPanel.Dock="Left" Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"
-                               Foreground="{DynamicResource SystemControlForegroundAccentBrush}"/>
-                    <TextBlock VerticalAlignment="Center" TextWrapping="Wrap"
-                               Text="XML frames with PDB info detected — use the 'MS Symbol Server' button to set the symbol path."/>
+                    <TextBlock DockPanel.Dock="Left" Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource SystemControlForegroundAccentBrush}"/>
+                    <TextBlock VerticalAlignment="Center" TextWrapping="Wrap" Text="XML frames with PDB info detected — use the 'MS Symbol Server' button to set the symbol path."/>
                 </DockPanel>
             </Border>
-            <Border CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
-                    Background="{DynamicResource SystemControlBackgroundListLowBrush}"
-                    BorderBrush="Orange" BorderThickness="1"
-                    Visibility="{Binding NeedsBaseAddresses, Converter={StaticResource BoolToVis}}">
+            <Border CornerRadius="4" Padding="8,6" Margin="0,0,0,6" Background="{DynamicResource SystemControlBackgroundListLowBrush}" BorderBrush="Orange" BorderThickness="1" Visibility="{Binding NeedsBaseAddresses, Converter={StaticResource BoolToVis}}">
                 <DockPanel>
-                    <TextBlock DockPanel.Dock="Left" Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"
-                               Foreground="Orange"/>
-                    <TextBlock VerticalAlignment="Center" TextWrapping="Wrap"
-                               Text="Virtual addresses detected — click 'Enter base addresses' to provide module base address info."/>
+                    <TextBlock DockPanel.Dock="Left" Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="Orange"/>
+                    <TextBlock VerticalAlignment="Center" TextWrapping="Wrap" Text="Virtual addresses detected — click 'Enter base addresses' to provide module base address info."/>
                 </DockPanel>
             </Border>
         </StackPanel>
@@ -161,29 +141,15 @@
             <!-- Input Options -->
             <GroupBox Grid.Row="1" Grid.Column="0" Header="Input Options" Margin="0,0,4,4" Padding="6,2,6,4" FontSize="10">
                 <StackPanel Margin="0,-2,0,0">
-                    <Button Margin="0,2,0,3" Click="EnterBaseAddresses_Click"
-                            HorizontalAlignment="Left" Padding="10,6">
+                    <Button Margin="0,2,0,3" Click="EnterBaseAddresses_Click" HorizontalAlignment="Left" Padding="10,6">
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding NeedsBaseAddresses}" Value="True">
-                                        <DataTrigger.EnterActions>
-                                            <BeginStoryboard x:Name="BaseAddrGlow">
-                                                <Storyboard RepeatBehavior="Forever">
-                                                    <ColorAnimation Storyboard.TargetProperty="(Button.BorderBrush).(SolidColorBrush.Color)"
-                                                                    To="Orange" Duration="0:0:0.5" AutoReverse="True"/>
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </DataTrigger.EnterActions>
-                                        <DataTrigger.ExitActions>
-                                            <StopStoryboard BeginStoryboardName="BaseAddrGlow"/>
-                                        </DataTrigger.ExitActions>
+                                        <DataTrigger.EnterActions><BeginStoryboard x:Name="BaseAddrGlow"><Storyboard RepeatBehavior="Forever"><ColorAnimation Storyboard.TargetProperty="(Button.BorderBrush).(SolidColorBrush.Color)" To="Orange" Duration="0:0:0.5" AutoReverse="True"/></Storyboard></BeginStoryboard></DataTrigger.EnterActions>
+                                        <DataTrigger.ExitActions><StopStoryboard BeginStoryboardName="BaseAddrGlow"/></DataTrigger.ExitActions>
                                         <Setter Property="BorderThickness" Value="2"/>
-                                        <Setter Property="BorderBrush">
-                                            <Setter.Value>
-                                                <SolidColorBrush Color="Transparent"/>
-                                            </Setter.Value>
-                                        </Setter>
+                                        <Setter Property="BorderBrush"><Setter.Value><SolidColorBrush Color="Transparent"/></Setter.Value></Setter>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -235,23 +201,10 @@
                                 <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding HasDetectedBuild}" Value="True">
-                                            <DataTrigger.EnterActions>
-                                                <BeginStoryboard x:Name="SqlBuildGlow">
-                                                    <Storyboard RepeatBehavior="Forever">
-                                                        <ColorAnimation Storyboard.TargetProperty="(Button.BorderBrush).(SolidColorBrush.Color)"
-                                                                        To="#40C040" Duration="0:0:0.5" AutoReverse="True"/>
-                                                    </Storyboard>
-                                                </BeginStoryboard>
-                                            </DataTrigger.EnterActions>
-                                            <DataTrigger.ExitActions>
-                                                <StopStoryboard BeginStoryboardName="SqlBuildGlow"/>
-                                            </DataTrigger.ExitActions>
+                                            <DataTrigger.EnterActions><BeginStoryboard x:Name="SqlBuildGlow"><Storyboard RepeatBehavior="Forever"><ColorAnimation Storyboard.TargetProperty="(Button.BorderBrush).(SolidColorBrush.Color)" To="#40C040" Duration="0:0:0.5" AutoReverse="True"/></Storyboard></BeginStoryboard></DataTrigger.EnterActions>
+                                            <DataTrigger.ExitActions><StopStoryboard BeginStoryboardName="SqlBuildGlow"/></DataTrigger.ExitActions>
                                             <Setter Property="BorderThickness" Value="2"/>
-                                            <Setter Property="BorderBrush">
-                                                <Setter.Value>
-                                                    <SolidColorBrush Color="Transparent"/>
-                                                </Setter.Value>
-                                            </Setter>
+                                            <Setter Property="BorderBrush"><Setter.Value><SolidColorBrush Color="Transparent"/></Setter.Value></Setter>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -261,29 +214,15 @@
                                 <TextBlock Text="For a SQL version..."/>
                             </StackPanel>
                         </Button>
-                        <Button Click="UseSymbolServer_Click" Padding="10,6"
-                                ToolTip="SRV*c:\temp\symcache*https://msdl.microsoft.com/download/symbols">
+                        <Button Click="UseSymbolServer_Click" Padding="10,6" ToolTip="SRV*c:\temp\symcache*https://msdl.microsoft.com/download/symbols">
                             <Button.Style>
                                 <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding HasXmlFrameInput}" Value="True">
-                                            <DataTrigger.EnterActions>
-                                                <BeginStoryboard x:Name="SymSrvGlow">
-                                                    <Storyboard RepeatBehavior="Forever">
-                                                        <ColorAnimation Storyboard.TargetProperty="(Button.BorderBrush).(SolidColorBrush.Color)"
-                                                                        To="#40C040" Duration="0:0:0.5" AutoReverse="True"/>
-                                                    </Storyboard>
-                                                </BeginStoryboard>
-                                            </DataTrigger.EnterActions>
-                                            <DataTrigger.ExitActions>
-                                                <StopStoryboard BeginStoryboardName="SymSrvGlow"/>
-                                            </DataTrigger.ExitActions>
+                                            <DataTrigger.EnterActions><BeginStoryboard x:Name="SymSrvGlow"><Storyboard RepeatBehavior="Forever"><ColorAnimation Storyboard.TargetProperty="(Button.BorderBrush).(SolidColorBrush.Color)" To="#40C040" Duration="0:0:0.5" AutoReverse="True"/></Storyboard></BeginStoryboard></DataTrigger.EnterActions>
+                                            <DataTrigger.ExitActions><StopStoryboard BeginStoryboardName="SymSrvGlow"/></DataTrigger.ExitActions>
                                             <Setter Property="BorderThickness" Value="2"/>
-                                            <Setter Property="BorderBrush">
-                                                <Setter.Value>
-                                                    <SolidColorBrush Color="Transparent"/>
-                                                </Setter.Value>
-                                            </Setter>
+                                            <Setter Property="BorderBrush"><Setter.Value><SolidColorBrush Color="Transparent"/></Setter.Value></Setter>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -322,32 +261,18 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <Button x:Name="resolveMainButton" FontWeight="Bold" Padding="14,6"
-                            Width="230" Click="ResolveMain_Click">
+                    <Button x:Name="resolveMainButton" FontWeight="Bold" Padding="14,6" Width="230" Click="ResolveMain_Click">
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding HighlightResolve}" Value="True">
-                                        <DataTrigger.EnterActions>
-                                            <BeginStoryboard x:Name="GlowStoryboard">
-                                                <Storyboard RepeatBehavior="3x">
-                                                    <ColorAnimation Storyboard.TargetProperty="(Effect).(DropShadowEffect.Color)"
-                                                                    To="#40C040" Duration="0:0:0.4" AutoReverse="True"/>
-                                                    <DoubleAnimation Storyboard.TargetProperty="(Effect).(DropShadowEffect.Opacity)"
-                                                                     To="1" Duration="0:0:0.4" AutoReverse="True"/>
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </DataTrigger.EnterActions>
-                                        <DataTrigger.ExitActions>
-                                            <StopStoryboard BeginStoryboardName="GlowStoryboard"/>
-                                        </DataTrigger.ExitActions>
+                                        <DataTrigger.EnterActions><BeginStoryboard x:Name="GlowStoryboard"><Storyboard RepeatBehavior="3x"><ColorAnimation Storyboard.TargetProperty="(Effect).(DropShadowEffect.Color)" To="#40C040" Duration="0:0:0.4" AutoReverse="True"/><DoubleAnimation Storyboard.TargetProperty="(Effect).(DropShadowEffect.Opacity)" To="1" Duration="0:0:0.4" AutoReverse="True"/></Storyboard></BeginStoryboard></DataTrigger.EnterActions>
+                                        <DataTrigger.ExitActions><StopStoryboard BeginStoryboardName="GlowStoryboard"/></DataTrigger.ExitActions>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </Button.Style>
-                        <Button.Effect>
-                            <DropShadowEffect Color="Transparent" ShadowDepth="0" BlurRadius="15" Opacity="0"/>
-                        </Button.Effect>
+                        <Button.Effect><DropShadowEffect Color="Transparent" ShadowDepth="0" BlurRadius="15" Opacity="0"/></Button.Effect>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                             <TextBlock x:Name="resolveMainIcon" Text="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
                             <TextBlock x:Name="resolveMainText" Text="Resolve Callstacks!" FontWeight="Bold"/>

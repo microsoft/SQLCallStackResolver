@@ -10,28 +10,20 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
             InitializeComponent();
         }
 
-        /// <summary>Attach this find bar to a target TextBox for searching.</summary>
-        public void Attach(TextBox target) {
-            _targetTextBox = target;
-        }
+        public void Attach(TextBox target) => _targetTextBox = target;
 
         /// <summary>Show the find bar and focus the search box.</summary>
         public void Open() {
             Visibility = Visibility.Visible;
-            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Input, new Action(() => {
-                SearchBox.Focus();
-                Keyboard.Focus(SearchBox);
-                SearchBox.SelectAll();
-            }));
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Input,
+                new Action(() => { SearchBox.Focus(); Keyboard.Focus(SearchBox); SearchBox.SelectAll(); }));
         }
 
         /// <summary>Hide the find bar and clear state.</summary>
         public void Close() {
             Visibility = Visibility.Collapsed;
-            _matchPositions.Clear();
-            _currentMatchIndex = -1;
-            MatchInfo.Text = "";
-            SearchBox.Text = "";
+            _matchPositions.Clear(); _currentMatchIndex = -1;
+            MatchInfo.Text = ""; SearchBox.Text = "";
         }
 
         private void Close_Click(object sender, RoutedEventArgs e) {
@@ -62,11 +54,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
                 pos += searchText.Length;
             }
 
-            if (_matchPositions.Count > 0) {
-                MatchInfo.Text = $"{_matchPositions.Count} matches";
-            } else {
-                MatchInfo.Text = "No matches";
-            }
+            MatchInfo.Text = _matchPositions.Count > 0 ? $"{_matchPositions.Count} matches" : "No matches";
         }
 
         private void HighlightCurrent() {
@@ -101,10 +89,7 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         }
 
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e) {
-            // Clear stale matches when search text changes; new matches built on Enter/nav
-            _matchPositions.Clear();
-            _currentMatchIndex = -1;
-            MatchInfo.Text = "";
+            _matchPositions.Clear(); _currentMatchIndex = -1; MatchInfo.Text = "";
         }
 
         private void SearchBox_KeyDown(object sender, KeyEventArgs e) {

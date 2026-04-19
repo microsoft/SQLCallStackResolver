@@ -103,13 +103,10 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
             if (dlg.ShowDialog(Window.GetWindow(this)) == true) ViewModel.OutputFilePath = dlg.FileName;
         }
 
-        private void ClearOutputFile_Click(object sender, RoutedEventArgs e) {
-            ViewModel.OutputFilePath = string.Empty;
-        }
+        private void ClearOutputFile_Click(object sender, RoutedEventArgs e) => ViewModel.OutputFilePath = string.Empty;
 
         private void CallStackInput_DragOver(object sender, DragEventArgs e) {
-            e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
-            e.Handled = true;
+            e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None; e.Handled = true;
         }
 
         private async void CallStackInput_Drop(object sender, DragEventArgs e) {
@@ -131,11 +128,8 @@ namespace Microsoft.SqlServer.Utils.Misc.SQLCallStackResolver.Modern {
         }
 
         private void ExecuteResolveAction(string mode) {
-            if (mode == "paste") {
-                ViewModel.PasteFromClipboardCommand.Execute(null);
-            } else {
-                ViewModel.ResolveCommand.Execute(null);
-            }
+            if (mode == "paste") ViewModel.PasteFromClipboardCommand.Execute(null);
+            else ViewModel.ResolveCommand.Execute(null);
         }
 
         private void UpdateResolveButton(string mode) {
