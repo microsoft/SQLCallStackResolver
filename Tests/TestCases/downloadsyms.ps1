@@ -70,13 +70,13 @@ mkdir -Force "./ImportXEL" -ErrorAction Ignore
 $localpath = "./ImportXEL/XESpins_0_131627061603030000.xel"
 if (-not (test-path $localpath)) {
     try {
-        Invoke-WebRequest -UseBasicParsing -uri "https://github.com/arvindshmicrosoft/SQLCallStackResolver/raw/main/docs/SQLSat696/Demos/LOCK_HASH/XESpins_0_131627061603030000.zip" -OutFile ($localpath + ".zip") -ErrorAction Ignore
+        Invoke-WebRequest -UseBasicParsing -uri "https://github.com/arvindsh/SQLCallStackResolver/raw/main/docs/SQLSat696/Demos/LOCK_HASH/XESpins_0_131627061603030000.zip" -OutFile ($localpath + ".zip") -ErrorAction Ignore
         Expand-Archive -Path ($localpath + ".zip") -DestinationPath "./ImportXEL"
     }
     catch{    }
 
     if (-not (test-path $localpath)){
-        Write-Warning "You must manually download and extract XESpins_0_131627061603030000.xel. You can do that from https://github.com/arvindshmicrosoft/SQLCallStackResolver/raw/main/docs/SQLSat696/Demos/LOCK_HASH/XESpins_0_131627061603030000.zip"
+        Write-Warning "You must manually download and extract XESpins_0_131627061603030000.xel. You can do that from https://github.com/arvindsh/SQLCallStackResolver/raw/main/docs/SQLSat696/Demos/LOCK_HASH/XESpins_0_131627061603030000.zip"
     }
 }
 
@@ -84,12 +84,12 @@ if (-not (test-path $localpath)) {
 $localpath = "./ImportXEL/xe_wait_completed_0_132353446563350000.xel"
 if (-not (test-path $localpath)){
     try{
-        Invoke-WebRequest -UseBasicParsing -uri "https://github.com/arvindshmicrosoft/SQLCallStackResolver/raw/main/docs/SQLSat696/Demos/xe_wait_completed_0_132353446563350000.xel" -OutFile $localpath -ErrorAction Ignore
+        Invoke-WebRequest -UseBasicParsing -uri "https://github.com/arvindsh/SQLCallStackResolver/raw/main/docs/SQLSat696/Demos/xe_wait_completed_0_132353446563350000.xel" -OutFile $localpath -ErrorAction Ignore
     }
     catch {}
 
     if (-not (test-path $localpath)){
-        Write-Warning "You must manually download and extract xe_wait_completed_0_132353446563350000.xel. You can do that from https://github.com/arvindshmicrosoft/SQLCallStackResolver/raw/main/docs/SQLSat696/Demos/xe_wait_completed_0_132353446563350000.xel"
+        Write-Warning "You must manually download and extract xe_wait_completed_0_132353446563350000.xel. You can do that from https://github.com/arvindsh/SQLCallStackResolver/raw/main/docs/SQLSat696/Demos/xe_wait_completed_0_132353446563350000.xel"
     }
 }
 
